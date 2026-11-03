@@ -40,8 +40,8 @@ changes this repository starts.
 Phase branches are reviewed and PR'd against the parent branch, never `master`. When running
 `/code-review` on a phase branch, diff against the parent, or pass the PR number so GitHub's base
 branch is used. This repository's phases are in `docs/page-plan.md`. The review procedure, and
-when a phase branch is merged, are in section 13 of the server's `docs/web-client-plan.md`. Read
-the submodule's copy, `libs/romanian_whist_server/docs/web-client-plan.md`: the server's `master`
+when a phase branch is merged, are in section 13 of the server's `docs/server-plan.md`. Read
+the submodule's copy, `libs/romanian_whist_server/docs/server-plan.md`: the server's `master`
 holds an older plan.
 
 ## Changing a PR: never `gh pr edit`

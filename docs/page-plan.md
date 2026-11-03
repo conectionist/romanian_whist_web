@@ -24,7 +24,7 @@ is done. When a phase is finished, its outcome is written under it, as the serve
    The links to it point at the server's `master`, where its work ends up. Until it gets there,
    `master` holds an older plan: read the one in this repository's submodule,
    `libs/romanian_whist_server/docs/web-client-plan.md`, which is the server this page is built
-   against, or the one on the parent branch that the server's `CLAUDE.md` names.
+   against, or the one on the server's parent branch, `ccr-c8ac042f-e6e18n`.
 3. The desktop client itself, because the page must look like it: run it, or look at the pictures
    its `tests/ScreenshotTool.cpp` takes. Then its `docs/ui-redesign/IMPLEMENTATION_PLAN.md`, whose
    phase outcomes record where the desktop client departed from its mock-up,
@@ -339,7 +339,10 @@ sets the rules. The page's share:
 - **An About page** says what the page keeps: a chosen display name and a random token in the
   browser's storage, with no accounts and no cookies.
 
-Both are built in the server plan's phase 9, as the page's share of it.
+Both are built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
+the page is built from the latest commit of this repository whose submodule points at the server
+being deployed, and a server change that no such commit points at gets a submodule update here
+first (the server plan's §12).
 
 ---
 
@@ -366,8 +369,10 @@ They run against a real server, built from the submodule ([§14](#14-building-an
 
 - **The page renders from fixtures without a server**, so screens can be checked in any state.
 - **A tool in the server repository, built in phase 6, plays the desktop client's
-  `tests/ScreenshotTool.cpp` games** (the server plan's [§10.5](https://github.com/conectionist/romanian_whist_server/blob/master/docs/web-client-plan.md#105-the-look)): the same
-  seeds and players, to the same moments. It writes each viewer's snapshot as a fixture. The sheets
+  `tests/ScreenshotTool.cpp` games**, with the same seeds and players, to the same moments. It
+  writes each viewer's snapshot into the server's `protocol/look/`, which the page reads through
+  its submodule (the server plan's
+  [§10.5](https://github.com/conectionist/romanian_whist_server/blob/master/docs/web-client-plan.md#105-the-look)). The sheets
   get fixtures built by hand, as the screenshot tool builds theirs.
 - **Playwright renders each fixture at the desktop shot's own size**: 1920×1080 for the
   whole-window shots, 1920×1034 for `table-empty`, the hands and the sheets. A script pairs each
@@ -409,8 +414,9 @@ checkout of the server beside this one.
 - **Day to day:** the Vite dev server (port 5173) passes `/ws` through to the server (port 8080).
   Or the server serves `dist/` itself, as it does in production.
 - **CI:** one Linux job, which builds the page and runs its unit tests. End-to-end tests and
-  screenshots run locally, at the end of a phase. Once the server writes its fixtures, the job
-  checks out the submodule too, without the submodule's own submodules, so that §13.1's tests run.
+  screenshots run locally, at the end of a phase. From phase 6, which moves the submodule to a
+  server with fixtures, the job checks out the submodule too, without the submodule's own
+  submodules, so that §13.1's tests run.
 - **Python** 3.12 with Pillow, for the mock-up's build script and the import tools.
 - **Pull requests:** change a PR's title or description with
   `gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -F body=@<file>`. `gh pr edit` fails on the
@@ -423,7 +429,8 @@ checkout of the server beside this one.
 The phases are numbered in one sequence with the server's. Phases 0 to 5, 9 and 11 are in the
 server plan's
 [§13](https://github.com/conectionist/romanian_whist_server/blob/master/docs/web-client-plan.md#13-phases),
-and 6, 7, 8 and 10 are here. Phase 9 has a share here too: the footer and the About page (§12).
+and 6, 7, 8 and 10 are here. Phase 9 has a share here too: the footer, the About page, and deploying the page with its server
+(§12).
 The branch workflow and the code review procedure are that section's. Its step 5, building and
 testing both presets after the fixes, means here the page's build, unit tests and browser tests.
 Sizes are relative: S, M, L.
@@ -437,8 +444,10 @@ After the server's phase 3, the page can be built against fixtures while the ser
   - the stage and seat geometry, name panels, racks, hand, played cards, lead mark, scoreboard,
     trick panel, bid strip and bid bubbles;
   - the playback queue;
-  - rendering from fixtures, which the fixture tool writes (§13.3). The tool is built in the server
-    repository, on its parent branch;
+  - first, in the server repository, the fixture tool (§13.3), on a phase branch of its own off
+    the server's parent branch. It is reviewed like any phase, and merged with a merge commit.
+    Then the submodule moves to that merge, and CI checks the submodule out (§14);
+  - rendering from the tool's fixtures;
   - `t()` everywhere, English only so far;
   - every element ported from its desktop source ([§7](#7-from-the-mock-ups-script)'s last
     column), with the mock-up's code kept only where it matches
@@ -480,8 +489,9 @@ After the server's phase 3, the page can be built against fixtures while the ser
 ### Phase 10 (optional): offline solo — M to L
 
 - **Work:**
-  - `server/core`, without Drogon, compiled with Emscripten (in the server repository) and run in
-    a Web Worker. The seat driver's wait becomes an awaited message from the page, using JSPI
+  - `server/core`, without Drogon, compiled with Emscripten and run in a Web Worker. The
+    Emscripten build is made in the server repository first, on a phase branch of its own, as
+    phase 6's fixture tool is. The seat driver's wait becomes an awaited message from the page, using JSPI
     (Chrome and Edge 137+, Firefox 153+, Safari 27+), with Asyncify as the fallback for other
     browsers (about 50% larger code, and its handling of virtual calls needs tuning);
   - the same protocol, over `postMessage`;

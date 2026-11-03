@@ -8,7 +8,7 @@ and that is worse than any wait. **Slower is always acceptable; a frozen desktop
 - **Page tests:** `nice -n 19 npx vitest run --maxWorkers=2` and
   `nice -n 19 npm run e2e -- --workers=1`. The end-to-end tests start
   `libs/romanian_whist_server/build/server/app/whist_server`, or the server `WHIST_SERVER` names,
-  so build the server first.
+  so build the submodule's `default` preset first.
 - **The server's build** follows the server's own `CLAUDE.md`, in `libs/romanian_whist_server`:
   never a bare `-j`, always `nice -n 19 cmake --build --preset <p> -j 2`. Its first build compiles
   Drogon too and takes several minutes: run it in the background.
@@ -37,9 +37,10 @@ Branches are stacked, as in the server: `master` -> the parent branch -> `web/ph
 This repository has no parent branch yet. It is made off `master` when the first phase that
 changes this repository starts.
 
-Phase branches are reviewed and PR'd against the parent branch, never `master`. This repository's
-phases are in `docs/page-plan.md`. The review procedure, and when a phase branch is merged, are in
-section 13 of the server's `docs/web-client-plan.md`.
+Phase branches are reviewed and PR'd against the parent branch, never `master`. When running
+`/code-review` on a phase branch, diff against the parent, or pass the PR number so GitHub's base
+branch is used. This repository's phases are in `docs/page-plan.md`. The review procedure, and
+when a phase branch is merged, are in section 13 of the server's `docs/web-client-plan.md`.
 
 ## Changing a PR: never `gh pr edit`
 

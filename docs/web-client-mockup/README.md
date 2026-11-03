@@ -24,7 +24,7 @@ fan (`HandItem.cpp`), the hand order (`src/core/CardOrder.cpp`), the corner pane
 mock-up's CSS approximation, not the desktop client's projective ones.
 
 The pieces neither client has (the lobby, presence on the name panels, the countdowns, the
-notices) are drawn in the desktop client's style, as the plan's section 8.1 asks. They are a
+notices) are drawn in the desktop client's style, as the page plan's section 2 asks. They are a
 first sketch, not decisions.
 
 This is a sketch for discussion, not a reference. The plan's rule stands: the desktop client as

@@ -330,7 +330,7 @@ body
 .pill.computer { color: var(--muted); }
 .pill.computer svg { color: var(--gold); }
 .pill.host { border-color: var(--gold); color: var(--gold-bright); }
-/* presence, new for the web (plan section 5.3) */
+/* presence, new for the web */
 .seat.away .portrait img { filter: grayscale(1) brightness(0.55); }
 .seat.away .name { color: var(--muted); }
 .seat .badge
@@ -525,7 +525,7 @@ body
 }
 .tbtn svg { width: 24px; height: 24px; color: var(--gold); flex: none; }
 
-/* a notice, new for the web: the desktop client has no toasts (plan section 8.1, point 5) */
+/* a notice, new for the web: the desktop client has no toasts */
 .notice
 {
   position: absolute; left: 50%; top: 14px;
@@ -779,7 +779,7 @@ body
 <div class="viewer">
   <header class="intro">
     <h1>Romanian Whist on the web</h1>
-    <p>A mock-up of the browser client planned in <code>docs/page-plan.md</code> of the <code>romanian_whist_web</code> repository. It wears the
+    <p>A mock-up of the browser client planned in <code>docs/page-plan.md</code> of the <code>romanian_whist_web</code> repository, on the server that <code>docs/web-client-plan.md</code> of <code>romanian_whist_server</code> plans. It wears the
       desktop client's look, as the plan requires, and adds what the desktop client doesn't have: online tables,
       a lobby, players who drop and come back, and a turn timer. The cards, portraits and table are the desktop
       client's own art; the game states are sample data.</p>
@@ -804,7 +804,7 @@ body
     <p>The table space, seat places, hand fan, played-card positions and corner panels follow the desktop client's
       source (<code>src/table/</code>), and the colours and fonts its theme (<code>src/paint/Theme.cpp</code>). New
       pieces (the lobby, presence on the name panels, the countdowns, the notices) are drawn in the same style, as
-      the plan's section 8.1 asks. The address <code>whist.example</code> stands in for the real host.</p>
+      the page plan's section 2 asks. The address <code>whist.example</code> stands in for the real host.</p>
   </footer>
 </div>
 <script>
@@ -1107,8 +1107,8 @@ function pill(...content)
 }
 const takenBid = (taken, bid) => pill(`Taken/Bid: ${taken}/${bid}`);
 
-// The turn's countdown: a ring round the panel and the seconds above it (plan
-// sections 5.3 and 8.4). `left` of `out of` seconds.
+// The turn's countdown: a ring round the panel and the seconds above it. `left` of `out of`
+// seconds.
 function countdown(left, outOf)
 {
   const w = 259 + 14, hgt = 118 + 14;
@@ -1724,51 +1724,51 @@ const SCREENS = [
   { id: "menu", group: "Before the game", tab: "Main menu", url: "whist.example", mount: mountMenu,
     title: "The main menu",
     text: "The desktop client's main menu, with two ways to play online added. New Game plays against computer players, as on the desktop. The other two set up a table, or join one, that friends reach by a link.",
-    refs: "Plan sections 2.2, 7, 9 (the source link the AGPL needs)" },
+    refs: "Server plan sections 2.2, 7, 9 (the source link the AGPL needs); page plan section 12" },
   { id: "solo", tab: "New Game", url: "whist.example", mount: mountSolo,
     title: "New Game, against the computer",
     text: "The desktop client's New Game, unchanged: play or watch, the opponents and their level, the game's shape, the pace and a fixed deal. The game runs on the server, as a private table with one human seat.",
-    refs: "Plan sections 4.1, 7.1" },
+    refs: "Server plan sections 4.1, 7.1" },
   { id: "create", tab: "Create a table", url: "whist.example/new", mount: mountCreate,
     title: "Creating an online table",
     text: "The same settings, without watching and without the seed. Two are new: which computer player takes a seat when someone drops, and the turn timer. You also pick a name, a gender (Romanian sentences need it) and a portrait.",
-    refs: "Plan sections 7.2, 7.3; decisions D9, D10, D12, D16" },
+    refs: "Server plan sections 7.2, 7.3; decisions D9, D10, D12, D16" },
   { id: "join", tab: "Join by link", url: `whist.example/t/${TABLE_CODE}`, mount: mountJoin,
     title: "Joining by link",
     text: "Someone who opens the link lands here with the code filled in. Names are unique at a table, and there are no accounts: a random token in the browser is what lets you back into your seat.",
-    refs: "Plan sections 7.3, 9 (identity)" },
+    refs: "Server plan sections 7.3, 9 (identity)" },
   { id: "lobby", tab: "Lobby", url: `whist.example/t/${TABLE_CODE}`, mount: mountLobby,
     title: "The lobby",
     text: "The table before the game, from the host's seat. Each seat is open, taken by a person, or given to a computer player. The host can change the settings, the seats and the computer players' levels until the game starts.",
     tryText: "Try Add computer on the open seat (right), and Copy link.",
-    refs: "Plan sections 4.9, 7.2" },
+    refs: "Server plan sections 4.9, 7.2" },
   { id: "away", group: "At the table, online", tab: "A player drops", url: `whist.example/t/${TABLE_CODE}`, mount: mountAway,
     title: "A player drops during his turn",
     text: "Bogdan's connection dropped while it was his turn. The table waits up to 30 seconds for him, and everyone sees the countdown on his panel. If he doesn't come back, the computer player behind his seat moves for him, and keeps doing so until he returns.",
     tryText: "Wait for the countdown to run out.",
-    refs: "Plan sections 5.1, 5.2 (timelines 1 to 3), 5.3" },
+    refs: "Server plan sections 5.1, 5.2 (timelines 1 to 3), 5.3" },
   { id: "turn", tab: "Your turn", url: `whist.example/t/${TABLE_CODE}`, mount: mountTurn,
     title: "Your turn, with the turn timer",
     text: "Bogdan made it back. Online, each turn has 60 seconds; the gold ring and the seconds above your panel show the last 15. Otherwise the table is the desktop client's: the cards you can't play are greyed out and the ones you can are raised.",
     tryText: "Click a raised card to play it, or let the timer run out.",
-    refs: "Plan sections 5.2 (timeline 4), 8.4, decision D9" },
+    refs: "Server plan section 5.2 (timeline 4), decision D9; page plan section 5" },
   { id: "stand-in", tab: "Computer stands in", url: `whist.example/t/${TABLE_CODE}`, mount: mountStandIn,
     title: "A computer player stands in",
     text: "Ana left the table. Her seat keeps her name, portrait and score; the badge on her portrait says a computer player has it, and the trick panel says so when it moves. If she comes back by the same link, her next move is hers again.",
-    refs: "Plan sections 3.2, 5.2 (timelines 5, 6), 5.3" },
+    refs: "Server plan sections 3.2, 5.2 (timelines 5, 6), 5.3" },
   { id: "hold", tab: "Round hold", url: `whist.example/t/${TABLE_CODE}`, mount: mountHold,
     title: "Waiting for everyone after a round",
     text: "Online, “Wait for me after each round” becomes a shared hold: the round sheet stays up until every connected player has pressed Continue, or for 30 seconds. Nobody can pause an online game.",
     tryText: "Press Continue.",
-    refs: "Plan section 4.8, decisions D12, D13" },
+    refs: "Server plan section 4.8, decisions D12, D13" },
   { id: "results", tab: "Final results", url: `whist.example/t/${TABLE_CODE}`, mount: mountResults,
     title: "Final results",
     text: "The desktop client's final results. Online, the host can start another game at the same table with the same seats, so nobody needs a new link.",
-    refs: "Plan section 4.9" },
+    refs: "Server plan section 4.9" },
   { id: "phone", tab: "Phone held upright", url: "", mount: null,
     title: "A phone held upright",
     text: "The first version supports phones held sideways, where the table scales down as it does in a small desktop window. Held upright, the page asks you to turn the phone.",
-    refs: "Plan section 8.10, decision D14" },
+    refs: "Page plan section 11, decision D14" },
 ];
 
 const tabs = document.getElementById("tabs");

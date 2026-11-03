@@ -9,6 +9,9 @@ export default defineConfig({
       "/ws": { target: "ws://127.0.0.1:8080", ws: true },
     },
   },
+  // The dependency scan would otherwise read every HTML file in the repository, the submodule's
+  // and the mock-up's included.
+  optimizeDeps: { entries: ["index.html"] },
   build: {
     outDir: "dist",
     emptyOutDir: true,

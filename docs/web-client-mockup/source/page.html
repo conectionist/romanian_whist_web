@@ -326,7 +326,7 @@ body
 .pill.computer { color: var(--muted); }
 .pill.computer svg { color: var(--gold); }
 .pill.host { border-color: var(--gold); color: var(--gold-bright); }
-/* presence, new for the web (plan section 5.3) */
+/* presence, new for the web */
 .seat.away .portrait img { filter: grayscale(1) brightness(0.55); }
 .seat.away .name { color: var(--muted); }
 .seat .badge
@@ -521,7 +521,7 @@ body
 }
 .tbtn svg { width: 24px; height: 24px; color: var(--gold); flex: none; }
 
-/* a notice, new for the web: the desktop client has no toasts (plan section 8.1, point 5) */
+/* a notice, new for the web: the desktop client has no toasts */
 .notice
 {
   position: absolute; left: 50%; top: 14px;
@@ -775,7 +775,7 @@ body
 <div class="viewer">
   <header class="intro">
     <h1>Romanian Whist on the web</h1>
-    <p>A mock-up of the browser client planned in <code>docs/page-plan.md</code> of the <code>romanian_whist_web</code> repository. It wears the
+    <p>A mock-up of the browser client planned in <code>docs/page-plan.md</code> of the <code>romanian_whist_web</code> repository, on the server that <code>docs/web-client-plan.md</code> of <code>romanian_whist_server</code> plans. It wears the
       desktop client's look, as the plan requires, and adds what the desktop client doesn't have: online tables,
       a lobby, players who drop and come back, and a turn timer. The cards, portraits and table are the desktop
       client's own art; the game states are sample data.</p>
@@ -800,6 +800,6 @@ body
     <p>The table space, seat places, hand fan, played-card positions and corner panels follow the desktop client's
       source (<code>src/table/</code>), and the colours and fonts its theme (<code>src/paint/Theme.cpp</code>). New
       pieces (the lobby, presence on the name panels, the countdowns, the notices) are drawn in the same style, as
-      the plan's section 8.1 asks. The address <code>whist.example</code> stands in for the real host.</p>
+      the page plan's section 2 asks. The address <code>whist.example</code> stands in for the real host.</p>
   </footer>
 </div>

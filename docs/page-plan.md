@@ -20,6 +20,11 @@ is done. When a phase is finished, its outcome is written under it, as the serve
    `romanian_whist_server`: above all §1 (the six rules), §2 (what is being built), §5.3 (what the
    others see), §6 (the protocol) and §7 (tables, seats and players). The page shows what the
    server sends.
+
+   The links to it point at the server's `master`, where its work ends up. Until it gets there,
+   `master` holds an older plan: read the one in this repository's submodule,
+   `libs/romanian_whist_server/docs/web-client-plan.md`, which is the server this page is built
+   against, or the one on the parent branch that the server's `CLAUDE.md` names.
 3. The desktop client itself, because the page must look like it: run it, or look at the pictures
    its `tests/ScreenshotTool.cpp` takes. Then its `docs/ui-redesign/IMPLEMENTATION_PLAN.md`, whose
    phase outcomes record where the desktop client departed from its mock-up,
@@ -327,6 +332,14 @@ sets the rules. The page's share:
 - Every asset is served by the server itself, so the page makes no third-party requests. That is
   also a privacy point.
 - The token is kept in the browser's storage and sent only in `hello`, never in a URL or a log.
+- **The footer** links "Source" to the server at the commit `GET /version` gives, and to this
+  repository at the commit the page was built from, which the build writes into the page. The
+  AGPL's section 13 needs both (the server plan's
+  [§12](https://github.com/conectionist/romanian_whist_server/blob/master/docs/web-client-plan.md#12-deployment-and-operations)).
+- **An About page** says what the page keeps: a chosen display name and a random token in the
+  browser's storage, with no accounts and no cookies.
+
+Both are built in the server plan's phase 9, as the page's share of it.
 
 ---
 
@@ -335,8 +348,9 @@ sets the rules. The page's share:
 ### 13.1 The protocol
 
 The page's tests decode every fixture in the server's `protocol/fixtures/`, read through the
-submodule, with the page's own decoder. A field renamed on either side fails them (the server
-plan's [§6.9](https://github.com/conectionist/romanian_whist_server/blob/master/docs/web-client-plan.md#69-keeping-the-two-sides-in-step)).
+submodule, with the page's own decoder. A field renamed in the server fails them once the
+submodule moves to that server (the server plan's
+[§6.9](https://github.com/conectionist/romanian_whist_server/blob/master/docs/web-client-plan.md#69-keeping-the-two-sides-in-step)).
 
 ### 13.2 End to end
 
@@ -351,7 +365,8 @@ They run against a real server, built from the submodule ([§14](#14-building-an
 ### 13.3 The look
 
 - **The page renders from fixtures without a server**, so screens can be checked in any state.
-- **A server-side tool plays the desktop client's `tests/ScreenshotTool.cpp` games**: the same
+- **A tool in the server repository, built in phase 6, plays the desktop client's
+  `tests/ScreenshotTool.cpp` games** (the server plan's [§10.5](https://github.com/conectionist/romanian_whist_server/blob/master/docs/web-client-plan.md#105-the-look)): the same
   seeds and players, to the same moments. It writes each viewer's snapshot as a fixture. The sheets
   get fixtures built by hand, as the screenshot tool builds theirs.
 - **Playwright renders each fixture at the desktop shot's own size**: 1920×1080 for the
@@ -394,7 +409,9 @@ checkout of the server beside this one.
 - **Day to day:** the Vite dev server (port 5173) passes `/ws` through to the server (port 8080).
   Or the server serves `dist/` itself, as it does in production.
 - **CI:** one Linux job, which builds the page and runs its unit tests. End-to-end tests and
-  screenshots run locally, at the end of a phase.
+  screenshots run locally, at the end of a phase. Once the server writes its fixtures, the job
+  checks out the submodule too, without the submodule's own submodules, so that §13.1's tests run.
+- **Python** 3.12 with Pillow, for the mock-up's build script and the import tools.
 - **Pull requests:** change a PR's title or description with
   `gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -F body=@<file>`. `gh pr edit` fails on the
   owner's repositories with a "Projects (classic)" GraphQL error.
@@ -406,8 +423,10 @@ checkout of the server beside this one.
 The phases are numbered in one sequence with the server's. Phases 0 to 5, 9 and 11 are in the
 server plan's
 [§13](https://github.com/conectionist/romanian_whist_server/blob/master/docs/web-client-plan.md#13-phases),
-and 6, 7, 8 and 10 are here. The branch workflow and the code review procedure are that section's,
-unchanged. Sizes are relative: S, M, L.
+and 6, 7, 8 and 10 are here. Phase 9 has a share here too: the footer and the About page (§12).
+The branch workflow and the code review procedure are that section's. Its step 5, building and
+testing both presets after the fixes, means here the page's build, unit tests and browser tests.
+Sizes are relative: S, M, L.
 
 After the server's phase 3, the page can be built against fixtures while the server's phases 4 and
 5 go on.
@@ -418,7 +437,8 @@ After the server's phase 3, the page can be built against fixtures while the ser
   - the stage and seat geometry, name panels, racks, hand, played cards, lead mark, scoreboard,
     trick panel, bid strip and bid bubbles;
   - the playback queue;
-  - rendering from fixtures;
+  - rendering from fixtures, which the fixture tool writes (§13.3). The tool is built in the server
+    repository, on its parent branch;
   - `t()` everywhere, English only so far;
   - every element ported from its desktop source ([§7](#7-from-the-mock-ups-script)'s last
     column), with the mock-up's code kept only where it matches

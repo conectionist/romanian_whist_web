@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const server = process.env.WHIST_SERVER ?? "../build/server/app/whist_server";
+const server = process.env.WHIST_SERVER ?? "libs/romanian_whist_server/build/server/app/whist_server";
 
 export default defineConfig({
   testDir: "tests/e2e",

@@ -1,6 +1,6 @@
 # Web client mock-up
 
-A clickable mock-up of the browser client planned in [`../web-client-plan.md`](../web-client-plan.md).
+A clickable mock-up of the browser client planned in [`../page-plan.md`](../page-plan.md).
 Open `web_client_mockup.html` in a browser. It needs a connection only for its fonts.
 
 It shows eleven screens, picked from tabs above a browser window:

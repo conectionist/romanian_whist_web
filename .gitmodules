@@ -1,0 +1,3 @@
+[submodule "libs/romanian_whist_server"]
+	path = libs/romanian_whist_server
+	url = https://github.com/conectionist/romanian_whist_server.git

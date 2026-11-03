@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebuild docs/web-client-mockup/web_client_mockup.html from its sources.
 
-A mock-up of the browser client planned in docs/web-client-plan.md. Like the desktop
+A mock-up of the browser client planned in docs/page-plan.md. Like the desktop
 client's table redesign mock-up (its docs/ui-redesign/mockup/), the built page is one
 self-contained file that opens in any browser, so it embeds its pictures as data
 URIs. The readable parts live here:

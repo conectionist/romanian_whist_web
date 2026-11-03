@@ -1,0 +1,9 @@
+node_modules/
+/dist/
+/test-results/
+/playwright-report/
+/blob-report/
+
+# Python bytecode, written when the mock-up's build script is imported.
+__pycache__/
+*.pyc

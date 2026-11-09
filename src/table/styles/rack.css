@@ -1,0 +1,68 @@
+/* The racks, src/table/RackItem.cpp. The frame's origin is on the rim; the row's shadow falls toward
+   the owner, in the frame. */
+.rack {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  z-index: 10;
+  pointer-events: none;
+  --k: 2;
+  /* The perspective's magnification of the rail, 300 / (300 - 8). */
+  --rail-k: 1.027397;
+}
+
+.rack-row {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  filter: drop-shadow(0 5px 5px var(--rack-shadow));
+}
+
+/* Each card is made --k times its flat size, and its matrix takes that back out. */
+.rack-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(62px * var(--k));
+  height: calc(90px * var(--k));
+  transform-origin: 0 0;
+  border-radius: calc(4px * var(--k));
+  overflow: hidden;
+  background: var(--rail-base);
+}
+
+.rack-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* A face reads from its top at the raised end, so it is turned half round. */
+.rack-card.face img {
+  transform: rotate(180deg);
+}
+
+/* The light on each card: clear by 45% of the way from the far end, dark at the rail, and a 1 px
+   hairline round it. */
+.rack-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(to top, var(--rack-card-light) 0%, transparent 45%, var(--rack-card-dark) 100%);
+  box-shadow: inset 0 0 0 calc(1px * var(--k)) var(--rack-card-edge);
+}
+
+/* The rail the cards stand in, lying on the rim across their near edges, raised toward the viewer. */
+.rail {
+  position: absolute;
+  background:
+    linear-gradient(180deg, var(--rail-light) 0%, transparent 30%, var(--rail-dark) 100%),
+    var(--rail-base);
+  box-shadow:
+    inset 0 0 0 calc(1px * var(--rail-k)) var(--rail-edge),
+    0 calc(2px * var(--rail-k)) calc(3px * var(--rail-k)) var(--rail-shadow);
+}

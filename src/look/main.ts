@@ -10,6 +10,7 @@ import "../table/styles/fonts.css";
 import "../table/styles/theme.css";
 import "../table/styles/table.css";
 import "../table/styles/panel.css";
+import "../table/styles/rack.css";
 
 // A look fixture: the desktop picture it pairs with, and the sync's fields the picture shows.
 interface Fixture {

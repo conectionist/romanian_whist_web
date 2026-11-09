@@ -1,6 +1,7 @@
 import type { Change } from "../play/store";
 import type { TableModel } from "../play/model";
 import { places } from "./geometry/seats";
+import { RackView, shownFor } from "./rack";
 import { SeatPanel } from "./seatPanel";
 import { TableTop } from "./tableTop";
 import type { TableView } from "./view";
@@ -11,6 +12,7 @@ import type { TableView } from "./view";
 export class TableScene {
   readonly top = new TableTop();
   private readonly panels: SeatPanel[] = [];
+  private readonly racks: RackView[] = [];
 
   constructor(readonly view: TableView) {
     view.space.append(this.top.element);
@@ -18,12 +20,16 @@ export class TableScene {
 
   private ensureSeats(count: number): void {
     while (this.panels.length < count) {
+      const rack = new RackView();
+      this.view.space.append(rack.element);
+      this.racks.push(rack);
       const panel = new SeatPanel();
       this.view.space.append(panel.element);
       this.panels.push(panel);
     }
     for (let seat = count; seat < this.panels.length; seat++) {
       this.panels[seat].hide();
+      this.racks[seat].hide();
     }
   }
 
@@ -49,6 +55,7 @@ export class TableScene {
       // somewhere invented.
       if (place === null) {
         this.panels[index].hide();
+        this.racks[index].hide();
         return;
       }
       this.panels[index].update(seat, place.panel, {
@@ -57,6 +64,14 @@ export class TableScene {
         biddingOpen,
         human: index === model.humanSeat,
       });
+
+      // Every rack but yours: your hand is the fan at the bottom. A watcher's seat 0 has one on the
+      // rim, in line with its panel.
+      if (place.human || place.angle === null) {
+        this.racks[index].hide();
+      } else {
+        this.racks[index].update(shownFor(seat), place.angle);
+      }
     });
   }
 

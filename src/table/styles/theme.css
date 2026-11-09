@@ -93,3 +93,16 @@ body {
 [hidden] {
   display: none !important;
 }
+
+:root {
+  /* The racks, src/table/RackItem.cpp. */
+  --rack-shadow: rgba(0, 0, 0, 0.55);
+  --rack-card-light: rgba(255, 240, 210, 0.16);
+  --rack-card-dark: rgba(0, 0, 0, 0.3);
+  --rack-card-edge: rgba(0, 0, 0, 0.25);
+  --rail-base: #6b3d1f;
+  --rail-light: rgba(255, 220, 170, 0.35);
+  --rail-dark: rgba(0, 0, 0, 0.45);
+  --rail-edge: rgba(30, 14, 4, 0.6);
+  --rail-shadow: rgba(0, 0, 0, 0.6);
+}

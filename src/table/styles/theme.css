@@ -67,6 +67,11 @@
   --menu-glint: rgba(201, 164, 92, 0.22);
   --menu-shadow: rgba(0, 0, 0, 0.45);
 
+  /* A line's height is the face's own spacing, as the desktop measures it: ascent plus descent. The
+     browser would round each of them to whole pixels. */
+  --lh-body: 1.2;
+  --lh-head: 1.152;
+
   --f-logo: "Cinzel Decorative", "Cinzel", Georgia, serif;
   --f-head: "Belleza", "Cinzel", Georgia, serif;
   --f-body: "Alegreya Sans", "Gill Sans", "Segoe UI", sans-serif;

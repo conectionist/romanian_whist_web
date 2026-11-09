@@ -98,12 +98,14 @@
 .score-round {
   font-family: var(--f-head);
   font-size: 22px;
+  line-height: var(--lh-head);
   color: var(--cream);
 }
 
 .score-sub {
   margin-top: 1px;
   font-size: 15px;
+  line-height: var(--lh-body);
   color: var(--muted);
 }
 
@@ -146,6 +148,7 @@
   padding: 4px 0;
   border-bottom: 1px solid var(--hud-rule);
   font-size: 12px;
+  line-height: var(--lh-body);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -162,6 +165,7 @@
 .score-grid .cell {
   padding: 3px 0 3px 12px;
   font-size: 17px;
+  line-height: var(--lh-body);
   text-align: right;
   color: var(--cream);
   white-space: nowrap;
@@ -216,6 +220,7 @@
 
 .score-trump-label {
   font-size: 19.8px;
+  line-height: var(--lh-body);
   font-weight: 700;
   letter-spacing: 0.24em;
   margin-right: -0.24em;

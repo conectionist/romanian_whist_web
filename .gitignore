@@ -1,5 +1,7 @@
 node_modules/
 /dist/
+/dist-look/
+/build/
 /test-results/
 /playwright-report/
 /blob-report/

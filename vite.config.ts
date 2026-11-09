@@ -15,6 +15,8 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    // Everything is a file the server serves: the page's content-security-policy refuses data: URLs.
+    assetsInlineLimit: 0,
   },
   test: {
     include: ["tests/unit/**/*.test.ts"],

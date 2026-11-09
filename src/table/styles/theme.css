@@ -57,6 +57,11 @@
   --logo-text-shadow: rgba(0, 0, 0, 0.55);
   --logo-ornament: #d9b46a;
 
+  --active-glow: rgba(242, 211, 140, 0.5);
+  --pill-border: rgba(201, 164, 92, 0.4);
+  /* Under every portrait: the dark the mock-up's portrait vignette fades to. */
+  --portrait-edge: #17100a;
+
   --menu-top: #2e1c10;
   --menu-bottom: #1a1009;
   --menu-glint: rgba(201, 164, 92, 0.22);

@@ -1,0 +1,108 @@
+/* The desktop client's panel, src/paint/Panel.cpp: a vertical gradient, a gold hairline border, a
+   dark inset line with a faint gold one inside it, and a drop shadow. */
+.panel {
+  position: absolute;
+  background: linear-gradient(180deg, var(--panel-top), var(--panel-bottom));
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
+  box-shadow:
+    inset 0 0 0 3px var(--panel-inner-shadow),
+    inset 0 0 0 4px var(--panel-inner-line),
+    0 12px 26px var(--panel-shadow);
+}
+
+/* The seat whose turn it is: a 3 px ring of bright gold and a glow round it. */
+.panel.active {
+  box-shadow:
+    inset 0 0 0 3px var(--panel-inner-shadow),
+    inset 0 0 0 4px var(--panel-inner-line),
+    0 0 0 3px var(--gold-bright),
+    0 0 26px var(--active-glow),
+    0 12px 26px var(--panel-shadow);
+}
+
+/* The name panels, src/table/SeatItem.cpp. */
+.seat {
+  width: 259px;
+  height: 118px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px 8px 8px;
+}
+
+.seat .portrait {
+  position: relative;
+  width: 88px;
+  height: 100px;
+  flex: none;
+  border: 1px solid var(--button-border);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--portrait-edge);
+  filter: sepia(0.18) contrast(1.05);
+}
+
+.seat .portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.seat .who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.seat .name {
+  display: flex;
+  font-family: var(--f-head);
+  font-size: 25px;
+  color: var(--cream);
+}
+
+.seat .marker {
+  flex: none;
+  margin-right: 6px;
+  color: var(--gold-bright);
+}
+
+.seat .name-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill {
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 12px;
+  border: 1px solid var(--pill-border);
+  border-radius: 999px;
+  font-size: 19px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cream);
+}
+
+.pill[data-state="good"] {
+  color: var(--good);
+  border-color: var(--good);
+}
+
+.pill[data-state="warn"] {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.pill[data-state="bad"] {
+  color: var(--bad);
+  border-color: var(--bad);
+}

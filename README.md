@@ -4,8 +4,7 @@ The browser page for Romanian Whist: solo games against computer players, and on
 game is played on [the Romanian Whist server](https://github.com/conectionist/romanian_whist_server),
 which is a submodule here, in `libs/romanian_whist_server`.
 
-**Status:** an echo page, which the server serves and which talks to the server's WebSocket echo
-at `/ws`. [`docs/page-plan.md`](docs/page-plan.md) is the plan for the rest.
+**Status:** a page that says hello to the server's WebSocket at `/ws` and shows what the server answers. [`docs/page-plan.md`](docs/page-plan.md) is the plan for the rest.
 
 ## Getting the code
 
@@ -13,8 +12,10 @@ at `/ws`. [`docs/page-plan.md`](docs/page-plan.md) is the plan for the rest.
 git clone --recurse-submodules https://github.com/conectionist/romanian_whist_web.git
 ```
 
-The submodule is needed only to run the page against a server. Cloned without
-`--recurse-submodules`? Run `git submodule update --init --recursive`.
+The submodule is needed to run the page against a server, and by the unit tests, which read the
+server's protocol fixtures. Cloned without `--recurse-submodules`? The unit tests need
+`git submodule update --init libs/romanian_whist_server`; running the page against a server needs
+`git submodule update --init --recursive`.
 
 ## Building the page
 

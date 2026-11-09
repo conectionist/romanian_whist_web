@@ -9,14 +9,13 @@ function byId<T extends HTMLElement>(id: string): T {
 }
 
 const status = byId<HTMLOutputElement>("status");
-const form = byId<HTMLFormElement>("send");
-const input = byId<HTMLInputElement>("text");
 const log = byId<HTMLOListElement>("log");
 
 const socket = new WebSocket(socketUrl(window.location));
 
 socket.addEventListener("open", () => {
   status.textContent = "connected";
+  socket.send(JSON.stringify({ type: "hello", protocol: 1, lang: "en" }));
 });
 
 socket.addEventListener("close", (event) => {
@@ -24,15 +23,14 @@ socket.addEventListener("close", (event) => {
 });
 
 socket.addEventListener("message", (event) => {
-  const item = document.createElement("li");
-  item.textContent = String(event.data);
-  log.append(item);
-});
-
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (socket.readyState === WebSocket.OPEN && input.value !== "") {
-    socket.send(input.value);
-    input.value = "";
+  const message = JSON.parse(String(event.data)) as { type: string; token?: string; table?: unknown };
+  if (message.type === "welcome" && message.token !== undefined) {
+    localStorage.setItem("whist.token", message.token);
   }
+  if (message.type === "sync" && message.table === null) {
+    status.textContent = "at no table";
+  }
+  const item = document.createElement("li");
+  item.textContent = message.type;
+  log.append(item);
 });

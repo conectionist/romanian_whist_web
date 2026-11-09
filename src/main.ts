@@ -1,3 +1,5 @@
+import { DecodeError, decode } from "./net/decode";
+import { PROTOCOL_VERSION, type ClientMessage } from "./net/protocol";
 import { socketUrl } from "./net/socket";
 
 function byId<T extends HTMLElement>(id: string): T {
@@ -15,7 +17,8 @@ const socket = new WebSocket(socketUrl(window.location));
 
 socket.addEventListener("open", () => {
   status.textContent = "connected";
-  socket.send(JSON.stringify({ type: "hello", protocol: 1, lang: "en" }));
+  const hello: ClientMessage = { type: "hello", protocol: PROTOCOL_VERSION, lang: "en" };
+  socket.send(JSON.stringify(hello));
 });
 
 socket.addEventListener("close", (event) => {
@@ -23,14 +26,22 @@ socket.addEventListener("close", (event) => {
 });
 
 socket.addEventListener("message", (event) => {
-  const message = JSON.parse(String(event.data)) as { type: string; token?: string; table?: unknown };
-  if (message.type === "welcome" && message.token !== undefined) {
-    localStorage.setItem("whist.token", message.token);
-  }
-  if (message.type === "sync" && message.table === null) {
-    status.textContent = "at no table";
+  let type: string;
+  try {
+    const message = decode(String(event.data));
+    type = message.type;
+    if (message.type === "welcome") {
+      localStorage.setItem("whist.token", message.token);
+    } else if (message.type === "sync" && message.table === null) {
+      status.textContent = "at no table";
+    }
+  } catch (error) {
+    if (!(error instanceof DecodeError)) {
+      throw error;
+    }
+    type = `unreadable (${error.field})`;
   }
   const item = document.createElement("li");
-  item.textContent = message.type;
+  item.textContent = type;
   log.append(item);
 });

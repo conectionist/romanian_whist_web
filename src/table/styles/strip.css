@@ -1,0 +1,78 @@
+/* The bid strip, src/table/BidStripItem.cpp: 680 wide at (428, 486), over the logo. */
+.bidstrip {
+  left: 428px;
+  top: 486px;
+  width: 680px;
+  padding: 16px 22px 18px;
+  text-align: center;
+}
+
+.bid-question {
+  font-family: var(--f-head);
+  font-size: 25px;
+  color: var(--cream);
+}
+
+.bid-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.bid-note {
+  margin-top: 12px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.opt {
+  width: 58px;
+  height: 62px;
+  padding: 0;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--button-top), var(--button-bottom));
+  box-shadow: 0 4px 10px var(--bid-shadow);
+  font-family: var(--f-head);
+  font-size: 28px;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+/* An offered bid under the cursor: a ring and a glow in place of the shadow. */
+.opt:not(:disabled):hover {
+  border-color: var(--gold-bright);
+  box-shadow:
+    0 0 0 2px var(--gold-bright),
+    0 0 16px var(--bid-glow);
+}
+
+/* The one bid you may not make: flat, dark and struck through. */
+.opt:disabled {
+  background: var(--bid-disabled-fill);
+  border-color: var(--bid-disabled-border);
+  box-shadow: none;
+  color: var(--bid-disabled-text);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+/* A bid said out loud, src/table/BidBubbleItem.cpp. */
+.bubble {
+  position: absolute;
+  z-index: 65;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.bubble-pill {
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--gold-bright);
+  color: var(--bubble-text);
+  box-shadow: 0 6px 14px var(--bubble-shadow);
+  font-family: var(--f-head);
+  font-size: 19px;
+  white-space: nowrap;
+}

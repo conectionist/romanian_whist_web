@@ -2,6 +2,8 @@ import type { Change } from "../play/store";
 import type { TableModel } from "../play/model";
 import { leadSeat, leadMarkPlacement } from "./geometry/trick";
 import { places } from "./geometry/seats";
+import { BidBubble } from "./bidBubble";
+import { BidStrip } from "./bidStrip";
 import { CornerButtons } from "./buttons";
 import { HandView } from "./hand";
 import { LeadMark } from "./leadMark";
@@ -27,10 +29,13 @@ export class TableScene {
   private readonly scoreboard = new Scoreboard();
   private readonly trickPanel = new TrickPanel();
   private readonly buttons = new CornerButtons();
+  readonly bidStrip = new BidStrip();
+  private readonly bubbles: BidBubble[] = [];
 
   constructor(readonly view: TableView) {
     view.space.append(this.top.element, this.trick.element, this.leadMark.element, this.hand.element);
     view.hud.append(this.trickPanel.element, this.scoreboard.element, this.buttons.element);
+    view.top.append(this.bidStrip.element);
   }
 
   private ensureSeats(count: number): void {
@@ -41,10 +46,14 @@ export class TableScene {
       const panel = new SeatPanel();
       this.view.space.append(panel.element);
       this.panels.push(panel);
+      const bubble = new BidBubble();
+      this.view.space.append(bubble.element);
+      this.bubbles.push(bubble);
     }
     for (let seat = count; seat < this.panels.length; seat++) {
       this.panels[seat].hide();
       this.racks[seat].hide();
+      this.bubbles[seat].dismiss();
     }
   }
 
@@ -57,6 +66,7 @@ export class TableScene {
       this.trick.clear();
       this.leadMark.set(null);
       this.hand.element.hidden = true;
+      this.bidStrip.update(null);
       return;
     }
 
@@ -105,6 +115,9 @@ export class TableScene {
     // The corner panels, shown from the first game state on.
     this.scoreboard.update(model);
     this.trickPanel.update(model);
+
+    // And the strip, while you are asked for a bid.
+    this.bidStrip.update(model);
   }
 
   // Everything in the air lands where it was going.

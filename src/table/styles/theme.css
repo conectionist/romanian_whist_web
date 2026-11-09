@@ -128,3 +128,14 @@ body {
   --hud-rule: rgba(201, 164, 92, 0.25);
   --trump-shadow: rgba(0, 0, 0, 0.55);
 }
+
+:root {
+  /* The bid strip and the bubbles, src/paint/Theme.cpp. */
+  --bid-shadow: rgba(0, 0, 0, 0.45);
+  --bid-glow: rgba(242, 211, 140, 0.5);
+  --bid-disabled-fill: #2a211a;
+  --bid-disabled-text: #6d604d;
+  --bid-disabled-border: #4d3d28;
+  --bubble-text: #2a1a0a;
+  --bubble-shadow: rgba(0, 0, 0, 0.5);
+}

@@ -43,7 +43,8 @@
   box-shadow: -3px 4px 10px var(--held-shadow);
 }
 
-.card.raised .face {
+.card.raised .face,
+.hcard.playable:hover .face {
   border-radius: 8px;
   transform: translateY(-30px);
   background: var(--gold-bright);
@@ -51,6 +52,32 @@
     0 0 0 2px var(--gold-bright),
     0 0 22px var(--raised-glow),
     0 14px 22px var(--raised-shadow);
+}
+
+/* Your hand: each card is a button resting in place. Only a playable card under the cursor rises,
+   and it does not move there: it is up at once. */
+.hand {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.hcard {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  pointer-events: auto;
+}
+
+.hcard.playable {
+  cursor: pointer;
+}
+
+.hcard.illegal {
+  cursor: not-allowed;
 }
 
 /* A card that cannot be played is darkened and dulled, and still shown. */

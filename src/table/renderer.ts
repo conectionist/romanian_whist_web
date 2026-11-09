@@ -2,7 +2,9 @@ import type { Change } from "../play/store";
 import type { TableModel } from "../play/model";
 import { leadSeat, leadMarkPlacement } from "./geometry/trick";
 import { places } from "./geometry/seats";
+import { HandView } from "./hand";
 import { LeadMark } from "./leadMark";
+import { humanSeated } from "./geometry/seats";
 import { RackView, shownFor } from "./rack";
 import { SeatPanel } from "./seatPanel";
 import { TableTop } from "./tableTop";
@@ -18,9 +20,10 @@ export class TableScene {
   private readonly racks: RackView[] = [];
   private readonly trick = new TrickView();
   private readonly leadMark = new LeadMark();
+  readonly hand = new HandView();
 
   constructor(readonly view: TableView) {
-    view.space.append(this.top.element, this.trick.element, this.leadMark.element);
+    view.space.append(this.top.element, this.trick.element, this.leadMark.element, this.hand.element);
   }
 
   private ensureSeats(count: number): void {
@@ -46,6 +49,7 @@ export class TableScene {
       this.ensureSeats(0);
       this.trick.clear();
       this.leadMark.set(null);
+      this.hand.element.hidden = true;
       return;
     }
 
@@ -87,6 +91,9 @@ export class TableScene {
     const lead = leadSeat(model.phase, seatCount, model.table, model.leadSeat);
     const leadPlace = lead === null ? null : (where[lead] ?? null);
     this.leadMark.set(leadPlace === null ? null : leadMarkPlacement(seatCount, leadPlace));
+
+    // Nobody seated, no hand: a watcher's table has none at the bottom.
+    this.hand.update(model.hand, humanSeated(seatCount, model.humanSeat));
   }
 
   // Everything in the air lands where it was going.

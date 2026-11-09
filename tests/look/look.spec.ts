@@ -35,9 +35,8 @@ for (const name of names) {
     await page.goto(`/look.html?shot=${name}`);
     await page.waitForSelector("body[data-ready]");
 
-    const raised = page.locator(`.hand [data-card="${shot.raised}"]`);
-    if (shot.raised !== undefined && (await raised.count()) > 0) {
-      await raised.hover();
+    if (shot.raised !== undefined) {
+      await page.locator(`.hand [data-card="${shot.raised}"]`).hover();
     }
 
     await page.screenshot({ path: join(OUT, shot.file), animations: "disabled" });

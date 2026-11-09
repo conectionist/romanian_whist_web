@@ -18,10 +18,10 @@ export class CardView {
   private height = 0;
   private placed: Placement | null = null;
 
-  constructor(look: Look) {
+  constructor(look: Look, tag: "div" | "button" = "div") {
     this.picture = el("img", { attrs: { alt: "", draggable: "false" } });
     this.face = el("div", { class: "face" }, this.picture);
-    this.element = el("div", { class: `card ${look}` }, this.face);
+    this.element = el(tag, { class: `card ${look}`, attrs: tag === "button" ? { type: "button" } : {} }, this.face);
     stamp(this.element);
   }
 

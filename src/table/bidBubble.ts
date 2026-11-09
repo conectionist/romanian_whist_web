@@ -1,5 +1,6 @@
 import { el } from "../dom/el";
 import { easeOut } from "../play/bezier";
+import { BUBBLE_MS, BUBBLE_STILL_MS } from "../play/motion";
 import { t } from "../i18n/t";
 import type { Rect } from "./space";
 
@@ -15,11 +16,6 @@ export function textFor(yours: boolean, bet: number): string {
 const IN_ENDS = 0.12;
 const OUT_STARTS = 0.8;
 const RISE_FROM = 6;
-
-// How long it shows: reading time, which does not scale with the pace of the motion. At Off it is
-// held still for a little less.
-export const BUBBLE_MS = 1600;
-export const BUBBLE_STILL_MS = 1500;
 
 // A bubble's opacity, and how far below its place it still is, `progress` of the way through.
 // Each stretch eases out.

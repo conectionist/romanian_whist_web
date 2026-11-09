@@ -1,6 +1,8 @@
 import { el } from "../dom/el";
 import { decode } from "../net/decode";
+import type { ServerMessage } from "../net/protocol";
 import { modelOf } from "../play/model";
+import { PACES, type Pace } from "../play/motion";
 import { Store } from "../play/store";
 import { loadFonts } from "../table/fonts";
 import { TableScene } from "../table/renderer";
@@ -56,7 +58,10 @@ async function main(): Promise<void> {
     frame.style.setProperty("--band", `${MENU_BAR}px`);
   }
   const view = new TableView(frame);
-  const scene = new TableScene(view);
+  // Still by default, so a capture is of one moment; a test of motion asks for a pace.
+  const asked = params.get("pace") ?? "off";
+  const pace: Pace = (PACES as readonly string[]).includes(asked) ? (asked as Pace) : "off";
+  const scene = new TableScene(view, { pace: () => pace });
   const store = new Store();
 
   // Draws the state a fixture holds, as a sync would, at once.
@@ -69,11 +74,27 @@ async function main(): Promise<void> {
     await scene.relayout(modelOf(store.state), change, false);
   };
 
+  // For the tests of motion: applies a server message as the queue would, and resolves when the
+  // motion it started has ended.
+  (window as unknown as { look: unknown }).look = {
+    apply: async (text: string, animate: boolean) => {
+      const message: ServerMessage = decode(text);
+      const change = store.apply(message, 0);
+      await scene.relayout(modelOf(store.state), change, animate);
+    },
+  };
+
+  // So a test can tell the nodes a second state reuses from the ones it makes.
+  const stamps = () => Array.from(document.querySelectorAll<HTMLElement>(".seat, .rack"), (node) => node.dataset.created).join(",");
+
   await scene.relayout(null, { kind: "sync", event: null, fresh: true }, false);
   await show(first);
+  document.body.dataset.firstStamps = stamps();
   if (then !== null) {
     await show(fixtureNamed(then));
   }
+
+  document.body.dataset.stamps = stamps();
 
   await loadFonts();
   scene.refit();

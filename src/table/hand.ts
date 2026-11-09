@@ -104,6 +104,12 @@ export class HandView {
     }
   }
 
+  // Takes a card out of the fan the moment it is played, before the server has said so. The next
+  // update puts it back if it is still in the hand.
+  hideCard(card: Card): void {
+    this.slots.get(card)?.view.hide();
+  }
+
   // Where this card rests in the fan, for a card that leaves it for the felt.
   restingPlacement(card: Card): Placement | null {
     const entry = this.slots.get(card);

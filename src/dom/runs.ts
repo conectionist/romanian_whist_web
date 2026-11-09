@@ -36,18 +36,19 @@ export function emphasised(sentence: string, parts: Run[], strong = true): Line 
   return line;
 }
 
-const RED_SUITS = /([♥♦])/;
+const SUITS = /([♥♦♠♣])/;
 
-// Text with each red suit glyph in its own colour, whatever run it is in. Only text nodes and
-// spans: nothing in the text is read as markup.
+// Text with each suit glyph in its suit's colour, whatever run it is in: red for hearts and
+// diamonds, cream for spades and clubs, which would vanish if they took a dark panel's. Only text
+// nodes and spans: nothing in the text is read as markup.
 function appendText(parent: HTMLElement, text: string): void {
-  for (const piece of text.split(RED_SUITS)) {
+  for (const piece of text.split(SUITS)) {
     if (piece === "") {
       continue;
     }
-    if (piece === "♥" || piece === "♦") {
+    if (piece === "♥" || piece === "♦" || piece === "♠" || piece === "♣") {
       // The variation selector asks for the glyph and not the coloured emoji, which takes no colour.
-      parent.append(el("span", { class: "red", text: `${piece}\uFE0E` }));
+      parent.append(el("span", { class: piece === "♥" || piece === "♦" ? "red" : "black", text: `${piece}\uFE0E` }));
     } else {
       parent.append(document.createTextNode(piece));
     }

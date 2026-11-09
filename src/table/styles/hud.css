@@ -87,6 +87,10 @@
   color: var(--red-suit);
 }
 
+.black {
+  color: var(--black-suit);
+}
+
 /* ---- the scoreboard, src/table/ScoreboardItem.cpp ---- */
 .score {
   width: max-content;

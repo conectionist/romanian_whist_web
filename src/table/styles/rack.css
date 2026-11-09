@@ -46,13 +46,16 @@
 }
 
 /* The light on each card: clear by 45% of the way from the far end, dark at the rail, and a 1 px
-   hairline round it. */
+   hairline round it. The desktop's racks render the whole card under the hairline's black, which
+   darkens it by that much, so the first layer is the same black over everything. */
 .rack-card::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(to top, var(--rack-card-light) 0%, transparent 45%, var(--rack-card-dark) 100%);
+  background:
+    linear-gradient(var(--rack-card-edge), var(--rack-card-edge)),
+    linear-gradient(to top, var(--rack-card-light) 0%, transparent 45%, var(--rack-card-dark) 100%);
   box-shadow: inset 0 0 0 calc(1px * var(--k)) var(--rack-card-edge);
 }
 

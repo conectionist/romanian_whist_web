@@ -38,7 +38,7 @@ export interface PlayedCardView {
 // The question the table is waiting for you to answer.
 export type PromptView =
   | { kind: "bet"; id: number; max: number; forbidden: number | null; first: boolean; roundType: RoundType; deadlineAt: number | null }
-  | { kind: "play"; id: number; deadlineAt: number | null };
+  | { kind: "play"; id: number; blind: boolean; deadlineAt: number | null };
 
 export interface HandView {
   // Every card of the hand in display order, playable or not. Empty for a blind hand.
@@ -138,7 +138,7 @@ export function modelOf(state: StoreState): TableModel | null {
     prompt =
       body.kind === "bet"
         ? { kind: "bet", id: body.id, max: body.max, forbidden: body.forbidden, first: body.first, roundType: body.roundType, deadlineAt: state.prompt.deadlineAt }
-        : { kind: "play", id: body.id, deadlineAt: state.prompt.deadlineAt };
+        : { kind: "play", id: body.id, blind: body.blind, deadlineAt: state.prompt.deadlineAt };
   }
 
   return {

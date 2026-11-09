@@ -2,12 +2,15 @@ import type { Change } from "../play/store";
 import type { TableModel } from "../play/model";
 import { leadSeat, leadMarkPlacement } from "./geometry/trick";
 import { places } from "./geometry/seats";
+import { CornerButtons } from "./buttons";
 import { HandView } from "./hand";
 import { LeadMark } from "./leadMark";
 import { humanSeated } from "./geometry/seats";
 import { RackView, shownFor } from "./rack";
+import { Scoreboard } from "./scoreboard";
 import { SeatPanel } from "./seatPanel";
 import { TableTop } from "./tableTop";
+import { TrickPanel } from "./trickPanel";
 import { TrickView } from "./trick";
 import type { TableView } from "./view";
 
@@ -21,9 +24,13 @@ export class TableScene {
   private readonly trick = new TrickView();
   private readonly leadMark = new LeadMark();
   readonly hand = new HandView();
+  private readonly scoreboard = new Scoreboard();
+  private readonly trickPanel = new TrickPanel();
+  private readonly buttons = new CornerButtons();
 
   constructor(readonly view: TableView) {
     view.space.append(this.top.element, this.trick.element, this.leadMark.element, this.hand.element);
+    view.hud.append(this.trickPanel.element, this.scoreboard.element, this.buttons.element);
   }
 
   private ensureSeats(count: number): void {
@@ -94,6 +101,10 @@ export class TableScene {
 
     // Nobody seated, no hand: a watcher's table has none at the bottom.
     this.hand.update(model.hand, humanSeated(seatCount, model.humanSeat));
+
+    // The corner panels, shown from the first game state on.
+    this.scoreboard.update(model);
+    this.trickPanel.update(model);
   }
 
   // Everything in the air lands where it was going.
@@ -102,6 +113,7 @@ export class TableScene {
   // The table's own measurements again, once its faces have loaded.
   refit(): void {
     this.top.fit();
+    this.scoreboard.measureSizers();
     this.view.refit();
   }
 }

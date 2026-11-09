@@ -36,6 +36,7 @@ jobs:
         run: |
           npm ci
           npm run build
+          npm run build:look
 
       - name: Test the page
         run: npm test

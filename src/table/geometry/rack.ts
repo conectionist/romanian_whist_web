@@ -1,10 +1,8 @@
 import { rackCardHeight, type Point, type Rect, type Size } from "../space";
 
-// What goes where in a rack, ported from the desktop's src/table/RackItem.cpp. The rack's frame has
-// its origin on the rim, +x along the rim and +y outward, toward the rack's owner; the frame is
-// turned into place by frameRotation(). A card stands in the rack tilted 50 degrees up out of the
-// table about its top edge, seen through a perspective of 300, so each card is a flat picture
-// drawn through the quad it projects to.
+// What goes where in a rack, from the desktop's src/table/RackItem.cpp. The frame has its origin on
+// the rim, +x along it and +y outward, and frameRotation() turns it into place. A card stands tilted
+// 50 degrees out of the table, seen through a perspective, so it is a flat picture drawn through a quad.
 
 export const MOST_CARDS = 8;
 
@@ -162,9 +160,8 @@ export function cssMatrix3d(m: Transform): string {
   return `matrix3d(${numbers.map((value) => (Math.abs(value) < 1e-12 ? 0 : value)).join(",")})`;
 }
 
-// How a card's art is laid on the flat card, from the art's own size: scaled to fill it and, for a
-// face, turned half round about the card's middle. A face reads from its top at the raised end:
-// the card hangs from the rail by its top edge, and a card worn on the forehead faces the table.
+// How a card's art is laid on the flat card: scaled to fill it and, for a face, turned half round,
+// since a card worn on the forehead hangs from the rail and reads from its top at the raised end.
 // As a CSS matrix(a, b, c, d, e, f).
 export function artTransform(art: Size, face: boolean): [number, number, number, number, number, number] {
   const size = cardSize();

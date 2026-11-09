@@ -5,11 +5,9 @@ export interface TranslateOptions {
   n?: number;
 }
 
-// Mirrors QCoreApplication::translate(context, source, comment, n) followed by arg(...): English
-// only, so the source is the text, and the context, which files it in a catalogue, is not read.
-// The arguments go in with one pass over the source, as Qt's
-// multi-argument arg() does, so an argument that contains "%2" is never substituted again. The
-// lowest-numbered placeholder takes the first argument, the next the second, and so on.
+// Mirrors Qt's translate() and multi-argument arg(): the source is the text, and the context, which
+// files it in a catalogue, is not read. One pass over the source, so an argument that holds "%2" is
+// never substituted again; the lowest-numbered placeholder takes the first argument.
 export function t(
   _context: string,
   source: string,

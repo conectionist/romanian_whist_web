@@ -28,11 +28,9 @@ interface Waiting {
   receivedAt: number;
 }
 
-// Every server message goes into one queue and is handled in order. A game message animates its
-// event and then draws its snapshot; a prompt goes live when the queue reaches it; a sync empties the
-// queue. The snapshot is drawn first and the motion starts from where the card came from, so what
-// is seen during it is what the desktop shows: the rack has already lost its card while the card
-// flies. The queue waits for that motion before it takes the next message.
+// Every server message goes into one queue and is handled in order: a prompt goes live when the queue
+// reaches it, and a sync empties it. The snapshot is drawn first and the motion starts from where the
+// card came from, as the desktop shows it, and the queue waits for the motion before the next one.
 export class PlaybackQueue {
   private readonly pending: Waiting[] = [];
   private draining = false;

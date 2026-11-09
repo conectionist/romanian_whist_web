@@ -31,10 +31,9 @@ interface PendingBid {
 
 const REFUSALS: readonly ErrorCode[] = ["illegal", "stalePrompt", "notYourTurn"];
 
-// What a click does: sends the answer, and shows it taken before the server has said so. Your own
-// card moves as soon as you click, and the server's word that it was played confirms it without
-// moving it again; an error puts it back. A bid hides the strip the same way, and an error shows it
-// again.
+// A click sends the answer and shows it taken before the server has said so: your card moves at once,
+// the server's word that it was played confirms it without moving it again, and an error puts it
+// back. A bid hides the strip the same way.
 export class Controller {
   private play: PendingPlay | null = null;
   private bid: PendingBid | null = null;

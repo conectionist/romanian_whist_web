@@ -30,10 +30,9 @@ export interface TrickMemory {
   cards: { seat: number; card: Card; winning: boolean }[];
 }
 
-// Which cards are new on the felt: when this frame follows the last, in the same round, with the
-// last table a prefix of this one, every card past the prefix is an arrival and flies. A new
-// round's table is a new table, whatever it holds, and with nothing to fly from, or nothing
-// moving, every card is placed at once.
+// Which cards are new on the felt: when this frame follows the last, in the same round, every card
+// past the last table's prefix flies. A new round is a new table, and with nothing to fly from, or
+// nothing moving, every card is placed at once.
 export function arrivalsFor(
   memory: TrickMemory | null,
   model: Pick<TableModel, "roundNumber" | "table">,

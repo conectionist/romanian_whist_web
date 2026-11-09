@@ -58,10 +58,8 @@ export function tensionText(form: Tension, bids: string, tricks: string, differe
   }
   const by = form === "over" || form === "under";
 
-  // The bid total is the bold part, so it is cut out of the sentence and not substituted into it: %1
-  // is swapped for a character no translation holds, the rest filled in whichever side of %1 a
-  // translation puts them, and the sentence split where that character is. %2 and %3 by name, because
-  // a translation may leave one out.
+  // The bid total is the bold part, so %1 is swapped for a character no translation holds, the rest is
+  // filled in by name (a translation may leave %2 or %3 out), and the sentence is split at the character.
   const cut = "";
   sentence = sentence.replace("%1", cut).replace("%2", tricks);
   if (by) {
@@ -102,10 +100,8 @@ export function tensionFor(model: TableModel): Line {
   return text("even", 0);
 }
 
-// The four sentences at their widest, with the font's widest digits: what the panel is never
-// narrower than, so that it changes neither its height as the bids come in nor its width as they
-// change. The numbers are as long as a game can make them: up to six seats bidding up to eight
-// each, so a total of two digits and over by as many; at most eight tricks.
+// The four sentences at their widest, in the font's widest digits, so the panel's width never changes
+// as the bids come in: a total and a difference of two digits at most, and one digit of tricks.
 export function widestTensions(widestDigit: string, widestBoldDigit: string): string[] {
   const one = widestDigit;
   const two = widestDigit.repeat(2);

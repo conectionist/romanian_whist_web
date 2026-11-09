@@ -106,3 +106,15 @@ body {
   --rail-edge: rgba(30, 14, 4, 0.6);
   --rail-shadow: rgba(0, 0, 0, 0.6);
 }
+
+:root {
+  /* Cards on the felt and in your hand, src/paint/CardShadow.cpp. */
+  --played-shadow: rgba(0, 0, 0, 0.45);
+  --winning-shadow: rgba(0, 0, 0, 0.5);
+  --winning-glow: rgba(242, 211, 140, 0.55);
+  --held-shadow: rgba(0, 0, 0, 0.45);
+  --raised-shadow: rgba(0, 0, 0, 0.5);
+  --raised-glow: rgba(242, 211, 140, 0.7);
+  --lead-mark-outline: rgba(60, 40, 10, 0.5);
+  --lead-mark-glow: rgba(242, 211, 140, 0.8);
+}

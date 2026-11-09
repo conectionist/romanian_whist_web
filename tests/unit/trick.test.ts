@@ -3,6 +3,7 @@ import { cardPlacementOf, leadMarkPlacementOf, leadSeat } from "../../src/table/
 import { frameRotation } from "../../src/table/geometry/rack";
 import { place } from "../../src/table/geometry/seats";
 import { centre } from "../../src/table/space";
+import { isLit } from "../../src/table/trick";
 
 describe("the trick round the logo", () => {
   it("puts your card straight below the logo, unturned", () => {
@@ -63,5 +64,13 @@ describe("the trick round the logo", () => {
       expect(leadSeat("playing", 4, [], 2)).toBe(2);
       expect(leadSeat("playing", 4, [], null)).toBeNull();
     });
+  });
+});
+
+describe("the winner's highlight", () => {
+  it("is lit only once there is something to beat", () => {
+    expect(isLit([{ winning: true }], 0)).toBe(false);
+    expect(isLit([{ winning: false }, { winning: true }], 1)).toBe(true);
+    expect(isLit([{ winning: false }, { winning: true }], 0)).toBe(false);
   });
 });

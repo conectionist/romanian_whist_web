@@ -1,9 +1,12 @@
 import type { Change } from "../play/store";
 import type { TableModel } from "../play/model";
+import { leadSeat, leadMarkPlacement } from "./geometry/trick";
 import { places } from "./geometry/seats";
+import { LeadMark } from "./leadMark";
 import { RackView, shownFor } from "./rack";
 import { SeatPanel } from "./seatPanel";
 import { TableTop } from "./tableTop";
+import { TrickView } from "./trick";
 import type { TableView } from "./view";
 
 // The table's scene: it owns every element, creates each once and updates it in place from the
@@ -13,9 +16,11 @@ export class TableScene {
   readonly top = new TableTop();
   private readonly panels: SeatPanel[] = [];
   private readonly racks: RackView[] = [];
+  private readonly trick = new TrickView();
+  private readonly leadMark = new LeadMark();
 
   constructor(readonly view: TableView) {
-    view.space.append(this.top.element);
+    view.space.append(this.top.element, this.trick.element, this.leadMark.element);
   }
 
   private ensureSeats(count: number): void {
@@ -39,6 +44,8 @@ export class TableScene {
     this.view.hud.hidden = model === null;
     if (model === null) {
       this.ensureSeats(0);
+      this.trick.clear();
+      this.leadMark.set(null);
       return;
     }
 
@@ -73,6 +80,13 @@ export class TableScene {
         this.racks[index].update(shownFor(seat), place.angle);
       }
     });
+
+    // The trick, each card in front of its owner's rack, and the mark on the felt in line with the
+    // leader's.
+    this.trick.update(model, where);
+    const lead = leadSeat(model.phase, seatCount, model.table, model.leadSeat);
+    const leadPlace = lead === null ? null : (where[lead] ?? null);
+    this.leadMark.set(leadPlace === null ? null : leadMarkPlacement(seatCount, leadPlace));
   }
 
   // Everything in the air lands where it was going.

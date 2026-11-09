@@ -34,8 +34,7 @@ in PRs of their own, one area at a time, not mixed into unrelated changes.
 ## Branch workflow
 
 Branches are stacked, as in the server: `master` -> the parent branch -> `web/phase-N-<name>`.
-This repository has no parent branch yet. It is made off `master` when the first phase that
-changes this repository starts.
+The parent branch is currently `ccr-209c0806-o444sp`.
 
 Phase branches are reviewed and PR'd against the parent branch, never `master`. When running
 `/code-review` on a phase branch, diff against the parent, or pass the PR number so GitHub's base

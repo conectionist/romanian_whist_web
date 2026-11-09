@@ -90,6 +90,7 @@ export class HandView {
       view.setHeight(handCardHeight);
       view.placeAt(cardPlacement(count, slot, size));
       view.element.style.zIndex = String(slot);
+      view.element.dataset.slot = String(slot);
       view.setDimmed(hand.backs === 0 && !hand.entries[slot].legal);
       view.element.classList.toggle("playable", playable);
       view.element.classList.toggle("illegal", hand.playable && !playable);

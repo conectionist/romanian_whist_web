@@ -67,7 +67,9 @@ trial), and `WHIST_SERVER_ADDRESS` is the server, as one of
 - `https://whist.example.org`, for a remote server behind its own TLS.
 
 Then `docker compose pull && docker compose up -d`. Updating is the same two commands, and the
-certificates stay in the `caddy_data` volume.
+certificates stay in the `caddy_data` volume. The container has a read-only root and only the right
+to bind ports 80 and 443. At `localhost`, which gets a certificate of Caddy's own, it logs that it
+could not install Caddy's root certificate; that only means your browser will not trust it.
 
 The image reads two environment variables: `SITE_ADDRESS` (the default, `:80`, serves plain HTTP) and
 `WHIST_SERVER_ADDRESS` (the default, `server:8080`, is the server service of the server's compose

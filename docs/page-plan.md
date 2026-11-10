@@ -436,7 +436,8 @@ checkout of the server beside this one.
     content-security-policy, `nosniff` and the referrer policy on every answer, errors included,
     and the caching rules on successful ones only: `immutable` under `/assets/`, `no-cache` for
     the page and a table's link, an hour for the rest.
-  - **Compose files.** `deploy/docker-compose.yml` runs the image alone, pointed at any server.
+  - **Compose files.** `deploy/docker-compose.yml` runs the image alone, pointed at any server, with
+    a read-only root and only the right to bind ports 80 and 443.
     The full stack and the setup behind the user's own proxy are the server's repository's
     compose files, which this repository's CI runs from the submodule. `compose.yaml` builds the
     server and the page from this checkout: `docker compose build server` first, then

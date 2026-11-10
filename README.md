@@ -158,11 +158,13 @@ the server's, built from this checkout:
 
 ```
 docker compose build server
-docker compose up --build
+docker compose build web
+docker compose up
 ```
 
-Then open http://127.0.0.1:8000/?solo=4. Build the server's image first, one image at a time: it
-compiles Drogon too and takes several minutes, and `JOBS`, the number of compile jobs, is 2 unless
+Then open http://127.0.0.1:8000/?solo=4. Build one image at a time, the server's first: a bare
+`docker compose build`, or `up --build`, builds both at once. The server's compiles Drogon too and
+takes several minutes, and `JOBS`, the number of compile jobs, is 2 unless
 `WHIST_JOBS` says otherwise, so that the machine stays usable. The server reports as its commit what
 `WHIST_SERVER_COMMIT` holds, for example
 `WHIST_SERVER_COMMIT=$(git -C libs/romanian_whist_server rev-parse --short HEAD)`. The page's image

@@ -440,8 +440,8 @@ checkout of the server beside this one.
     a read-only root and only the right to bind ports 80 and 443.
     The full stack and the setup behind the user's own proxy are the server's repository's
     compose files, which this repository's CI runs from the submodule. `compose.yaml` builds the
-    server and the page from this checkout: `docker compose build server` first, then
-    `docker compose up --build`, on port 8000.
+    server and the page from this checkout: `docker compose build server`, then
+    `docker compose build web`, then `docker compose up`, on port 8000.
   - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
     page, a table's link, the file types, the policy and caching headers, that an error has no
     caching rule (or none that is long, from the server alone), and a solo game through `/ws`,

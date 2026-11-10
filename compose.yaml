@@ -1,6 +1,6 @@
-# The page and the server, both built from this checkout: docker compose build server, then
-# docker compose up --build, then http://127.0.0.1:8000. The server's folder needs
-# git submodule update --init --recursive first.
+# The page and the server, both built from this checkout, one image at a time: docker compose build
+# server, docker compose build web, docker compose up, then http://127.0.0.1:8000. The server's
+# folder needs git submodule update --init --recursive first.
 services:
   server:
     build:

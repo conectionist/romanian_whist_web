@@ -20,7 +20,7 @@ services:
     environment:
       SITE_ADDRESS: ${WHIST_DOMAIN:?set WHIST_DOMAIN in .env, such as whist.example.org, or :80 for plain HTTP}
       WHIST_SERVER_ADDRESS: ${WHIST_SERVER_ADDRESS:?set WHIST_SERVER_ADDRESS in .env, such as host.docker.internal:8080 or https://whist.example.org}
-    # So that host.docker.internal reaches a server on this machine that listens on the bridge.
+    # On Linux, so that host.docker.internal reaches a server on this machine listening on the bridge.
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes: [caddy_data:/data, caddy_config:/config]
     logging: *logging

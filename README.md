@@ -47,16 +47,20 @@ curl -fsSL -o .env https://raw.githubusercontent.com/conectionist/romanian_whist
 Edit `.env`: `WHIST_DOMAIN` is the domain name (`:80` serves plain HTTP at http://localhost, for a
 trial), and `WHIST_SERVER_ADDRESS` is the server, as one of
 
-- `host.docker.internal:8080`, for a server on this machine. The container reaches it over the
-  Docker bridge, so the server must listen on the bridge's address, not on `127.0.0.1` alone:
-  with a page that loads but a `502` on `/ws`, that is the cause. Get the address with
+- `host.docker.internal:8080`, for a server on this machine. On Linux the container reaches it
+  over the Docker bridge, so the server must listen on the bridge's address, not on `127.0.0.1`
+  alone: with a page that loads but a `502` on `/ws`, that is the cause. Get the address with
   `docker network inspect bridge --format '{{ (index .IPAM.Config 0).Gateway }}'`, usually
   `172.17.0.1`, and use it as `WHIST_LISTEN` in the server's own-proxy compose file
   (`172.17.0.1:8080`), in `-p 172.17.0.1:8080:8080` of `docker run`, or as the `"address"` of a
-  server you built. Only this machine can reach that address;
+  server you built. Only this machine and its containers can reach that address. A server you
+  built also needs the host's firewall to let Docker's networks reach port 8080, and to start
+  after Docker, which creates the address. On Docker Desktop none of this applies: the host's
+  `127.0.0.1` is reachable as it is;
 - `server:8080`, or another `host:port`, for a server container on a Docker network. This file
   declares no network, so join the page to that one with a `docker-compose.override.yml` beside it
-  (`docker network ls` lists them; the server's own compose files make `whist_default`):
+  (`docker network ls` lists them; the server's own-proxy compose file makes `whist_default`).
+  Stop the page before you bring that server's compose project down, or the network stays:
 
   ```yaml
   services:
@@ -73,7 +77,8 @@ trial), and `WHIST_SERVER_ADDRESS` is the server, as one of
 Then `docker compose pull && docker compose up -d`. Updating is the same two commands, and the
 certificates stay in the `caddy_data` volume. The container has a read-only root and only the right
 to bind ports 80 and 443. At `localhost`, which gets a certificate of Caddy's own, it logs that it
-could not install Caddy's root certificate; that only means your browser will not trust it.
+could not install Caddy's root certificate. That is harmless: the container's trust store is not
+your browser's, which warns about this certificate either way.
 
 The image reads two environment variables: `SITE_ADDRESS` (the default, `:80`, serves plain HTTP) and
 `WHIST_SERVER_ADDRESS` (the default, `server:8080`, is the server service of the server's compose
@@ -108,9 +113,9 @@ node tools/smoke.mjs --url http://127.0.0.1:8000 --profile web --server-commit <
   and only that an error answer is not cached for long.
 
 Every profile checks the page, a table's link, the file types, and the game through `/ws`. The
-policy is checked on the server's own answer, `/version`, and on errors too. `--server-commit` is the commit the server was built from,
-which its welcome reports; leave it out to skip that check. `--timeout` is the seconds to wait for
-the page, and again for the game (10 by default). `node tools/smoke.mjs --copies` checks, with no
+`web` and `proxy` profiles also check the policy on `/version` and on errors. `--server-commit` is
+the commit the server was built from, which its welcome reports; leave it out to skip that check.
+`--timeout` is the seconds to wait for the page, and again for the game (10 by default). `node tools/smoke.mjs --copies` checks, with no
 server, that this image's Caddyfile and the server's two proxy examples all send the same
 content-security-policy; the unit tests check that too.
 

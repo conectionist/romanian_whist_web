@@ -1,8 +1,8 @@
 # Romanian Whist in the browser: the page's implementation plan
 
-> **Status: phase 1's echo page is built, and so is phase 6, the table page, which draws the table and
-> plays a solo game against the server (PR #3); the owner has not approved it yet. The rest of the
-> page, phases 7 and 8, is not built.**
+> **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
+> draws the table and plays a solo game against the server (PR #3). The rest of the page, phases 7
+> and 8, is not built.**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the
@@ -440,7 +440,7 @@ Sizes are relative: S, M, L.
 After the server's phase 3, the page can be built against fixtures while the server's phases 4 and
 5 go on.
 
-### Phase 6: the table page — L
+### Phase 6: the table page — L ✅ COMPLETE
 
 - **Work:**
   - the stage and seat geometry, name panels, racks, hand, played cards, lead mark, scoreboard,
@@ -673,9 +673,9 @@ of code `e2eef2e`):
   - **`npm run build` and `npm run build:look`** pass at `e2eef2e`, and the unit, end-to-end and look
     tests pass: 318, 8 and 13.
   - **CI** (Build (Linux): `npm ci`, the two builds and the unit tests) is green at `7908bd2`,
-    `cb5304e` and `e2eef2e`. It does not run the end-to-end or the look tests, which need the
-    server's build and a browser.
-  - **The owner has not approved the phase yet.** The heading takes its ✅ when he does.
+    `cb5304e`, `e2eef2e` and `647e02a`. It does not run the end-to-end or the look tests, which need
+    the server's build and a browser.
+  - **The owner approved** the phase on 2026-11-10.
 
 ### Phase 7: sheets and menus — L
 

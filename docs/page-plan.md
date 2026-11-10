@@ -572,7 +572,7 @@ of code `e2eef2e`):
   - **The server answers 404, not 403, for `.webp`** (Q7). Cards, portraits and the table's
     textures do not load from `whist_server` until it serves WebP. The page and every test still
     work; `npm run dev` shows the pictures. **`webp` must be added to the server's `setFileTypes`
-    before phase 7.**
+    before phase 7.** Added in the server's PR #11, merged as `b6f59c7`.
   - **The racks copy the desktop's pictures, not its source.** The desktop renders every rack card a
     quarter darker than the mock-up's CSS does, though its source paints only a 1 px hairline in that
     black. It was measured: a uniform 0.75 on every channel, in all four racks, at both ends of the
@@ -680,6 +680,11 @@ of code `e2eef2e`):
 ### Phase 7: sheets and menus — L
 
 - **Work:**
+  - first, the submodule moves to the server's `b6f59c7`, which serves the page's WebP pictures and
+    JSON files;
+  - the reference pictures are the `sheet-*`, `menu` and `language` shots from the same CI run as
+    phase 6's (desktop commit `03a3244`, in `shots/` on the desktop's throwaway branch
+    `ccr-209c0806-o444sp`). If the desktop's look changes, the workflow there takes them again;
   - the round sheet, history, last trick, final results, rules, settings and pause, as the
     desktop client's overlay and sheets draw them, not the mock-up's modal;
   - the main menu and solo setup, as the desktop client's main menu and New Game;
@@ -692,7 +697,11 @@ of code `e2eef2e`):
     has not accepted;
   - everything in
     [the server plan's §2.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#21-carried-over-from-the-desktop-client)
-    works in solo play.
+    works in solo play;
+  - a blind card whose prompt the computer closes (the turn timer) keeps its back until it is
+    played, tried against a real online table. Phase 6 could only unit-test it;
+  - the desktop's throwaway branch `ccr-209c0806-o444sp` is deleted, once its pictures are no longer
+    needed.
 
 ### Phase 8: Romanian, keyboard, touch — M
 

@@ -43,8 +43,27 @@ curl -fsSL -o .env https://raw.githubusercontent.com/conectionist/romanian_whist
 Edit `.env`: `WHIST_DOMAIN` is the domain name (`:80` serves plain HTTP at http://localhost, for a
 trial), and `WHIST_SERVER_ADDRESS` is the server, as one of
 
-- `host:port`, for a container on a Docker network this one is on;
-- `host.docker.internal:8080`, for a server on this machine;
+- `host.docker.internal:8080`, for a server on this machine. The container reaches it over the
+  Docker bridge, so the server must listen on the bridge's address, not on `127.0.0.1` alone:
+  with a page that loads but a `502` on `/ws`, that is the cause. Get the address with
+  `docker network inspect bridge --format '{{ (index .IPAM.Config 0).Gateway }}'`, usually
+  `172.17.0.1`, and use it as `WHIST_LISTEN` in the server's own-proxy compose file
+  (`172.17.0.1:8080`), in `-p 172.17.0.1:8080:8080` of `docker run`, or as the `"address"` of a
+  server you built. Only this machine can reach that address;
+- `server:8080`, or another `host:port`, for a server container on a Docker network. This file
+  declares no network, so join the page to that one with a `docker-compose.override.yml` beside it
+  (`docker network ls` lists them; the server's own compose files make `whist_default`):
+
+  ```yaml
+  services:
+    web:
+      networks: [whist]
+  networks:
+    whist:
+      name: whist_default
+      external: true
+  ```
+
 - `https://whist.example.org`, for a remote server behind its own TLS.
 
 Then `docker compose pull && docker compose up -d`. Updating is the same two commands, and the

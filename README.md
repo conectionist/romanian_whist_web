@@ -107,7 +107,8 @@ node tools/smoke.mjs --url http://127.0.0.1:8000 --profile web --server-commit <
 `--profile` says what the address in front of the page is, and so which headers to expect:
 
 - `web`: this image's Caddy. It checks the content-security-policy, the caching rules and gzip too,
-  and that an error answer has no caching rule.
+  and that an error answer is not kept by a cache: `no-store` passes, `public` and a `max-age` do
+  not.
 - `proxy`: your own proxy with the server's examples. It checks the same, but gzip is only reported.
 - `server`: the server serving the page itself, with no proxy. It checks neither headers nor gzip,
   and only that an error answer is not cached for long.

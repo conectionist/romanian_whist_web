@@ -443,8 +443,8 @@ checkout of the server beside this one.
     server and the page from this checkout: `docker compose build server`, then
     `docker compose build web`, then `docker compose up`, on port 8000.
   - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
-    page, a table's link, the file types, the policy and caching headers, that an error has no
-    caching rule (or none that is long, from the server alone), and a solo game through `/ws`,
+    page, a table's link, the file types, the policy and caching headers, that an error is not
+    kept by a cache (or not for long, from the server alone), and a solo game through `/ws`,
     using the server's smoke test. A browser check, `playwright.docker.config.ts`, loads the page
     under the image's policy, and fails if the page arrives without it.
   - **CI.** The `docker` job checks that this repository's compose files and the override its

@@ -26,7 +26,7 @@ test("the page starts a solo game under the image's content-security-policy", as
   });
 
   const response = await page.goto("/?solo=4&speed=4");
-  expect(response?.headers()["content-security-policy"]).toBe(PAGE_CSP);
+  expect(await response?.headerValue("content-security-policy")).toBe(PAGE_CSP);
   await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
   await page.locator(".hand .hcard").first().waitFor();
 

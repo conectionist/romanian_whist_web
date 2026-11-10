@@ -39,6 +39,7 @@ const PROFILES = {
 
 const TABLE_CODE = "K7QM4P";
 const LONG_CACHE = /immutable|max-age=([1-9]\d{5,})/;
+const KEPT = /public|immutable|max-age=[1-9]|s-maxage=[1-9]/;
 
 async function get(baseUrl, path, headers = {}) {
   const response = await fetch(new URL(path, baseUrl), { headers, redirect: "manual", signal: AbortSignal.timeout(10000) });
@@ -150,16 +151,17 @@ export async function checkPage(baseUrl, profileName, { serverCommit, timeoutMs 
   }
 
   // A caching rule on an error would keep a fault in a browser for as long. Where the caching rules
-  // are ours, an error has none; the server alone may set its own, which must not be long.
+  // are ours, an error is the server's own: it may say not to cache but never to keep. The server
+  // alone may keep one briefly.
   const noRule = profile.errorCache === "none";
-  await check(noRule ? "an error answer has no caching rule" : "an error answer is never cached for long", async () => {
+  await check(noRule ? "an error answer is not kept by a cache" : "an error answer is never cached for long", async () => {
     for (const path of ["/assets/nope.js", "/nope.svg", `/t/${TABLE_CODE.toLowerCase()}`, "/ws"]) {
       const response = await get(baseUrl, path);
       if (response.status < 400) {
         throw new Error(`${path} gave ${response.status}, expected an error`);
       }
       const cache = response.headers.get("cache-control") ?? "";
-      if (noRule ? cache !== "" : LONG_CACHE.test(cache)) {
+      if ((noRule ? KEPT : LONG_CACHE).test(cache)) {
         throw new Error(`${path} (${response.status}) has cache-control: ${cache}`);
       }
     }

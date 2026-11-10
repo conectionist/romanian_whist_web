@@ -447,10 +447,13 @@ checkout of the server beside this one.
     caching rule (or none that is long, from the server alone), and a solo game through `/ws`,
     using the server's smoke test. A browser check, `playwright.docker.config.ts`, loads the page
     under the image's policy, and fails if the page arrives without it.
-  - **CI.** The `docker` job builds both images, runs the full stack with our Caddy, the
-    own-proxy setup directly and through the server's Caddy and nginx examples, and the page
-    alone over HTTPS, and holds the page's image to its size budget. The `publish` job pushes the
-    page's image from `master` and version tags, never from a pull request.
+  - **CI.** The `docker` job checks that this repository's compose files and the override its
+    README gives parse, builds both images, and runs the full stack with our Caddy, the own-proxy
+    setup directly and through the server's Caddy and nginx examples, this repository's compose
+    file pointed at that server over the Docker bridge and, with the README's override, over the
+    server's network, and the same file over HTTPS under its hardening. It holds the page's image
+    to its size budget. The `publish` job pushes the page's image from `master` and version tags,
+    never from a pull request.
   - **Versioning.** The image's tag is the version in `package.json`; its labels carry the
     protocol version and the server revision it was tested with. The server's plan has the rest
     ([§12.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#121-with-docker-recommended)).

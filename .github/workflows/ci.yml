@@ -90,6 +90,16 @@ jobs:
           test -n "$version"
           test "$TAG" = "v$version"
 
+      # The override is the one the README gives for joining a server's network: the steps below run it.
+      - name: Check this repository's compose files, and the override its README gives
+        run: |
+          sed -n '/^  ```yaml$/,/^  ```$/p' README.md | sed '1d;$d;s/^  //' > "$RUNNER_TEMP/join-network.yml"
+          test -s "$RUNNER_TEMP/join-network.yml"
+          export WHIST_DOMAIN=:80 WHIST_SERVER_ADDRESS=server:8080
+          docker compose -f deploy/docker-compose.yml config -q
+          docker compose -f deploy/docker-compose.yml -f "$RUNNER_TEMP/join-network.yml" config -q
+          docker compose config -q
+
       - uses: docker/setup-buildx-action@v4
 
       # latest and the version tags come from a push only: a manual run on master or on a tag would
@@ -143,11 +153,6 @@ jobs:
       - name: Check that every copy of the content-security-policy is the page's
         run: node tools/smoke.mjs --copies
 
-      - name: Check this repository's compose files
-        run: |
-          WHIST_DOMAIN=:80 WHIST_SERVER_ADDRESS=server:8080 docker compose -f deploy/docker-compose.yml config -q
-          docker compose config -q
-
       # The compose files are the server repository's, from the submodule.
       - name: The full stack, with our Caddy
         env:
@@ -166,19 +171,17 @@ jobs:
           test "$(docker inspect -f '{{.State.ExitCode}}' whist-server-1)" = 0
           $compose down -v
 
-      # The server listens on every address: the proxies below reach it on loopback, and the page's
-      # own compose file, last, reaches it from its container over the Docker bridge.
       - name: Behind your own proxy, and the page's own compose file pointed at it
         env:
-          WHIST_LISTEN: 0.0.0.0:8080
           WHIST_SERVER_TAG: ci
           WHIST_WEB_TAG: ci
           SERVER_COMMIT: ${{ steps.info.outputs.server_commit }}
         run: |
           examples=libs/romanian_whist_server/deploy/examples
           compose="docker compose -f libs/romanian_whist_server/deploy/docker-compose.own-proxy.yml"
+          healthy() { timeout 60 sh -c 'until [ "$(docker inspect -f "{{.State.Health.Status}}" whist-server-1)" = healthy ]; do sleep 1; done'; }
           $compose up -d --pull never
-          timeout 60 sh -c 'until [ "$(docker inspect -f "{{.State.Health.Status}}" whist-server-1)" = healthy ]; do sleep 1; done'
+          healthy
           test "$(docker inspect -f '{{.State.ExitCode}}' whist-page-1)" = 0
           node tools/smoke.mjs --url http://127.0.0.1:8080 --profile server --server-commit "$SERVER_COMMIT"
 
@@ -197,19 +200,37 @@ jobs:
           node tools/smoke.mjs --url http://127.0.0.1:8082 --profile proxy --server-commit "$SERVER_COMMIT"
           docker rm -f own-caddy own-nginx
 
+          # The page's own compose file reaches the server over the Docker bridge, so the server
+          # moves to the bridge's address, as the README says, and the page is stopped before the
+          # server's network goes.
+          gateway=$(docker network inspect bridge --format '{{ (index .IPAM.Config 0).Gateway }}')
+          WHIST_LISTEN="$gateway:8080" $compose up -d --pull never
+          healthy
           alone="docker compose -f deploy/docker-compose.yml"
-          WHIST_DOMAIN=:80 WHIST_SERVER_ADDRESS=host.docker.internal:8080 $alone up -d --pull never --wait --wait-timeout 120
+          export WHIST_DOMAIN=:80
+          WHIST_SERVER_ADDRESS=host.docker.internal:8080 $alone up -d --pull never --wait --wait-timeout 120
           node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT"
-          WHIST_DOMAIN=:80 WHIST_SERVER_ADDRESS=host.docker.internal:8080 $alone down -v
+          WHIST_SERVER_ADDRESS=host.docker.internal:8080 $alone down -v
+
+          alone="$alone -f $RUNNER_TEMP/join-network.yml"
+          WHIST_SERVER_ADDRESS=server:8080 $alone up -d --pull never --wait --wait-timeout 120
+          node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT"
+          WHIST_SERVER_ADDRESS=server:8080 $alone down -v
           $compose down -v
 
-      # The one place that exercises Caddy's automatic HTTPS, with its own local certificate.
+      # The one place that exercises Caddy's automatic HTTPS, with its own local certificate, under
+      # the compose file's hardening.
       - name: The page alone over HTTPS
+        env:
+          WHIST_DOMAIN: localhost
+          WHIST_SERVER_ADDRESS: server:8080
+          WHIST_WEB_TAG: ci
         run: |
-          docker run -d --name https-web -e SITE_ADDRESS=localhost -p 8443:443 -p 8081:80 "$IMAGE:ci"
-          timeout 60 sh -c 'until curl -ksf -o /dev/null https://localhost:8443/; do sleep 1; done'
-          test "$(curl -ks -o /dev/null -w '%{http_code}' http://localhost:8081/)" = 308
-          docker rm -f https-web
+          alone="docker compose -f deploy/docker-compose.yml"
+          $alone up -d --pull never
+          timeout 60 sh -c 'until curl -ksf -o /dev/null https://localhost/; do sleep 1; done'
+          test "$(curl -ks -o /dev/null -w '%{http_code}' http://localhost/)" = 308
+          $alone down -v
 
       # The sum of the layers: the size docker image inspect gives depends on the runner's image store.
       - name: Check the image's size against its budget
@@ -220,7 +241,7 @@ jobs:
 
       # The compose files refuse to read their settings unset, so the logs need them too.
       - name: The logs
-        if: failure()
+        if: ${{ !success() }}
         env:
           WHIST_DOMAIN: ":80"
           WHIST_SERVER_ADDRESS: server:8080
@@ -230,7 +251,6 @@ jobs:
           docker compose -f deploy/docker-compose.yml logs || true
           docker logs own-caddy || true
           docker logs own-nginx || true
-          docker logs https-web || true
 
   # Only master, a version tag, or a manual run that asks for it. A pull request never publishes.
   publish:

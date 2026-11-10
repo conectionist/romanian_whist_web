@@ -112,15 +112,26 @@ export class HandView {
 
     for (const [key, entry] of this.slots) {
       if (!used.has(key)) {
-        entry.view.hide();
+        this.retire(entry);
       }
     }
+  }
+
+  // A slot that leaves the fan is hidden, and no longer a card that can be played.
+  private retire(entry: Slot): void {
+    entry.playable = false;
+    entry.view.hide();
+    entry.view.element.classList.remove("playable", "illegal");
+    entry.view.element.setAttribute("aria-disabled", "true");
   }
 
   // Takes a card out of the fan the moment it is played, before the server has said so. The next
   // update puts it back if it is still in the hand.
   hideCard(card: Card): void {
-    this.slots.get(card)?.view.hide();
+    const entry = this.slots.get(card);
+    if (entry !== undefined) {
+      this.retire(entry);
+    }
   }
 
   // Where this card rests in the fan, for a card that leaves it for the felt.

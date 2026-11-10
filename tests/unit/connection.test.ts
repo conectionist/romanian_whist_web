@@ -125,9 +125,10 @@ describe("the connection", () => {
   });
 
   it("reloads once for a new version, and then gives up", () => {
-    const { socket, reloads, timers } = setup();
+    const { socket, reloads, timers, statuses } = setup();
     socket().fire("message", { data: error("version") });
     expect(reloads()).toBe(1);
+    expect(statuses[statuses.length - 1]).toBe("closed");
     socket().close();
     expect(timers).toEqual([]);
 
@@ -135,6 +136,39 @@ describe("the connection", () => {
     again.session.setItem("whist.reloaded", "1");
     again.socket().fire("message", { data: error("version") });
     expect(again.reloads()).toBe(0);
+  });
+
+  it("drops a token the server refuses and says hello again without it", () => {
+    const { socket, storage, statuses } = setup({ [TOKEN_KEY]: "not a token" });
+    socket().readyState = 1;
+    socket().fire("open", {});
+    expect(JSON.parse(socket().sent[0]).token).toBe("not a token");
+    const refused = socket();
+    refused.fire("message", { data: JSON.stringify({ type: "error", seq: 1, code: "badMessage", detail: "token" }) });
+
+    expect(storage.values.has(TOKEN_KEY)).toBe(false);
+    expect(FakeSocket.instances).toHaveLength(2);
+    expect(socket()).not.toBe(refused);
+    socket().readyState = 1;
+    socket().fire("open", {});
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en" });
+    expect(statuses[statuses.length - 1]).toBe("open");
+    // The refused socket closing on its own is not a lost connection.
+    refused.fire("close", {});
+    expect(FakeSocket.instances).toHaveLength(2);
+  });
+
+  it("leaves a badMessage about anything else, or after the welcome, alone", () => {
+    const other = setup({ [TOKEN_KEY]: "LXF33D9tR1EIzH3GPvWDpw" });
+    other.socket().fire("message", { data: JSON.stringify({ type: "error", seq: 1, code: "badMessage", detail: "lang" }) });
+    expect(FakeSocket.instances).toHaveLength(1);
+    expect(other.storage.values.has(TOKEN_KEY)).toBe(true);
+
+    const welcomed = setup();
+    welcomed.socket().fire("message", { data: welcome });
+    welcomed.socket().fire("message", { data: JSON.stringify({ type: "error", seq: 2, code: "badMessage", detail: "token" }) });
+    expect(FakeSocket.instances).toHaveLength(1);
+    expect(welcomed.storage.values.get(TOKEN_KEY)).toBe("LXF33D9tR1EIzH3GPvWDpw");
   });
 
   it("goes on after a message it cannot read", () => {

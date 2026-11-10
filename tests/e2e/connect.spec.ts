@@ -28,3 +28,10 @@ test("the page keeps its member across a reload", async ({ page }) => {
   await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
   expect(await page.evaluate(() => window.localStorage.getItem("whist.token"))).toBe(token);
 });
+
+test("a stored token the server cannot read is dropped, and the page still gets its table state", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.setItem("whist.token", "not a token"));
+  await page.goto("/");
+  await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+  expect(await page.evaluate(() => window.localStorage.getItem("whist.token"))).toMatch(/^[A-Za-z0-9_-]{22}$/);
+});

@@ -68,6 +68,8 @@ export class Connection {
   private attempt = 0;
   private timer: number | null = null;
   private stopped = false;
+  // Whether this socket has been welcomed: a refused token is only the page's to drop before then.
+  private welcomed = false;
   private readonly storage: Memory;
   private readonly session: Memory;
 
@@ -84,6 +86,7 @@ export class Connection {
   private open(): void {
     this.timer = null;
     this.options.onStatus("connecting");
+    this.welcomed = false;
     const socket = (this.options.createSocket ?? ((url) => new WebSocket(url)))(this.options.url);
     this.socket = socket;
 
@@ -137,21 +140,34 @@ export class Connection {
     }
 
     if (message.type === "welcome") {
+      this.welcomed = true;
       this.storage.setItem(TOKEN_KEY, message.token);
       this.attempt = 0;
       this.session.removeItem(RELOADED_KEY);
     } else if (message.type === "error" && message.code === "openElsewhere") {
       this.stopped = true;
       this.options.onStatus("elsewhere");
+    } else if (message.type === "error" && message.code === "badMessage" && message.detail === "token" && !this.welcomed) {
+      // The stored token is not one the server reads, so no welcome will come: ask again without it.
+      this.restartWithoutToken();
     } else if (message.type === "error" && message.code === "version") {
       // This page is of another version than the server: load the current one, once.
       this.stopped = true;
+      this.options.onStatus("closed");
       if (this.session.getItem(RELOADED_KEY) === null) {
         this.session.setItem(RELOADED_KEY, "1");
         (this.options.reload ?? (() => window.location.reload()))();
       }
     }
     this.options.onMessage(message);
+  }
+
+  private restartWithoutToken(): void {
+    this.storage.removeItem(TOKEN_KEY);
+    const refused = this.socket;
+    this.socket = null;
+    refused?.close();
+    this.open();
   }
 
   // Sends a message if the connection is open; says whether it did.

@@ -93,6 +93,43 @@ test.describe("with nothing moving", () => {
 });
 
 test.describe("with the cards flying", () => {
+  test("your own card is in the air the moment you click it", async ({ page }) => {
+    const problems: string[] = [];
+    page.on("pageerror", (error) => problems.push(error.message));
+
+    await page.goto("/?solo=4&seed=42&speed=4");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+
+    // Bid until a card is asked for.
+    const asked = page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable");
+    for (;;) {
+      await asked.first().waitFor();
+      if ((await page.locator(".bidstrip:not([hidden])").count()) === 0) {
+        break;
+      }
+      await page.locator(".bidstrip:not([hidden]) .opt:not(:disabled)").first().click();
+      await expect(asked).toHaveCount(0);
+    }
+
+    // Clicked in the page, so what is counted is what the click itself left running: a flight that
+    // a redraw in the same click cut short would not be there.
+    const flying = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard.playable"));
+      cards.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot));
+      cards[0].click();
+      return document
+        .getAnimations()
+        .filter((animation) => (animation.effect as KeyframeEffect | null)?.target?.closest(".trick") !== null && animation.playState === "running")
+        .length;
+    });
+    expect(flying).toBe(1);
+
+    // It lands on the felt, and nothing is left running.
+    await expect(page.locator(".trick .card:not([hidden])")).not.toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
+    expect(problems).toEqual([]);
+  });
+
   test("a solo game is played with the cards flying, and the table lands where the server says", async ({ page }) => {
     const problems: string[] = [];
     page.on("pageerror", (error) => problems.push(error.message));

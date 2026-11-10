@@ -7,7 +7,7 @@ import { Controller } from "./play/controller";
 import { modelOf } from "./play/model";
 import { currentPace } from "./play/motion";
 import { PlaybackQueue } from "./play/queue";
-import { Store } from "./play/store";
+import { NO_CHANGE, Store } from "./play/store";
 import { el } from "./dom/el";
 import { loadFonts } from "./table/fonts";
 import { TableScene } from "./table/renderer";
@@ -40,8 +40,9 @@ const store = new Store();
 // Whether the table moves for what is drawn now: the viewer's pace, and not in a background tab.
 const animates = () => currentPace() !== "off" && document.visibilityState !== "hidden";
 
-const redraw = (): Promise<void> =>
-  scene.relayout(controller.adjust(modelOf(store.state)), { kind: "error", event: null, fresh: false }, false);
+// Draws the table as it stands, for a click. With the table's pace, so the flight your card has just
+// started is not cut short.
+const redraw = (): Promise<void> => scene.relayout(controller.adjust(modelOf(store.state)), NO_CHANGE, animates());
 
 const connection: Connection = new Connection({
   url: socketUrl(window.location),

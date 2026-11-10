@@ -213,8 +213,6 @@ export function shownFor(model: TableModel): Shown {
   return { header: headerFor(model), tension: tensionFor(model), rows: rowsFor(model), trump: trumpFor(model) };
 }
 
-const COLUMNS = 5;
-
 interface RowCells {
   name: HTMLElement;
   marker: HTMLElement;
@@ -372,6 +370,3 @@ export class Scoreboard {
     setText(this.trumpNone, shown.trump.name);
   }
 }
-
-// The grid has this many columns: the player, then bid, taken, points and run.
-export const SCORE_COLUMNS = COLUMNS;

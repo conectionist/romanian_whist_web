@@ -5,7 +5,6 @@ import type { SeatView } from "../play/model";
 import {
   MOST_CARDS,
   RAIL_RADIUS,
-  cardQuad,
   cardTransform,
   cssMatrix3d,
   frameRotation,
@@ -108,11 +107,6 @@ export class RackView {
       style.height = `${rail.h}px`;
       style.borderRadius = `${RAIL_RADIUS * railScale()}px`;
     }
-  }
-
-  // The corners the card at this index is drawn through, for tests and captures.
-  quad(index: number) {
-    return cardQuad(this.shown.count, index);
   }
 
   hide(): void {

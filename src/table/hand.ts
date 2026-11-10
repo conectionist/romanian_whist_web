@@ -132,9 +132,4 @@ export class HandView {
     }
     return cardPlacement(this.count, entry.slot, sizeForHeight(handCardHeight));
   }
-
-  // The element for a card, for the page's tests and captures.
-  elementOf(card: Card): HTMLElement | null {
-    return this.slots.get(card)?.view.element ?? null;
-  }
 }

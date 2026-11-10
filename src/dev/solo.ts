@@ -1,7 +1,7 @@
 import type { ClientMessage, Settings, SettingsSeat } from "../net/protocol";
 
 // A solo game started from the address: /?solo=4, /?solo=4&seed=42 or /?solo=4&speed=4. The page has
-// no menu to start one yet, and the end-to-end tests start theirs this way.
+// no menu to start one, and the end-to-end tests start theirs this way.
 
 // The players the desktop's screenshot tool plays with: "Player", a man, and Ana, Bogdan, Cristina,
 // Dan and Elena, Low risk and Ducking by turns, wearing the faces the look fixtures give them.

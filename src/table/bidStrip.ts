@@ -51,11 +51,11 @@ export function fieldsFor(model: TableModel): Fields | null {
 
   // Otherwise how the bids stand: the bids already in and what they add up to, against this round's
   // tricks, singular or plural on the trick count.
-  const sentence =
+  const bids = [model.betsPlaced, model.betSum, highest];
+  fields.note =
     highest === 1
-      ? t("bidstrip", "%1 bid so far, totalling %2 of %3 trick.")
-      : t("bidstrip", "%1 bid so far, totalling %2 of %3 tricks.");
-  fields.note = t("bidstrip", sentence, [model.betsPlaced, model.betSum, highest]);
+      ? t("bidstrip", "%1 bid so far, totalling %2 of %3 trick.", bids)
+      : t("bidstrip", "%1 bid so far, totalling %2 of %3 tricks.", bids);
   return fields;
 }
 
@@ -72,7 +72,6 @@ export class BidStrip {
   private readonly note = el("div", { class: "bid-note" });
   private readonly buttons: HTMLButtonElement[] = [];
   private onBid: (bet: number) => void = () => undefined;
-  private suppressed = false;
   private fields: Fields | null = null;
 
   constructor() {
@@ -84,13 +83,6 @@ export class BidStrip {
   // Told which bid was chosen.
   setHandler(onBid: (bet: number) => void): void {
     this.onBid = onBid;
-  }
-
-  // Hides the strip while a bid sent to the server waits to be taken, and shows it again if it was
-  // not.
-  setSuppressed(suppressed: boolean): void {
-    this.suppressed = suppressed;
-    this.element.hidden = this.suppressed || this.fields === null;
   }
 
   private button(bet: number): HTMLButtonElement {
@@ -111,7 +103,7 @@ export class BidStrip {
   update(model: TableModel | null): void {
     const fields = model === null ? null : fieldsFor(model);
     this.fields = fields;
-    this.element.hidden = this.suppressed || fields === null;
+    this.element.hidden = fields === null;
     if (fields === null) {
       return;
     }

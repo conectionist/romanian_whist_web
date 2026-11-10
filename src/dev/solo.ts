@@ -1,8 +1,7 @@
 import type { ClientMessage, Settings, SettingsSeat } from "../net/protocol";
 
-// A solo game started from the address: /?solo=4 or /?solo=4&seed=42. The page has no New Game
-// until its menus are built; this is how a game is started till then, and how the end-to-end tests
-// start one.
+// A solo game started from the address: /?solo=4, /?solo=4&seed=42 or /?solo=4&speed=4. The page has
+// no menu to start one yet, and the end-to-end tests start theirs this way.
 
 // The players the desktop's screenshot tool plays with: "Player", a man, and Ana, Bogdan, Cristina,
 // Dan and Elena, Low risk and Ducking by turns, wearing the faces the look fixtures give them.
@@ -18,7 +17,13 @@ const PLAYERS: readonly SettingsSeat[] = [
 export interface SoloRequest {
   players: number;
   seed?: number;
+  // How fast the computer players move, 0 (slow) to 4 (instant).
+  speed?: number;
 }
+
+// The desktop's default. At the top speed the messages come faster than the table plays them, so it
+// never moves the computer players' cards.
+export const DEFAULT_SPEED = 2;
 
 // What the address asks for, or null when it asks for no game, or a game the table cannot seat.
 export function soloRequestFrom(search: string): SoloRequest | null {
@@ -31,11 +36,16 @@ export function soloRequestFrom(search: string): SoloRequest | null {
   if (players < 2 || players > PLAYERS.length) {
     return null;
   }
+  const request: SoloRequest = { players };
   const seed = params.get("seed");
-  if (seed === null) {
-    return { players };
+  if (seed !== null && /^\d+$/.test(seed)) {
+    request.seed = Number(seed);
   }
-  return /^\d+$/.test(seed) ? { players, seed: Number(seed) } : { players };
+  const speed = params.get("speed");
+  if (speed !== null && /^[0-4]$/.test(speed)) {
+    request.speed = Number(speed);
+  }
+  return request;
 }
 
 export function soloSettings(request: SoloRequest): Settings {
@@ -44,8 +54,7 @@ export function soloSettings(request: SoloRequest): Settings {
     structure: "1-8-1",
     foreheadAndHidden: true,
     allOneCardForehead: false,
-    // The top speed.
-    botSpeed: 4,
+    botSpeed: request.speed ?? DEFAULT_SPEED,
     waitAfterRound: false,
   };
   if (request.seed !== undefined) {

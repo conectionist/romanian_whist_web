@@ -48,7 +48,7 @@ test.describe("with nothing moving", () => {
     const problems: string[] = [];
     page.on("pageerror", (error) => problems.push(error.message));
 
-    await page.goto("/?solo=4&seed=42");
+    await page.goto("/?solo=4&seed=42&speed=4");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
 
     // 22 decisions, bids and cards alike: the moment the desktop's screenshot of four players shows.
@@ -79,7 +79,7 @@ test.describe("with nothing moving", () => {
   });
 
   test("a game goes on to the end of a round when every answer is the lowest", async ({ page }) => {
-    await page.goto("/?solo=3&seed=7");
+    await page.goto("/?solo=3&seed=7&speed=4");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
     for (let decisions = 0; decisions < 6; decisions++) {
       await decide(page);

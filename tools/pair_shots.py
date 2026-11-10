@@ -4,12 +4,12 @@
     python3 tools/pair_shots.py [--web DIR] [--desktop DIR] [--out DIR]
 
 --web is where `npm run look` wrote the captures (build/shots/web), --desktop where the desktop
-client's screenshot tool did (build/shots/desktop), --out where the pairs go (build/shots/phase-6).
-For each name both folders hold, it writes
+client's screenshot tool did (build/shots/desktop), --out where the pairs go (build/shots/compare).
+For each capture in --web that the desktop's folder has a picture of, it writes
 
     compare-<name>.png     the page on the left and the desktop client on the right, each labelled
     diff-<name>.png        where they differ, four times as strongly
-    compare-<name>-closeup.png, for the three hands: the hand's region, twice as large
+    compare-<name>-closeup.png, for each hand: the hand's region, twice as large
 
 and prints the mean absolute difference of the pair, 0 to 255. The sizes must match; a desktop
 picture at twice the size (a high-density screen) is scaled down first. Without a desktop folder it
@@ -26,9 +26,6 @@ import sys
 from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageStat
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-
-NAMES = ['table-3-players', 'table-4-players', 'table-5-players', 'table-6-players', 'bidding',
-         'table-empty', 'hand-1-card', 'hand-4-cards', 'hand-8-cards']
 
 # The hand's region in a 1920 x 1034 table picture, for the close-ups.
 HAND_REGION = (440, 700, 1480, 1034)
@@ -77,20 +74,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--web', type=pathlib.Path, default=ROOT / 'build/shots/web')
     parser.add_argument('--desktop', type=pathlib.Path, default=ROOT / 'build/shots/desktop')
-    parser.add_argument('--out', type=pathlib.Path, default=ROOT / 'build/shots/phase-6')
+    parser.add_argument('--out', type=pathlib.Path, default=ROOT / 'build/shots/compare')
     args = parser.parse_args()
 
     if not args.desktop.is_dir():
         print(f'There is no {args.desktop}: the desktop client\'s pictures are not here yet, so nothing is paired.\n'
-              'Run its screenshot tool and copy the nine pictures there (see docs/page-plan.md).')
+              'Run its screenshot tool and copy its pictures there (the README says how).')
         return 0
     if not args.web.is_dir():
         sys.exit(f'There is no {args.web}: run npm run look first.')
 
+    names = sorted(path.stem for path in args.web.glob('*.png'))
+    if not names:
+        sys.exit(f'There are no captures in {args.web}: run npm run look first.')
+
     args.out.mkdir(parents=True, exist_ok=True)
     paired = 0
 
-    for name in NAMES:
+    for name in names:
         web_path = args.web / f'{name}.png'
         desktop_path = args.desktop / f'{name}.png'
         if not web_path.is_file() or not desktop_path.is_file():
@@ -122,7 +123,7 @@ def main():
         print(f'{name:<18} mean absolute difference {mean:6.2f}')
         paired += 1
 
-    print(f'{paired} of {len(NAMES)} pictures paired, in {args.out}')
+    print(f'{paired} of {len(names)} pictures paired, in {args.out}')
     return 0
 
 

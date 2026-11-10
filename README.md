@@ -76,7 +76,7 @@ checkable without a server:
 - `npm run compare` pairs each capture with the desktop's picture of the same name, which its
   screenshot tool writes (`WHIST_SHOTS_DIR=build/shots/web-reference ./build/tests/desktop_tests
   "[.screenshot]"` in the desktop's checkout). Put those nine pictures in `build/shots/desktop/`;
-  without them it says so and writes nothing. It writes, into `build/shots/phase-6/`,
+  without them it says so and writes nothing. It writes, into `build/shots/compare/`,
   `compare-<name>.png` (the page on the left, the desktop on the right), `diff-<name>.png`, a
   `compare-hand-*-closeup.png` for each hand, and prints each pair's mean absolute difference.
 

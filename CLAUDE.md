@@ -13,6 +13,8 @@ and that is worse than any wait. **Slower is always acceptable; a frozen desktop
   never a bare `-j`, always `nice -n 19 cmake --build --preset <p> -j 2`. Its first build compiles
   Drogon too and takes several minutes: run it in the background.
 - **One heavy command at a time.** Never a server build and the page's tests at once.
+- **Docker builds:** `docker build --build-arg JOBS=2 …` (or `docker compose build`), one image
+  build at a time, in the background. `docker compose build server` before the page.
 - **Sanitizer builds of the server, its chaos test and its load test** only when the owner asks,
   one run per command. Don't loop them.
 - **Long jobs go in the background** (`run_in_background`), still under `nice`, so the owner can

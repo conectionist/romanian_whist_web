@@ -10,7 +10,10 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "e2e": "npm run build && playwright test"
+    "e2e": "npm run build && playwright test",
+    "build:look": "tsc --noEmit && vite build --mode look",
+    "look": "npm run build:look && playwright test --config playwright.look.config.ts",
+    "compare": "python3 tools/pair_shots.py"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

@@ -22,8 +22,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # No submodules: only the end-to-end tests need the server, and they run locally.
+      # The server, for its protocol fixtures; not its own submodules, which only its build needs.
       - uses: actions/checkout@v7
+        with:
+          submodules: true
 
       - uses: actions/setup-node@v7
         with:
@@ -34,6 +36,7 @@ jobs:
         run: |
           npm ci
           npm run build
+          npm run build:look
 
       - name: Test the page
         run: npm test

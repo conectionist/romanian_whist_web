@@ -1,0 +1,173 @@
+/* The room, the fitted space, and the table top: src/table/TableView.cpp and TableTopItem.cpp. */
+
+.window {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* A strip with the desktop's menu bar's look and none of its items, where the menu bar goes. */
+.menu-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 46px;
+  background: linear-gradient(180deg, var(--menu-top), var(--menu-bottom));
+  border-bottom: 1px solid var(--panel-border);
+  box-shadow:
+    0 1px 0 var(--menu-glint),
+    0 6px 16px var(--menu-shadow);
+  z-index: 100;
+}
+
+.view {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--band, 0px);
+  bottom: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 42%, var(--room-centre) 0%, var(--room-middle) 58%, var(--room-edge) 100%);
+  --s: 1;
+}
+
+/* Table units are CSS pixels, scaled and placed by view.ts. */
+.space,
+.space-top {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1536px;
+  height: 1024px;
+  transform-origin: 0 0;
+}
+
+.space-top {
+  z-index: 80;
+  pointer-events: none;
+}
+
+.space-top > * {
+  pointer-events: auto;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.table-top {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1536px;
+  height: 1024px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.wood {
+  position: absolute;
+  left: 258px;
+  top: 2px;
+  width: 1020px;
+  height: 1020px;
+  border-radius: 50%;
+  background: var(--wood-texture) center / 100% 100% no-repeat, var(--wood-base);
+  box-shadow:
+    0 0 70px var(--table-shadow),
+    inset 0 0 0 2px var(--wood-dark),
+    inset 0 0 0 4px var(--wood-highlight),
+    inset 0 0 22px var(--wood-inner-shadow);
+}
+
+.felt {
+  position: absolute;
+  left: 328px;
+  top: 72px;
+  width: 880px;
+  height: 880px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--felt-vignette-light) 0%, rgba(0, 0, 0, 0) 45%, var(--felt-vignette-dark) 100%),
+    var(--felt-texture) center / 100% 100% no-repeat,
+    var(--felt-base);
+  box-shadow:
+    0 0 0 9px var(--bead-inner),
+    0 0 0 11px var(--bead-middle),
+    0 0 0 13px var(--wood-dark),
+    inset 0 0 60px var(--felt-inner-shadow-wide),
+    inset 0 0 18px var(--felt-inner-shadow-near);
+}
+
+.felt-line {
+  position: absolute;
+  inset: 24px;
+  border: 1.5px solid var(--felt-line);
+  border-radius: 50%;
+}
+
+/* The round logo, drawn in a frame 215 / 0.9 across at 0.9, as the desktop draws it. */
+.medal {
+  position: absolute;
+  left: 768px;
+  top: 512px;
+  width: calc(215px / 0.9);
+  height: calc(215px / 0.9);
+  transform: translate(-50%, -50%) scale(0.9);
+  border-radius: 50%;
+  border: 2px solid var(--logo-border);
+  background: radial-gradient(ellipse at 50% 40%, var(--logo-centre) 0%, var(--logo-middle) 70%, var(--logo-edge) 100%);
+  box-shadow:
+    inset 0 0 0 3px var(--panel-inner-shadow),
+    inset 0 0 0 4px var(--panel-inner-line),
+    0 12px 26px var(--panel-shadow);
+  display: grid;
+  place-items: center;
+}
+
+.medal::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--logo-inner-line);
+  border-radius: 50%;
+}
+
+.medal-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: scale(var(--fit, 1));
+  color: var(--logo-ornament);
+}
+
+.medal-stack svg {
+  display: block;
+  width: 120px;
+  height: 12px;
+  overflow: visible;
+}
+
+.medal-letters {
+  font-family: var(--f-logo);
+  font-weight: 700;
+  font-size: 37px;
+  line-height: 37px;
+  letter-spacing: 0.37px;
+  text-align: center;
+  white-space: nowrap;
+  background: linear-gradient(180deg, var(--logo-text-top) 0%, var(--logo-text-middle) 48%, var(--logo-text-bottom) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 var(--logo-text-shadow));
+}

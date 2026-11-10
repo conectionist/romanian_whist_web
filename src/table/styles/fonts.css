@@ -1,0 +1,40 @@
+/* The desktop client's three families, as WOFF2 files this server serves, with their licences. */
+@font-face {
+  font-family: "Belleza";
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/belleza/Belleza-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Alegreya Sans";
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/alegreya-sans/AlegreyaSans-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Alegreya Sans";
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/alegreya-sans/AlegreyaSans-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Alegreya Sans";
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/alegreya-sans/AlegreyaSans-Bold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Cinzel Decorative";
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/cinzel-decorative/CinzelDecorative-Bold.woff2") format("woff2");
+}

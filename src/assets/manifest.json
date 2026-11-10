@@ -1,0 +1,90 @@
+{
+  "desktopCommit": "5757811869ce54931b2c64fb2731550620c09146",
+  "cards": {
+    "3C": "/cards/3C.webp",
+    "3D": "/cards/3D.webp",
+    "3H": "/cards/3H.webp",
+    "3S": "/cards/3S.webp",
+    "4C": "/cards/4C.webp",
+    "4D": "/cards/4D.webp",
+    "4H": "/cards/4H.webp",
+    "4S": "/cards/4S.webp",
+    "5C": "/cards/5C.webp",
+    "5D": "/cards/5D.webp",
+    "5H": "/cards/5H.webp",
+    "5S": "/cards/5S.webp",
+    "6C": "/cards/6C.webp",
+    "6D": "/cards/6D.webp",
+    "6H": "/cards/6H.webp",
+    "6S": "/cards/6S.webp",
+    "7C": "/cards/7C.webp",
+    "7D": "/cards/7D.webp",
+    "7H": "/cards/7H.webp",
+    "7S": "/cards/7S.webp",
+    "8C": "/cards/8C.webp",
+    "8D": "/cards/8D.webp",
+    "8H": "/cards/8H.webp",
+    "8S": "/cards/8S.webp",
+    "9C": "/cards/9C.webp",
+    "9D": "/cards/9D.webp",
+    "9H": "/cards/9H.webp",
+    "9S": "/cards/9S.webp",
+    "TC": "/cards/TC.webp",
+    "TD": "/cards/TD.webp",
+    "TH": "/cards/TH.webp",
+    "TS": "/cards/TS.webp",
+    "JC": "/cards/JC.webp",
+    "JD": "/cards/JD.webp",
+    "JH": "/cards/JH.webp",
+    "JS": "/cards/JS.webp",
+    "QC": "/cards/QC.webp",
+    "QD": "/cards/QD.webp",
+    "QH": "/cards/QH.webp",
+    "QS": "/cards/QS.webp",
+    "KC": "/cards/KC.webp",
+    "KD": "/cards/KD.webp",
+    "KH": "/cards/KH.webp",
+    "KS": "/cards/KS.webp",
+    "AC": "/cards/AC.webp",
+    "AD": "/cards/AD.webp",
+    "AH": "/cards/AH.webp",
+    "AS": "/cards/AS.webp"
+  },
+  "back": "/cards/back.svg",
+  "portraits": {
+    "man-dark-hair-beard": "/portraits/man-dark-hair-beard.svg",
+    "man-hat-mustache": "/portraits/man-hat-mustache.svg",
+    "woman-long-brown-hair": "/portraits/woman-long-brown-hair.svg",
+    "man-white-hair-hat": "/portraits/man-white-hair-hat.svg",
+    "woman-long-red-hair": "/portraits/woman-long-red-hair.svg",
+    "man-black-hair-beard": "/portraits/man-black-hair-beard.svg",
+    "man-stubble": "/portraits/man-stubble.webp",
+    "man-short-hair": "/portraits/man-short-hair.webp",
+    "woman-long-dark-hair": "/portraits/woman-long-dark-hair.webp",
+    "woman-shoulder-hair": "/portraits/woman-shoulder-hair.webp",
+    "cyborg-man-bald": "/portraits/cyborg-man-bald.webp",
+    "cyborg-man-half": "/portraits/cyborg-man-half.webp",
+    "cyborg-man-eye": "/portraits/cyborg-man-eye.webp",
+    "cyborg-woman-eye": "/portraits/cyborg-woman-eye.webp",
+    "man-black-tee": "/portraits/man-black-tee.webp",
+    "woman-wavy-black-hair": "/portraits/woman-wavy-black-hair.webp",
+    "cyborg-man-gold": "/portraits/cyborg-man-gold.webp"
+  },
+  "textures": {
+    "wood": "/table/wood.webp",
+    "felt": "/table/felt.webp"
+  },
+  "fonts": {
+    "Belleza": {
+      "400": "/fonts/belleza/Belleza-Regular.woff2"
+    },
+    "Alegreya Sans": {
+      "400": "/fonts/alegreya-sans/AlegreyaSans-Regular.woff2",
+      "500": "/fonts/alegreya-sans/AlegreyaSans-Medium.woff2",
+      "700": "/fonts/alegreya-sans/AlegreyaSans-Bold.woff2"
+    },
+    "Cinzel Decorative": {
+      "700": "/fonts/cinzel-decorative/CinzelDecorative-Bold.woff2"
+    }
+  }
+}

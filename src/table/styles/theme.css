@@ -1,0 +1,146 @@
+/* The desktop client's table palette, src/paint/Theme.cpp tablePalette(): one dark look. */
+:root {
+  color-scheme: dark;
+
+  --room-centre: #3b2414;
+  --room-middle: #1c110a;
+  --room-edge: #0b0704;
+
+  --wood-base: #5a331a;
+  --felt-base: #1d5a3a;
+
+  --panel-top: rgba(40, 29, 19, 0.95);
+  --panel-bottom: rgba(19, 13, 8, 0.95);
+  --panel-border: #806137;
+  --panel-inner-shadow: rgba(18, 12, 7, 0.9);
+  --panel-inner-line: rgba(201, 164, 92, 0.3);
+  --panel-shadow: rgba(0, 0, 0, 0.55);
+
+  --gold: #c9a45c;
+  --gold-bright: #f2d38c;
+  --cream: #f1e6cc;
+  --muted: #bba783;
+
+  --good: #86c98f;
+  --warn: #e6b95c;
+  --bad: #e5806d;
+
+  --red-suit: #e0524a;
+  --black-suit: var(--cream);
+
+  --button-top: #2a6142;
+  --button-bottom: #17402a;
+  --button-border: #a3824a;
+
+  --wood-dark: #2a160a;
+  --wood-highlight: rgba(255, 210, 150, 0.12);
+  --bead-inner: #3b210f;
+  --bead-middle: #7a4c27;
+
+  --felt-vignette-light: rgba(255, 255, 255, 0.07);
+  --felt-vignette-dark: rgba(0, 0, 0, 0.38);
+  --felt-line: rgba(201, 164, 92, 0.2);
+
+  --table-shadow: rgba(0, 0, 0, 0.75);
+  --wood-inner-shadow: rgba(0, 0, 0, 0.5);
+  --felt-inner-shadow-wide: rgba(0, 0, 0, 0.55);
+  --felt-inner-shadow-near: rgba(0, 0, 0, 0.45);
+
+  --logo-centre: var(--button-top);
+  --logo-middle: var(--button-bottom);
+  --logo-edge: #0f2c1d;
+  --logo-border: #b8924a;
+  --logo-inner-line: rgba(232, 200, 130, 0.55);
+  --logo-text-top: #fbe7b2;
+  --logo-text-middle: #e2b866;
+  --logo-text-bottom: #a77a35;
+  --logo-text-shadow: rgba(0, 0, 0, 0.55);
+  --logo-ornament: #d9b46a;
+
+  --active-glow: rgba(242, 211, 140, 0.5);
+  --pill-border: rgba(201, 164, 92, 0.4);
+  /* Under every portrait: the dark its vignette fades to. */
+  --portrait-edge: #17100a;
+
+  --menu-top: #2e1c10;
+  --menu-bottom: #1a1009;
+  --menu-glint: rgba(201, 164, 92, 0.22);
+  --menu-shadow: rgba(0, 0, 0, 0.45);
+
+  /* A line's height is the face's own spacing, as the desktop measures it: ascent plus descent. The
+     browser would round each of them to whole pixels. */
+  --lh-body: 1.2;
+  --lh-head: 1.152;
+
+  --f-logo: "Cinzel Decorative", "Cinzel", Georgia, serif;
+  --f-head: "Belleza", "Cinzel", Georgia, serif;
+  --f-body: "Alegreya Sans", "Gill Sans", "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--room-edge);
+  color: var(--cream);
+  font-family: var(--f-body);
+  -webkit-user-select: none;
+  user-select: none;
+  /* A suit is a letter-like glyph in its suit's colour, never a coloured emoji. */
+  font-variant-emoji: text;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:root {
+  /* The racks, src/table/RackItem.cpp. */
+  --rack-shadow: rgba(0, 0, 0, 0.55);
+  --rack-card-light: rgba(255, 240, 210, 0.16);
+  --rack-card-dark: rgba(0, 0, 0, 0.3);
+  --rack-card-edge: rgba(0, 0, 0, 0.25);
+  --rail-base: #6b3d1f;
+  --rail-light: rgba(255, 220, 170, 0.35);
+  --rail-dark: rgba(0, 0, 0, 0.45);
+  --rail-edge: rgba(30, 14, 4, 0.6);
+  --rail-shadow: rgba(0, 0, 0, 0.6);
+}
+
+:root {
+  /* Cards on the felt and in your hand, src/paint/CardShadow.cpp. */
+  --played-shadow: rgba(0, 0, 0, 0.45);
+  --winning-shadow: rgba(0, 0, 0, 0.5);
+  --winning-glow: rgba(242, 211, 140, 0.55);
+  --held-shadow: rgba(0, 0, 0, 0.45);
+  --raised-shadow: rgba(0, 0, 0, 0.5);
+  --raised-glow: rgba(242, 211, 140, 0.7);
+  --lead-mark-outline: rgba(60, 40, 10, 0.5);
+  --lead-mark-glow: rgba(242, 211, 140, 0.8);
+}
+
+:root {
+  /* The corner panels, src/paint/Theme.cpp. */
+  --panel-inner-line-hover: rgba(242, 211, 140, 0.6);
+  --button-glow: rgba(242, 211, 140, 0.25);
+  --hud-rule: rgba(201, 164, 92, 0.25);
+  --trump-shadow: rgba(0, 0, 0, 0.55);
+}
+
+:root {
+  /* The bid strip and the bubbles, src/paint/Theme.cpp. */
+  --bid-shadow: rgba(0, 0, 0, 0.45);
+  --bid-glow: rgba(242, 211, 140, 0.5);
+  --bid-disabled-fill: #2a211a;
+  --bid-disabled-text: #6d604d;
+  --bid-disabled-border: #4d3d28;
+  --bubble-text: #2a1a0a;
+  --bubble-shadow: rgba(0, 0, 0, 0.5);
+}

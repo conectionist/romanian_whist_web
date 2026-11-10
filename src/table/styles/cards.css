@@ -1,0 +1,100 @@
+/* Cards on the felt, src/table/CardItem.cpp and CardShadow.cpp: each casts one shadow, and the
+   trick's winner a deeper one inside a bright ring. */
+.trick {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.card {
+  position: absolute;
+}
+
+.card .face {
+  width: 100%;
+  height: 100%;
+  border-radius: 7px;
+}
+
+.card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.card.played .face {
+  box-shadow: 0 6px 14px var(--played-shadow);
+}
+
+/* The winner rises toward its own top, with its shadow, glow and ring. The ring is filled through,
+   under the art, so where the art's corners are rounder than the ring's the gold shows in them. */
+.card.winning .face {
+  transform: translateY(-8px);
+  background: var(--gold-bright);
+  box-shadow:
+    0 0 0 2px var(--gold-bright),
+    0 0 26px var(--winning-glow),
+    0 16px 24px var(--winning-shadow);
+}
+
+.card.held .face {
+  border-radius: 8px;
+  box-shadow: -3px 4px 10px var(--held-shadow);
+}
+
+.card.raised .face,
+.hcard.playable:hover .face {
+  border-radius: 8px;
+  transform: translateY(-30px);
+  background: var(--gold-bright);
+  box-shadow:
+    0 0 0 2px var(--gold-bright),
+    0 0 22px var(--raised-glow),
+    0 14px 22px var(--raised-shadow);
+}
+
+/* Your hand: each card is a button resting in place. Only a playable card under the cursor rises,
+   and it does not move there: it is up at once. */
+.hand {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.hcard {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  pointer-events: auto;
+}
+
+.hcard.playable {
+  cursor: pointer;
+}
+
+.hcard.illegal {
+  cursor: not-allowed;
+}
+
+/* A card that cannot be played is darkened and dulled, and still shown. */
+.card.dimmed .face {
+  filter: brightness(0.55) saturate(0.55);
+}
+
+/* The lead mark, src/table/LeadMarkItem.cpp: 11 by 11 with a 1 px outline and a glow. */
+.lead-mark {
+  position: absolute;
+  z-index: 30;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  background: var(--gold-bright);
+  box-shadow:
+    0 0 0 1px var(--lead-mark-outline),
+    0 0 10px var(--lead-mark-glow);
+  pointer-events: none;
+}

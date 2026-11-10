@@ -15,7 +15,7 @@ first deal then is. The sheets, the menus, the lobby and Romanian are not built 
 
 The page is an image for linux/amd64, `ghcr.io/conectionist/romanian_whist_web`: Caddy serving the
 built page with automatic HTTPS, passing `/ws` and `/version` on to a game server, and answering
-a table's link, `/t/` and six letters or digits, with the page. Its tags are `latest` (the newest
+a table's link, `/t/` and six capital letters or digits, with the page. Its tags are `latest` (the newest
 `master`), a release such as `0.1.0` or `0.1`, and `sha-<commit>`.
 
 **Not for the public internet yet.** The server has no limits on connections, tables or message
@@ -27,6 +27,10 @@ rates, which come with its phase 9.
 - **Behind your own Caddy or nginx:** the server serves the page itself, from a volume that this
   image fills. See "Behind your own reverse proxy" in the same README.
 - **Pointed at any server,** below.
+- **Without Docker:** the server serves the built `dist/` as its document root, behind a proxy that
+  holds TLS. See "Deploying without Docker" in
+  [the server's README](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/README.md#deploying-without-docker)
+  and [§12.2 of its plan](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#122-by-hand).
 
 ### The page alone, pointed at a server
 
@@ -88,10 +92,11 @@ Pin both tags in production, and pick two whose labels are equal.
 ### Checking a deployment
 
 `tools/smoke.mjs` checks a running page and plays the first moments of a solo game through it. It
-needs Node 22 or later and no packages, and exits 0 on a pass and 1 otherwise:
+needs Node 22 or later and no packages, but also the server's submodule, whose smoke test it uses.
+It exits 0 on a pass and 1 otherwise:
 
 ```
-node tools/smoke.mjs --url http://127.0.0.1:8000 --profile web --server-commit 21b905d
+node tools/smoke.mjs --url http://127.0.0.1:8000 --profile web --server-commit <commit>
 ```
 
 `--profile` says what the address in front of the page is, and so which headers to expect:

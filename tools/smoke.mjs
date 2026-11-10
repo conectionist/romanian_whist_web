@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Checks a running deployment of the page, and plays the first moments of a solo game through it.
-// Usage and profiles: the README, under Deploying with Docker.
+// Usage and profiles: the README, under Checking a deployment.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -11,7 +11,7 @@ import { smokeGame, waitForPage } from "../libs/romanian_whist_server/tools/smok
 export const PAGE_CSP =
   "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
-// What sends the policy besides the server's own code: the image's Caddyfile and the proxy examples.
+// Every place that sends the policy: the image's Caddyfile and the server's two proxy examples.
 const CSP_FILES = [
   "deploy/Caddyfile",
   "libs/romanian_whist_server/deploy/examples/whist.caddy",

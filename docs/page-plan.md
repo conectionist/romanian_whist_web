@@ -431,7 +431,7 @@ checkout of the server beside this one.
   because TypeScript 7 ships a glibc binary only, and serves `dist/` from `caddy:2.11.9-alpine`
   with `deploy/Caddyfile`. The Linux job and the owner's machine stay on Node 24, where the
   lockfile is made.
-  - **Caddyfile.** It serves the page, hides dotfiles, answers `/t/` and six letters or digits with
+  - **Caddyfile.** It serves the page, hides dotfiles, answers `/t/` and six capital letters or digits with
     `index.html`, and passes `/ws` and `/version` to `WHIST_SERVER_ADDRESS`. It sends the
     content-security-policy, `nosniff` and the referrer policy on every answer, errors included,
     and the caching rules on successful ones only: `immutable` under `/assets/`, `no-cache` for

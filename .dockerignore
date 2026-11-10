@@ -1,7 +1,8 @@
 .git
 **/.git
 .github
-.env
+**/.env*
+**/.npmrc
 .cache
 .vscode
 .idea
@@ -20,4 +21,3 @@ tools/*
 *.md
 compose.yaml
 deploy/docker-compose.yml
-deploy/.env*

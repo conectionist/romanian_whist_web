@@ -343,7 +343,7 @@ sets the rules. The page's share:
 - The token is kept in the browser's storage and sent only in `hello`, never in a URL or a log.
 - **The footer** links "Source" to the server at the commit `GET /version` gives, and to this
   repository at the commit the page was built from, which the build writes into the page. In the
-  image, that commit comes from a build argument, since the build context has no `.git`. The
+  image, that commit will come from a build argument, since the build context has no `.git`. The
   AGPL's section 13 needs both (the server plan's
   [§12](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#12-deployment-and-operations)).
 - **An About page** says what the page keeps: a chosen display name and a random token in the

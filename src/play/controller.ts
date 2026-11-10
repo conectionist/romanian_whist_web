@@ -35,11 +35,12 @@ const REFUSALS: readonly ErrorCode[] = ["illegal", "stalePrompt", "notYourTurn"]
 
 // A click sends the answer and shows it taken before the server has said so: your card moves at once,
 // the server's word that it was played confirms it without moving it again, and an error puts it
-// back. A bid hides the strip the same way. A card stays taken out of your hand until the server's word
-// that it was played, which comes after its prompt is closed.
+// back. A bid hides the strip the same way.
 export class Controller {
   private play: PendingPlay | null = null;
   private bid: PendingBid | null = null;
+  // The blind prompt that is open: its back stays when it closes with no click of yours.
+  private blind: { prompt: number; backs: number } | null = null;
 
   constructor(private readonly deps: ControllerDeps) {}
 
@@ -93,14 +94,22 @@ export class Controller {
         // Whatever was answered is over: the sync says what is open now.
         this.play = null;
         this.bid = null;
+        this.blind = null;
         break;
       case "promptClosed":
         if (this.bid?.prompt === message.id) {
           this.bid = null;
         }
-        // Taken by you, the card is still on its way; the timer ran out, and another card played.
-        if (this.play?.prompt === message.id && message.by === "computer") {
+        // Your card stays out of the hand until your seat's cardPlayed. When the computer answered
+        // for you, a card you clicked is not the one played: call it back. A blind back stays
+        // whoever closed the prompt, since the snapshot has no hand to draw it from.
+        if (this.play?.prompt === message.id && message.by === "computer" && this.play.card !== null) {
           this.drop();
+        } else if (this.play === null && this.blind?.prompt === message.id) {
+          this.play = { prompt: message.id, card: null, backs: this.blind.backs };
+        }
+        if (this.blind?.prompt === message.id) {
+          this.blind = null;
         }
         break;
       case "game":
@@ -132,6 +141,10 @@ export class Controller {
       default:
         break;
     }
+    const open = this.deps.store.state.prompt?.body;
+    if (open?.kind === "play" && open.hand === undefined) {
+      this.blind = { prompt: open.id, backs: open.handSize ?? 0 };
+    }
   }
 
   // Forgets what was answered, and calls back a card that went early without being taken.
@@ -141,6 +154,7 @@ export class Controller {
     }
     this.play = null;
     this.bid = null;
+    this.blind = null;
   }
 
   // The table as it is while an answer waits to be taken: the card played has left your hand, and

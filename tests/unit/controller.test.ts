@@ -18,9 +18,13 @@ function syncFor(name: string, change: (state: any) => void = () => undefined): 
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "../../libs/romanian_whist_server/protocol/fixtures");
 
-// A game message with this event, over table 4's snapshot, which is this viewer's own.
-function gameMessage(event: object): ServerMessage {
+// A game message with this event, over table 4's snapshot, which is this viewer's own. In a blind
+// round that snapshot holds no hand of yours.
+function gameMessage(event: object, blind = false): ServerMessage {
   const snapshot = JSON.parse(readFileSync(join(LOOK, "table-4-players.json"), "utf8")).state.snapshot;
+  if (blind) {
+    delete snapshot.seats[0].hand;
+  }
   return decode(JSON.stringify({ type: "game", seq: 9, game: 1, event, snapshot }));
 }
 
@@ -29,9 +33,16 @@ function closedTable(): ServerMessage {
   return decode(JSON.stringify({ ...message, state: "closed" }));
 }
 
+// A blind round's prompt over table 4: one card, which you are not shown.
+function makeBlind(state: any): void {
+  state.prompt = { id: 24, kind: "play", deadline: null, handSize: 1, legal: [0], blind: true };
+  delete state.snapshot.seats[0].hand;
+}
+
 function setup(name: string, change?: (state: any) => void, accepts = true) {
   const store = new Store();
-  store.apply(syncFor(name, change), 0);
+  const first = syncFor(name, change);
+  store.apply(first, 0);
   const sent: ClientMessage[] = [];
   const played: string[] = [];
   const recalled: string[] = [];
@@ -49,11 +60,12 @@ function setup(name: string, change?: (state: any) => void, accepts = true) {
       redraws += 1;
     },
   });
-  // The queue tells the controller what it applies, then the store has it.
+  // The queue has the store apply a message, then tells the controller.
   const apply = (message: ServerMessage) => {
     store.apply(message, 0);
     controller.onApply(message, NO_CHANGE);
   };
+  controller.onApply(first, NO_CHANGE);
   return { store, controller, sent, played, recalled, apply, redraws: () => redraws };
 }
 
@@ -209,9 +221,7 @@ describe("a click on your hand", () => {
   });
 
   it("plays a blind card without showing it, and keeps its back until the snapshot takes it", () => {
-    const run = setup("table-4-players", (state) => {
-      state.prompt = { id: 24, kind: "play", deadline: null, handSize: 1, legal: [0], blind: true };
-    });
+    const run = setup("table-4-players", makeBlind);
     run.controller.onPlay(0);
     expect(run.sent).toEqual([{ type: "play", prompt: 24, index: 0 }]);
     expect(run.played).toEqual([]);
@@ -219,8 +229,54 @@ describe("a click on your hand", () => {
     // Its prompt closing takes the hand from the snapshot, which has none to show; the back stays.
     run.apply({ type: "promptClosed", seq: 1, id: 24, by: "you" });
     expect(run.controller.adjust(modelOf(run.store.state))?.hand).toEqual({ entries: [], backs: 1, positions: [0], playable: false });
-    run.apply(gameMessage({ kind: "cardPlayed", seat: 0, card: "KC" }));
+    run.apply(gameMessage({ kind: "cardPlayed", seat: 0, card: "KC" }, true));
+    expect(run.controller.pendingPlay).toBeNull();
     expect(run.controller.adjust(modelOf(run.store.state))?.hand.backs).toBe(0);
+  });
+
+  it("keeps a blind back when the computer closes the prompt after your click", () => {
+    const run = setup("table-4-players", makeBlind);
+    run.controller.onPlay(0);
+    run.apply({ type: "promptClosed", seq: 1, id: 24, by: "computer" });
+    expect(run.controller.pendingPlay).toEqual({ prompt: 24, card: null, backs: 1 });
+    expect(run.controller.adjust(modelOf(run.store.state))?.hand).toEqual({ entries: [], backs: 1, positions: [0], playable: false });
+    run.apply(gameMessage({ kind: "cardPlayed", seat: 0, card: "KC" }, true));
+    expect(run.controller.pendingPlay).toBeNull();
+    expect(run.controller.adjust(modelOf(run.store.state))?.hand.backs).toBe(0);
+  });
+
+  it("keeps a blind back when the computer closes the prompt with no click, until your card is played", () => {
+    const run = setup("table-4-players", makeBlind);
+    run.apply({ type: "promptClosed", seq: 1, id: 24, by: "computer" });
+    expect(run.controller.adjust(modelOf(run.store.state))?.hand).toEqual({ entries: [], backs: 1, positions: [0], playable: false });
+    run.apply(gameMessage({ kind: "cardPlayed", seat: 0, card: "KC" }, true));
+    expect(run.controller.pendingPlay).toBeNull();
+    expect(run.controller.adjust(modelOf(run.store.state))?.hand.backs).toBe(0);
+  });
+
+  it("keeps the back of a blind prompt that arrives after the first sync", () => {
+    const run = setup("table-4-players", (state) => {
+      makeBlind(state);
+      state.prompt = null;
+    });
+    run.apply(decode(JSON.stringify({ type: "prompt", seq: 1, id: 24, kind: "play", deadline: null, handSize: 1, legal: [0], blind: true })));
+    run.apply({ type: "promptClosed", seq: 2, id: 24, by: "computer" });
+    expect(run.controller.adjust(modelOf(run.store.state))?.hand.backs).toBe(1);
+  });
+
+  it("lets go of a blind back the game ends over", () => {
+    const run = setup("table-4-players", makeBlind);
+    run.apply({ type: "promptClosed", seq: 1, id: 24, by: "computer" });
+    run.apply(gameMessage({ kind: "gameStopped" }, true));
+    expect(run.controller.pendingPlay).toBeNull();
+  });
+
+  it("holds no back for a prompt that showed a hand, or one that was never open", () => {
+    const run = setup("table-4-players");
+    run.apply({ type: "promptClosed", seq: 1, id: 23, by: "computer" });
+    expect(run.controller.pendingPlay).toBeNull();
+    run.apply({ type: "promptClosed", seq: 2, id: 99, by: "computer" });
+    expect(run.controller.pendingPlay).toBeNull();
   });
 });
 

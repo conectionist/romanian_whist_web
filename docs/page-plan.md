@@ -1,6 +1,8 @@
 # Romanian Whist in the browser: the page's implementation plan
 
-> **Status: phase 1's echo page is built. The page proper, phases 6 to 8, is not.**
+> **Status: phase 1's echo page is built, and so is phase 6, the table page, which draws the table and
+> plays a solo game against the server (PR #3); the owner has not approved it yet. The rest of the
+> page, phases 7 and 8, is not built.**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the
@@ -458,6 +460,222 @@ After the server's phase 3, the page can be built against fixtures while the ser
   - no difference from the desktop client remains that the browser does not force or the owner
     has not accepted;
   - the owner approves.
+
+**Outcome** (branch `web/phase-6-table-page`, PR #3, parent `ccr-209c0806-o444sp`, the last commit
+of code `e2eef2e`):
+
+- **The branch.**
+  - **The commits,** in the plan's order:
+    - the server's fixtures and the parent's name: `9758235` (the submodule moves to `a656cde`, the
+      merge of the server's fixture tool), `c962784`;
+    - the protocol `b18943f`, the art `2d31580`, `t()` `db62000`, the geometry `362f54f`, the store
+      and the table model `031b223`;
+    - the table: the room and the felt `4e50382`, the name panels `9517968`, the racks `d49aa8d`,
+      the played cards and the lead mark `4bd9a3e`, your hand `2d09f21`, the scoreboard, the trick
+      panel and the corner buttons `ae1d1fa`, the bid strip and the bubbles `928a1bb`;
+    - the playback queue and the motion `a4e12e8`, the solo game against the server `0291ba5`, the
+      docs `13a0d8d`, the look page in CI `d63c560`;
+    - the comparison with the desktop's pictures: the scoreboard `17a5ef3`, the trick panel
+      `20b3ec1`, the racks `7908bd2`;
+    - the first review's fixes: `9c9ea6d`, `6483b2b`, `64184a1`, `e1084f8`, `ee038cb`, `6de5ef3`,
+      `ed5075f`, and two the work itself called for, `30aad2e` and `cb5304e`;
+    - the second review's fixes: `57a0302`, `d19e162`, `4334fe5`, `e2eef2e`.
+  - **The PR** is against the parent, never `master`. The server stays on its own parent branch,
+    `ccr-c8ac042f-e6e18n`, and the submodule is at `a656cde`.
+- **The owner's choices.** The plan's fifteen questions, all at their defaults:
+  - Q1 the branch names; Q2 the reference pictures (below); Q3 a 46 px menu band with no items in the
+    window shots; Q4 the corner buttons draw and do nothing; Q5 `?solo=N[&seed=S]` until the page
+    has a New Game; Q6 no countdown ring and no presence on the name panels yet;
+  - Q7 the WebP gap recorded, and `webp` to be added to the server's `setFileTypes` before phase 7;
+    Q8 WebP cards at 310x450, not the desktop's SVGs; Q9 WOFF2 fonts; Q10 the look page built apart
+    into `dist-look/`; Q11 `prefers-reduced-motion` reads as Off; Q12 the server plan's tick on a
+    docs-only branch after approval; Q13 the desktop commit `5757811`; Q14 D5, D14 and D18 as they
+    stand; Q15 the comparisons linked by absolute path;
+  - after the first cold review: fix 1 to 8 and 11, skip 9 and 10 and record 10 as a departure, and
+    give the fixes a second cold review;
+  - after the second: fix all nine, and the helper comment in the controller's test that the
+    re-check found backwards; no third review.
+- **Built.**
+  - **The server's fixtures.** The submodule is at `a656cde`. CI checks it out, not recursively, and
+    builds the look page.
+  - **The protocol.** Types and a strict decoder: a `DecodeError` names the field. It is tested
+    against every file in `protocol/fixtures/` and every look fixture's state.
+  - **The art.** `tools/import_assets.py` takes the desktop's cards, portraits, table textures and
+    fonts at `5757811` into `public/`, as WebP, WOFF2 with each OFL licence and an SVG card back,
+    and writes a manifest. The first load is 457 KiB for the empty table and about 700 KiB with a
+    game. The importer's worst case is 945 KiB of its 2 MiB.
+  - **`t()`,** English only, with the desktop's contexts and sentences, one-pass `%n` substitution,
+    and the gendered sentences about people.
+  - **The geometry,** ported from the desktop and tested against its numbers: the stage and its fit,
+    the seat layout, the projective racks (`QTransform::quadToQuad` written out, handed to CSS as
+    `matrix3d`), the hand's fan, the trick and the lead mark, the card order.
+  - **The store and the table model.** The store is applied as pure functions. The model has the shape
+    of the desktop's `GameSnapshot`.
+  - **The table.** The room, the rim, the felt and the round logo; the name panels; the racks; the
+    played cards and the lead mark; your hand; the scoreboard, the trick panel and the corner
+    buttons; the bid strip and the bubbles. Every element is made once and updated in place, keyed by
+    seat and by card.
+  - **Motion.** One playback queue. A card flies from its panel, or from your fan; a full trick is
+    swept to its winner; bubbles are said and never waited for. More than four waiting messages catch
+    up with no animation. Off, a background tab and `prefers-reduced-motion` animate nothing.
+  - **A solo game against the server.**
+    - The connection backs off, keeps its token, drops a token the server cannot read and asks once
+      without it.
+    - A click sends the answer and shows it taken at once: your card leaves the fan and flies, and an
+      error puts it back. The answer stays taken until the server says the card was played, and is
+      forgotten when the game ends, stops, starts again or its table closes.
+    - A blind card keeps its back until the server's word and then flies from the middle back, at the
+      fan's size.
+    - `/?solo=N` starts a game with the desktop screenshot tool's players, at the desktop's default
+      speed. `&seed=S`, `&speed=0` to `4` and `&forehead=all` change the deal, the computer players'
+      speed, and make the first deal blind.
+  - **The look tool.** `npm run look` renders the nine fixtures at the desktop's own sizes with no
+    server, and `npm run compare` pairs them with the desktop's pictures.
+- **The reference pictures.** The container cannot build the desktop (no Qt 6.7), and the owner had
+  no Qt machine at hand. The nine pictures were taken by the desktop's own `"[.screenshot]"` tool on
+  GitHub CI (ubuntu-latest, Qt 6.10.3, the `default` preset, offscreen) at desktop `5757811` plus a
+  commit that only changes the workflow, on the desktop's throwaway branch `ccr-209c0806-o444sp`.
+  The desktop's `src/` and `resources/` are the same as at `5757811`. The pictures are kept in
+  `build/shots/desktop/`, which is git-ignored, and the README has the steps.
+- **The comparisons.** Mean absolute difference of each capture from the desktop's picture, 0 to
+  255, before and after the three comparison commits (the scoreboard's lines, black suits, the rack
+  cards). They are the same after both rounds of fixes.
+
+  | Shot | Before | After |
+  |---|---|---|
+  | `table-3-players` | 1.93 | 1.73 |
+  | `table-4-players` | 2.32 | 1.93 |
+  | `table-5-players` | 2.18 | 1.72 |
+  | `table-6-players` | 2.66 | 2.04 |
+  | `bidding` | 2.02 | 1.51 |
+  | `table-empty` | 0.74 | 0.74 |
+  | `hand-1-card` | 1.85 | 1.55 |
+  | `hand-4-cards` | 1.93 | 1.52 |
+  | `hand-8-cards` | 2.06 | 1.73 |
+
+  Every element lands on the same whole pixel as the desktop's: a shift search finds none. The room,
+  the felt and the rim agree to within a level or two, and the portraits and the lead mark to within
+  half a pixel. Two runs of the look tool can differ by a few hundred pixels in one picture, in the
+  logo's lettering, and not in the same picture twice; the means do not change. What remains:
+
+  | Difference | Cause |
+  |---|---|
+  | The menu band has no items | **Accepted** (Q3) |
+  | Card faces are slightly softer and thin lines less crisp; this is most of what remains, and court cards show it most | **Accepted** (Q8): WebP at 310x450 against the desktop's vector SVG drawn at the exact size |
+  | Suit glyphs in the trick panel come from the system's fallback font and differ in shape and width | **Browser-forced** |
+  | Panel and button hairlines straddle two device rows where the desktop's are crisp: the table is scaled by CSS, and the browser puts a box on a whole local pixel before scaling it | **Browser-forced** |
+  | Text lines sit up to a pixel from the desktop's, in the scoreboard's three header lines and the trick panel's title and rows: Qt puts a baseline on a whole device pixel | **Browser-forced** |
+  | Wood grain and felt mottling are sampled slightly differently | **Browser-forced** |
+  | Scoreboard column spacing when a panel is wider than its columns: the extra width is shared equally, not in proportion; no difference shows in the nine shots | **Browser-forced** (CSS grid) |
+
+- **Where the build departs from the plan, or found what it did not say:**
+  - **The server answers 404, not 403, for `.webp`** (Q7). Cards, portraits and the table's
+    textures do not load from `whist_server` until it serves WebP. The page and every test still
+    work; `npm run dev` shows the pictures. **`webp` must be added to the server's `setFileTypes`
+    before phase 7.**
+  - **The racks copy the desktop's pictures, not its source.** The desktop renders every rack card a
+    quarter darker than the mock-up's CSS does, though its source paints only a 1 px hairline in that
+    black. It was measured: a uniform 0.75 on every channel, in all four racks, at both ends of the
+    card. The page reproduces what the desktop's pictures show. If the owner takes it for a desktop
+    bug, the fix is one CSS layer in `rack.css` here and a change in `RackItem.cpp` there.
+  - **The trick panel rebuilds its row and run elements with `replaceChildren` when their text
+    changes** (the first review's 10), where §6 asks for elements made once and updated in place.
+    They are a few small elements, rebuilt only on a change of text; left as they are.
+  - **Hooks the plan did not name:**
+    - `data-slot` on hand cards, for the tests;
+    - `window.look` and `?pace=` on the look page;
+    - `&speed=` and `&forehead=all` on `?solo=N`;
+    - an extra commit, `d63c560`, adds `npm run build:look` to CI, since the script did not exist at
+      the first step.
+  - **`?solo=N` is acted on after a sync with no table,** and the page reads `tableState` as "at a
+    table", since the server answers `createSolo` with one.
+  - **A blind card whose prompt the computer closes** (a turn timer running out, or a replacement)
+    keeps its back until the card is played. Solo allows neither, so only unit tests reach this path,
+    until online tables exist and the page can be tried against one.
+- **Left out:**
+  - **The sheets, the menus, the lobby and Romanian** (phases 7 and 8); New Game, which replaces
+    `?solo=N`; the countdown ring and presence on the name panels (Q6); the corner buttons' sheets
+    (Q4); the menu band's items (Q3).
+  - **The page's own JS, CSS and HTML in the asset budget** (the first review's 9). They add about
+    1 MiB, so nothing is near the limit.
+  - **`storePace`,** which nothing used until a settings sheet exists, and `cardsText`, which the
+    scoreboard says in its own words.
+- **Tests:** 318 unit tests in 23 files, 8 end-to-end tests and 13 look tests.
+  - **Unit:** the protocol against every fixture, the geometry against the desktop's numbers, the
+    queue with a fake stage and clock, the controller with a fake table, the connection with a fake
+    socket and storage.
+  - **End to end,** against `whist_server`:
+    - connect and reload, and a stored token the server cannot read;
+    - 22 decisions reaching the moment `table-4-players.json` shows, then a reload mid-trick;
+    - a game to the end of a round;
+    - your own card in the air the moment you click it;
+    - a blind card keeping its back until the server's word, then flying from the fan at its size;
+    - a game at the default speed with the cards flying, and the table landing where the server says.
+  - **Look:** the nine captures, element reuse, seat-count changes, and a real flight and sweep in
+    Chromium.
+  - **Mutation checks,** each made and reverted:
+    - the redraw at a click with no animation fails the flight check (1 animation expected, 0
+      received);
+    - clearing the answer when its prompt closes fails 3 controller tests;
+    - a blind back that vanishes at the click fails the blind end-to-end test (1 back expected, 0
+      received);
+    - dropping the blind back when the computer closes the prompt fails 1 controller test, and not
+      holding it when there was no click fails 2;
+    - removing the socket guard in the connection's close handler fails 2 connection tests, and the
+      once-only guard on a refused token fails 1.
+  - **Two tests that could not fail** were found by the reviews and made able to: the end-to-end
+    flight count, which counted only at the end, and the connection test of a refused socket closing.
+- **Reviews.**
+  - **The first cold review,** of `7908bd2`, found 11 problems, none above severity 3. It found
+    sound: the decoder, the store, the queue, the connection, the ported geometry (`matrix3d` checked
+    against Qt's source), `t()` and the palette, element reuse, CI, the asset tool and the twelve
+    comparisons.
+    1. Severity 3: your own card never flew, because the redraw at the click cut its flight short.
+    2. Severity 2: the card you played came back into your hand until the server's word.
+    3. Severity 2: a blind card's back vanished at the click, and the card flew small and faint.
+    4. Severity 2: an answer pending at the end of a game was never forgotten.
+    5. Severity 2: a malformed stored token left the page waiting for ever.
+    6. Severity 2: `?solo` played at the top speed, so no computer player's card flew.
+    7. Severity 1: comments about what the page would have later, and one that sent the reader to
+       another function.
+    8. Severity 1: the pairing tool was fixed to phase 6.
+    9. Severity 1: the asset budget leaves out the page's own code. Skipped.
+    10. Severity 1: the trick panel's `replaceChildren`. Skipped, recorded above.
+    11. Severity 1: dead code, and a translated sentence passed back to `t()`.
+
+    The owner chose to fix 1 to 8 and 11, in my order, and to skip 9 and 10. The fixes are `9c9ea6d`
+    (6), `6483b2b` (1), `64184a1` (2, 3 and 4), `e1084f8` (5), `ee038cb` (7), `6de5ef3` (11) and
+    `ed5075f` (8). Two more commits came from the work: `30aad2e`, because a slot taken out of the fan
+    kept its `playable` class once a played card stayed out of the hand until the server's word, which
+    the end-to-end count of playable cards caught; and `cb5304e`, which makes the test of the cards
+    flying play at the default speed and count them.
+  - **The second cold review,** of `7908bd2..cb5304e`, found 9 problems, none above severity 2. It
+    found sound: all nine fixes, every path of a pending answer, the new end-to-end tests able to
+    fail, and the retiring of hand slots with no leak.
+    1. Severity 2: a blind back vanished when the computer closed the prompt. My check agreed, and
+       found the cause wider than the review said: a timer closing the prompt before any click took
+       the back too.
+    2. Severity 2: no test reached a blind round in the page.
+    3. Severity 1: the test of a refused socket closing could not fail.
+    4. Severity 1: a refused token was retried at once with no limit.
+    5. Severity 1: a comment in the controller's test did not match its fixture.
+    6. Severity 1: `cardsText`, `storePace` and the `CornerButton` interface were still unused.
+    7. Severity 1: a comment about what the strip once was.
+    8. Severity 1: the controller's class comment was four lines and said a reason twice.
+    9. Severity 1: the README did not say what `&speed` does.
+
+    My re-check agreed with all nine, 1 and 4 in part, and found a tenth: a helper comment in the
+    controller's test that had the order of the queue and the store backwards. The owner chose to fix
+    all nine and that comment, in my order, and to skip a third cold review. They are fixed in `57a0302` (2), `d19e162`
+    (1, 5, 8 and the helper), `4334fe5` (3 and 4) and `e2eef2e` (6, 7 and 9). The blind end-to-end
+    test found no bug in the page.
+- **Builds and CI.**
+  - **`npm run build` and `npm run build:look`** pass at `e2eef2e`, and the unit, end-to-end and look
+    tests pass: 318, 8 and 13.
+  - **CI** (Build (Linux): `npm ci`, the two builds and the unit tests) is green at `7908bd2`,
+    `cb5304e` and `e2eef2e`. It does not run the end-to-end or the look tests, which need the
+    server's build and a browser.
+  - **The owner has not approved the phase yet.** The heading takes its ✅ when he does.
 
 ### Phase 7: sheets and menus — L
 

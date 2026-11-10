@@ -14,7 +14,9 @@ playwright-report
 blob-report
 libs
 docs
-tools
+# The type declaration of the smoke test, which a unit test imports and tsc checks, stays.
+tools/*
+!tools/smoke.d.mts
 *.md
 compose.yaml
 deploy/docker-compose.yml

@@ -5,8 +5,10 @@ game is played on [the Romanian Whist server](https://github.com/conectionist/ro
 which is a submodule here, in `libs/romanian_whist_server`.
 
 **Status:** the table page. It draws the table from what the server sends, in the desktop client's
-look, and plays a solo game: `/?solo=4` starts one against the computer players (`&seed=42` fixes the
-deal). The sheets, the menus, the lobby and Romanian are not built yet.
+look, and plays a solo game: `/?solo=4` starts one against the computer players. `&seed=42` fixes the
+deal, `&speed=0` to `4` sets how fast they move (2 is the desktop's default, 4 is instant, and then
+their cards do not fly), and `&forehead=all` makes every one-card round a Forehead round, which the
+first deal then is. The sheets, the menus, the lobby and Romanian are not built yet.
 [`docs/page-plan.md`](docs/page-plan.md) is the plan for them.
 
 ## Getting the code

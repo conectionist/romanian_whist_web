@@ -24,11 +24,6 @@ function lastTrickIcon(): SVGSVGElement {
   );
 }
 
-export interface CornerButton {
-  element: HTMLButtonElement;
-  label: string;
-}
-
 function button(label: string, picture: SVGSVGElement, name: string): HTMLButtonElement {
   return el(
     "button",

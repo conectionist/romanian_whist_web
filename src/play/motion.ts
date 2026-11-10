@@ -76,14 +76,6 @@ export function storedPace(): Pace {
   }
 }
 
-export function storePace(pace: Pace): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, pace);
-  } catch {
-    // The choice lasts until the page is closed.
-  }
-}
-
 // A viewer who asks their system for reduced motion gets none: the desktop's Off.
 export function effectivePace(chosen: Pace, prefersReducedMotion: boolean): Pace {
   return prefersReducedMotion ? "off" : chosen;

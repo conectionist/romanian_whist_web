@@ -2,7 +2,8 @@
 
 > **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
 > draws the table and plays a solo game against the server (PR #3). The rest of the page, phases 7
-> and 8, is not built.**
+> and 8, is not built. Outside the phases, the page's Docker image is built, and waits for review
+> ([§14](#14-building-and-running-locally)).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the
@@ -157,12 +158,16 @@ The repository:
 
 ```
 romanian_whist_web/                 AGPL-3.0-or-later, like the server and the engine
-├── libs/romanian_whist_server/     submodule: the server, for its fixtures and the end-to-end tests
+├── libs/romanian_whist_server/     submodule: the server, for its fixtures, the end-to-end tests,
+│                                   its image and the proxy examples
 ├── src/                            TypeScript: net, play, table, sheets, lobby, i18n
 ├── public/                         generated assets (§9), fonts and their licences
-├── tests/                          Vitest (units), Playwright (end to end, screenshots)
-├── tools/                          asset import, translation import, screenshot pairing
+├── tests/                          Vitest (units), Playwright (end to end, the image, screenshots)
+├── tools/                          asset import, translation import, screenshot pairing, smoke.mjs
+├── deploy/                         the image's Caddyfile, and the compose file for the page alone
 ├── docs/                           this plan, and the mock-up
+├── Dockerfile                      the page's image: Caddy serving the built page
+├── compose.yaml                    the page and the server, built from this checkout (§14)
 └── CLAUDE.md                       the owner's machine rules (§14)
 ```
 
@@ -330,12 +335,15 @@ sets the rules. The page's share:
 
 - Player-chosen text goes in only through `textContent`.
 - The page works under the strict Content-Security-Policy the server sends: no inline script, and
-  `connect-src 'self'`.
+  `connect-src 'self'`. Until the server's phase 9 sends it, the policy comes from the image's
+  Caddy, or, behind the user's own proxy, from the server's proxy examples. Every copy is the exact
+  string of `PAGE_CSP` in `tools/smoke.mjs`, which a unit test and the smoke test compare.
 - Every asset is served by the server itself, so the page makes no third-party requests. That is
   also a privacy point.
 - The token is kept in the browser's storage and sent only in `hello`, never in a URL or a log.
 - **The footer** links "Source" to the server at the commit `GET /version` gives, and to this
-  repository at the commit the page was built from, which the build writes into the page. The
+  repository at the commit the page was built from, which the build writes into the page. In the
+  image, that commit comes from a build argument, since the build context has no `.git`. The
   AGPL's section 13 needs both (the server plan's
   [§12](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#12-deployment-and-operations)).
 - **An About page** says what the page keeps: a chosen display name and a random token in the
@@ -415,10 +423,35 @@ checkout of the server beside this one.
   these packages, with an `edgesOut` error, so `package-lock.json` is made with npm 11.
 - **Day to day:** the Vite dev server (port 5173) passes `/ws` through to the server (port 8080).
   Or the server serves `dist/` itself, as it does in production.
-- **CI:** one Linux job, which builds the page and runs its unit tests. End-to-end tests and
-  screenshots run locally, at the end of a phase. From phase 6, which moves the submodule to a
-  server with fixtures, the job checks out the submodule too, without the submodule's own
-  submodules, so that §13.1's tests run.
+- **CI:** the Linux job builds the page and runs its unit tests. End-to-end tests and screenshots
+  run locally, at the end of a phase. From phase 6, which moves the submodule to a server with
+  fixtures, the job checks out the submodule too, without the submodule's own submodules, so that
+  §13.1's tests run. The `docker` job and the `publish` job are below.
+- **Docker.** The page is an image: `Dockerfile` builds it with Node 26 (npm 11) in a Debian stage,
+  because TypeScript 7 ships a glibc binary only, and serves `dist/` from `caddy:2.11.9-alpine`
+  with `deploy/Caddyfile`. The Linux job and the owner's machine stay on Node 24, where the
+  lockfile is made.
+  - **Caddyfile.** It serves the page, hides dotfiles, answers `/t/` and six letters or digits with
+    `index.html`, and passes `/ws` and `/version` to `WHIST_SERVER_ADDRESS`. It sends the
+    content-security-policy, `nosniff` and the referrer policy on every answer, errors included,
+    and the caching rules on successful ones only: `immutable` under `/assets/`, `no-cache` for
+    the page and a table's link, an hour for the rest.
+  - **Compose files.** `deploy/docker-compose.yml` runs the image alone, pointed at any server.
+    The full stack and the setup behind the user's own proxy are the server's repository's
+    compose files, which this repository's CI runs from the submodule. `compose.yaml` builds the
+    server and the page from this checkout: `docker compose build server` first, then
+    `docker compose up --build`, on port 8000.
+  - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
+    page, a table's link, the file types, the policy and caching headers, that an error is never
+    cached for long, and a solo game through `/ws`, using the server's smoke test. A browser
+    check, `playwright.docker.config.ts`, loads the page under the image's policy.
+  - **CI.** The `docker` job builds both images, runs the full stack with our Caddy, the
+    own-proxy setup directly and through the server's Caddy and nginx examples, and the page
+    alone over HTTPS, and holds the page's image to its size budget. The `publish` job pushes the
+    page's image from `master` and version tags, never from a pull request.
+  - **Versioning.** The image's tag is the version in `package.json`; its labels carry the
+    protocol version and the server revision it was tested with. The server's plan has the rest
+    ([§12.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#121-with-docker-recommended)).
 - **Python** 3.12 with Pillow, for the mock-up's build script and the import tools.
 - **Pull requests:** change a PR's title or description with
   `gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -F body=@<file>`. `gh pr edit` fails on the
@@ -680,8 +713,8 @@ of code `e2eef2e`):
 ### Phase 7: sheets and menus — L
 
 - **Work:**
-  - first, the submodule moves to the server's `b6f59c7`, which serves the page's WebP pictures and
-    JSON files;
+  - the submodule has moved to the server's `21b905d` (the Docker image's merge), which serves the
+    page's WebP pictures and JSON files, so this step is done;
   - the reference pictures are the `sheet-*`, `menu` and `language` shots from the same CI run as
     phase 6's (desktop commit `03a3244`, in `shots/` on the desktop's throwaway branch
     `ccr-209c0806-o444sp`). If the desktop's look changes, the workflow there takes them again;

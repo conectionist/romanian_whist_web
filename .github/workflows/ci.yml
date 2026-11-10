@@ -1,15 +1,28 @@
 name: CI
 
-# A pull request is built by its pull_request run, so push builds only master.
+# A pull request is built by its pull_request run, so push builds only master and the version tags.
 on:
   push:
     branches: [master]
+    tags: ['v*.*.*']
     paths-ignore:
       - '**/*.md'
   pull_request:
     paths-ignore:
       - '**/*.md'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the image to ghcr.io, tagged sha-<commit> and with the branch's name
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/conectionist/romanian_whist_web
+  SERVER_IMAGE: ghcr.io/conectionist/romanian_whist_server
 
 # A new push to a PR cancels that PR's older run. Runs on master are never cancelled.
 concurrency:
@@ -40,3 +53,195 @@ jobs:
 
       - name: Test the page
         run: npm test
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.info.outputs.commit }}
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+
+    steps:
+      # Recursive: the server's image is built from the submodule, which needs its own.
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Find the commits and the protocol version
+        id: info
+        run: |
+          echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "server_commit=$(git -C libs/romanian_whist_server rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "server_revision=$(git -C libs/romanian_whist_server rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          protocol=$(sed -n 's/^export const PROTOCOL_VERSION = \([0-9][0-9]*\);.*/\1/p' src/net/protocol.ts)
+          server_protocol=$(sed -n 's/.*protocolVersion = \([0-9][0-9]*\);.*/\1/p' libs/romanian_whist_server/server/core/Protocol.h)
+          test -n "$protocol"
+          test "$protocol" = "$server_protocol"
+          echo "protocol=$protocol" >> "$GITHUB_OUTPUT"
+
+      - name: A tag must be the version in package.json
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(sed -n 's/^  "version": "\([0-9][0-9.]*\)",$/\1/p' package.json)
+          test -n "$version"
+          test "$TAG" = "v$version"
+
+      - uses: docker/setup-buildx-action@v4
+
+      # latest and the version tags come from a push only: a manual run on master or on a tag would
+      # otherwise move them.
+      - name: Name the image's tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false
+          tags: |
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'push' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name == 'push' }}
+            type=ref,event=branch,enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=sha
+          labels: |
+            org.opencontainers.image.title=Romanian Whist page
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
+            io.github.conectionist.whist.protocol=${{ steps.info.outputs.protocol }}
+            io.github.conectionist.whist.server-revision=${{ steps.info.outputs.server_revision }}
+
+      - name: Build the page's image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE }}:ci
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      # A fixed job count keeps the runner from running out of memory.
+      - name: Build the server's image, from the submodule
+        uses: docker/build-push-action@v7
+        with:
+          context: libs/romanian_whist_server
+          load: true
+          tags: ${{ env.SERVER_IMAGE }}:ci
+          build-args: |
+            JOBS=4
+            WHIST_COMMIT=${{ steps.info.outputs.server_commit }}
+          cache-from: type=gha,scope=server
+          cache-to: type=gha,scope=server,mode=max
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Check that every copy of the content-security-policy is the page's
+        run: node tools/smoke.mjs --copies
+
+      # The compose files are the server repository's, from the submodule.
+      - name: The full stack, with our Caddy
+        env:
+          WHIST_DOMAIN: ":80"
+          WHIST_SERVER_TAG: ci
+          WHIST_WEB_TAG: ci
+          SERVER_COMMIT: ${{ steps.info.outputs.server_commit }}
+        run: |
+          compose="docker compose -f libs/romanian_whist_server/deploy/docker-compose.yml"
+          $compose up -d --pull never --wait
+          node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT"
+          npm ci
+          npx playwright install --with-deps chromium
+          WHIST_URL=http://127.0.0.1 npx playwright test --config playwright.docker.config.ts
+          $compose stop
+          test "$(docker inspect -f '{{.State.ExitCode}}' whist-server-1)" = 0
+          $compose down -v
+
+      - name: Behind your own proxy, directly and through the Caddy and nginx examples
+        env:
+          WHIST_SERVER_TAG: ci
+          WHIST_WEB_TAG: ci
+          SERVER_COMMIT: ${{ steps.info.outputs.server_commit }}
+        run: |
+          examples=libs/romanian_whist_server/deploy/examples
+          compose="docker compose -f libs/romanian_whist_server/deploy/docker-compose.own-proxy.yml"
+          $compose up -d --pull never
+          timeout 60 sh -c 'until [ "$(docker inspect -f "{{.State.Health.Status}}" whist-server-1)" = healthy ]; do sleep 1; done'
+          test "$(docker inspect -f '{{.State.ExitCode}}' whist-page-1)" = 0
+          node tools/smoke.mjs --url http://127.0.0.1:8080 --profile server --server-commit "$SERVER_COMMIT"
+
+          printf ':8081 {\n\timport /etc/caddy/whist.caddy\n}\n' > "$RUNNER_TEMP/Caddyfile"
+          docker run -d --name own-caddy --network host \
+              -v "$RUNNER_TEMP/Caddyfile:/etc/caddy/Caddyfile:ro" \
+              -v "$PWD/$examples/whist.caddy:/etc/caddy/whist.caddy:ro" caddy:2.11.9-alpine
+          node tools/smoke.mjs --url http://127.0.0.1:8081 --profile proxy --server-commit "$SERVER_COMMIT"
+
+          printf 'events {}\nhttp {\n    include mime.types;\n    server { listen 8082; include snippets/whist.conf; }\n}\n' > "$RUNNER_TEMP/nginx.conf"
+          docker run -d --name own-nginx --network host \
+              -v "$RUNNER_TEMP/nginx.conf:/etc/nginx/nginx.conf:ro" \
+              -v "$PWD/$examples/nginx/whist.conf:/etc/nginx/snippets/whist.conf:ro" \
+              -v "$PWD/$examples/nginx/whist-headers.conf:/etc/nginx/snippets/whist-headers.conf:ro" \
+              nginx:1.30.6-alpine
+          node tools/smoke.mjs --url http://127.0.0.1:8082 --profile proxy --server-commit "$SERVER_COMMIT"
+
+          docker rm -f own-caddy own-nginx
+          $compose down -v
+
+      # The one place that exercises Caddy's automatic HTTPS, with its own local certificate.
+      - name: The page alone over HTTPS
+        run: |
+          docker run -d --name https-web -e SITE_ADDRESS=localhost -p 8443:443 -p 8081:80 "$IMAGE:ci"
+          timeout 60 sh -c 'until curl -ksf -o /dev/null https://localhost:8443/; do sleep 1; done'
+          test "$(curl -ks -o /dev/null -w '%{http_code}' http://localhost:8081/)" = 308
+          docker rm -f https-web
+
+      # The sum of the layers: the size docker image inspect gives depends on the runner's image store.
+      - name: Check the image's size against its budget
+        run: |
+          bytes=$(docker history --human=false --format '{{.Size}}' "$IMAGE:ci" | awk '{ sum += $1 } END { print sum }')
+          echo "The image is $((bytes / 1000000)) MB, of a budget of 85 MB." | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$bytes" -le 85000000
+
+      - name: The logs
+        if: failure()
+        run: |
+          docker compose -f libs/romanian_whist_server/deploy/docker-compose.yml logs || true
+          docker compose -f libs/romanian_whist_server/deploy/docker-compose.own-proxy.yml logs || true
+          docker logs own-caddy || true
+          docker logs own-nginx || true
+          docker logs https-web || true
+
+  # Only master, a version tag, or a manual run that asks for it. A pull request never publishes.
+  publish:
+    name: Publish the image
+    needs: [build, docker]
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ needs.docker.outputs.tags }}
+          labels: ${{ needs.docker.outputs.labels }}
+          cache-from: type=gha,scope=web

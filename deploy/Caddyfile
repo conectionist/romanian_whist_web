@@ -1,0 +1,55 @@
+(page_headers) {
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+}
+
+# The page, and the game server's WebSocket behind it, on one origin.
+#   SITE_ADDRESS          a domain name gets HTTPS by itself; :80 serves plain HTTP
+#   WHIST_SERVER_ADDRESS  the game server: host:port on the same network, or https://host
+{$SITE_ADDRESS::80} {
+	@server path /ws /version
+	handle @server {
+		reverse_proxy {$WHIST_SERVER_ADDRESS:server:8080} {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	handle {
+		root * /srv
+		# A table's link is the page itself, which reads the code from its address.
+		@table path_regexp ^/t/[A-Z0-9]{6}$
+		rewrite @table /index.html
+		encode zstd gzip
+		file_server {
+			hide .*
+		}
+	}
+
+	import page_headers
+
+	# An error that file_server gives skips the headers above, so they are set again for errors.
+	handle_errors {
+		import page_headers
+	}
+
+	# The caching headers go on successful answers only, so that an error is never cached for long.
+	@hashed path /assets/*
+	header @hashed {
+		Cache-Control "public, max-age=31536000, immutable"
+		match status 2xx 304
+	}
+	@page path / /index.html /t/*
+	header @page {
+		Cache-Control no-cache
+		match status 2xx 304
+	}
+	@other not path /assets/* / /index.html /t/* /ws /version
+	header @other {
+		Cache-Control "public, max-age=3600"
+		match status 2xx 304
+	}
+}

@@ -2,7 +2,7 @@ import { el, svg } from "../dom/el";
 import { t } from "../i18n/t";
 
 // The two buttons in the bottom-left corner, src/table/TableButtonItem.cpp and paint/Icons.cpp. They
-// are drawn as the desktop draws them; a click does nothing until the sheets they open are built.
+// are drawn as the desktop draws them; a click does nothing, since there is no sheet for it to open.
 
 function icon(paths: string[], extra: SVGElement[] = []): SVGSVGElement {
   return svg(

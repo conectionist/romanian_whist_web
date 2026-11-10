@@ -17,7 +17,7 @@ export interface Header {
   calledOut: boolean;
 }
 
-// "6 cards dealt", or "1 card dealt": two strings, for cardsText()'s reason.
+// "6 cards dealt", or "1 card dealt": two strings and not a plural form, so each is a line of a catalogue.
 export function dealtText(trickCount: number): string {
   return trickCount === 1 ? t("scoreboard", "1 card dealt") : t("scoreboard", "%1 cards dealt", [trickCount]);
 }

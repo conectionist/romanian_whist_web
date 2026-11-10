@@ -78,8 +78,7 @@ const queue = new PlaybackQueue(
   },
 );
 
-// A game asked for in the address, until the page has menus: made once, when the server says the
-// member is at no table.
+// A game asked for in the address is made once, when the server says the member is at no table.
 const solo = soloRequestFrom(window.location.search);
 let soloAsked = false;
 

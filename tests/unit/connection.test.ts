@@ -31,19 +31,24 @@ class FakeSocket {
   }
 }
 
-function memory(initial: Record<string, string> = {}) {
+// A storage that cannot remove what it holds is one that keeps a token the server refuses.
+function memory(initial: Record<string, string> = {}, keeps = false) {
   const values = new Map(Object.entries(initial));
   return {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => void values.set(key, value),
-    removeItem: (key: string) => void values.delete(key),
+    removeItem: (key: string) => {
+      if (!keeps) {
+        values.delete(key);
+      }
+    },
     values,
   };
 }
 
-function setup(initial: Record<string, string> = {}) {
+function setup(initial: Record<string, string> = {}, keeps = false) {
   FakeSocket.instances = [];
-  const storage = memory(initial);
+  const storage = memory(initial, keeps);
   const session = memory();
   const statuses: Status[] = [];
   const messages: ServerMessage[] = [];
@@ -139,7 +144,7 @@ describe("the connection", () => {
   });
 
   it("drops a token the server refuses and says hello again without it", () => {
-    const { socket, storage, statuses } = setup({ [TOKEN_KEY]: "not a token" });
+    const { socket, storage, statuses, timers, connection } = setup({ [TOKEN_KEY]: "not a token" });
     socket().readyState = 1;
     socket().fire("open", {});
     expect(JSON.parse(socket().sent[0]).token).toBe("not a token");
@@ -153,9 +158,56 @@ describe("the connection", () => {
     socket().fire("open", {});
     expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en" });
     expect(statuses[statuses.length - 1]).toBe("open");
-    // The refused socket closing on its own is not a lost connection.
+    // The refused socket closing on its own is not a lost connection: nothing is waited for, the
+    // new socket is still the connection, and it sends.
     refused.fire("close", {});
     expect(FakeSocket.instances).toHaveLength(2);
+    expect(timers).toEqual([]);
+    expect(statuses[statuses.length - 1]).toBe("open");
+    expect(connection.send({ type: "pause" })).toBe(true);
+  });
+
+  it("asks once without a token that will not go, and then backs off", () => {
+    const { socket, timers, statuses, storage } = setup({ [TOKEN_KEY]: "not a token" }, true);
+    const refuse = () => socket().fire("message", { data: JSON.stringify({ type: "error", seq: 1, code: "badMessage", detail: "token" }) });
+    socket().readyState = 1;
+    socket().fire("open", {});
+    refuse();
+    expect(FakeSocket.instances).toHaveLength(2);
+    expect(timers).toEqual([]);
+
+    // Sent again with the token that stayed, and refused again: a lost connection, retried later.
+    socket().readyState = 1;
+    socket().fire("open", {});
+    expect(JSON.parse(socket().sent[0]).token).toBe("not a token");
+    refuse();
+    expect(FakeSocket.instances).toHaveLength(2);
+    expect(timers.map((timer) => timer.ms)).toEqual([1000]);
+    expect(statuses[statuses.length - 1]).toBe("closed");
+
+    timers[0].run();
+    expect(FakeSocket.instances).toHaveLength(3);
+    socket().readyState = 1;
+    socket().fire("open", {});
+    refuse();
+    expect(timers.map((timer) => timer.ms)).toEqual([1000, 2000]);
+    expect(storage.values.get(TOKEN_KEY)).toBe("not a token");
+  });
+
+  it("drops a refused token again once a welcome has come in between", () => {
+    const { socket, storage, timers } = setup({ [TOKEN_KEY]: "not a token" });
+    const refuse = () => socket().fire("message", { data: JSON.stringify({ type: "error", seq: 1, code: "badMessage", detail: "token" }) });
+    refuse();
+    socket().fire("message", { data: welcome });
+    socket().close();
+    timers[0].run();
+    expect(FakeSocket.instances).toHaveLength(3);
+
+    // Another tab, or another page, left a token the server cannot read.
+    storage.values.set(TOKEN_KEY, "not a token");
+    refuse();
+    expect(FakeSocket.instances).toHaveLength(4);
+    expect(storage.values.has(TOKEN_KEY)).toBe(false);
   });
 
   it("leaves a badMessage about anything else, or after the welcome, alone", () => {

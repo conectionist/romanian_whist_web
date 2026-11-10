@@ -70,6 +70,9 @@ export class Connection {
   private stopped = false;
   // Whether this socket has been welcomed: a refused token is only the page's to drop before then.
   private welcomed = false;
+  // Whether the token has been dropped since the last welcome: a refusal after that is not for the
+  // page to answer at once, or a token that cannot be removed would be sent again with no pause.
+  private droppedToken = false;
   private readonly storage: Memory;
   private readonly session: Memory;
 
@@ -141,6 +144,7 @@ export class Connection {
 
     if (message.type === "welcome") {
       this.welcomed = true;
+      this.droppedToken = false;
       this.storage.setItem(TOKEN_KEY, message.token);
       this.attempt = 0;
       this.session.removeItem(RELOADED_KEY);
@@ -163,8 +167,14 @@ export class Connection {
   }
 
   private restartWithoutToken(): void {
-    this.storage.removeItem(TOKEN_KEY);
     const refused = this.socket;
+    if (this.droppedToken) {
+      // Closed, and the connection is tried again after the back-off like any lost one.
+      refused?.close();
+      return;
+    }
+    this.droppedToken = true;
+    this.storage.removeItem(TOKEN_KEY);
     this.socket = null;
     refused?.close();
     this.open();

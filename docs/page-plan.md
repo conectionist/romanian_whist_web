@@ -443,9 +443,10 @@ checkout of the server beside this one.
     server and the page from this checkout: `docker compose build server` first, then
     `docker compose up --build`, on port 8000.
   - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
-    page, a table's link, the file types, the policy and caching headers, that an error is never
-    cached for long, and a solo game through `/ws`, using the server's smoke test. A browser
-    check, `playwright.docker.config.ts`, loads the page under the image's policy.
+    page, a table's link, the file types, the policy and caching headers, that an error has no
+    caching rule (or none that is long, from the server alone), and a solo game through `/ws`,
+    using the server's smoke test. A browser check, `playwright.docker.config.ts`, loads the page
+    under the image's policy, and fails if the page arrives without it.
   - **CI.** The `docker` job builds both images, runs the full stack with our Caddy, the
     own-proxy setup directly and through the server's Caddy and nginx examples, and the page
     alone over HTTPS, and holds the page's image to its size budget. The `publish` job pushes the

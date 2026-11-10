@@ -96,12 +96,14 @@ node tools/smoke.mjs --url http://127.0.0.1:8000 --profile web --server-commit 2
 
 `--profile` says what the address in front of the page is, and so which headers to expect:
 
-- `web`: this image's Caddy. It checks the content-security-policy, the caching rules and gzip too.
+- `web`: this image's Caddy. It checks the content-security-policy, the caching rules and gzip too,
+  and that an error answer has no caching rule.
 - `proxy`: your own proxy with the server's examples. It checks the same, but gzip is only reported.
-- `server`: the server serving the page itself, with no proxy. It checks neither headers nor gzip.
+- `server`: the server serving the page itself, with no proxy. It checks neither headers nor gzip,
+  and only that an error answer is not cached for long.
 
-Every profile checks the page, a table's link, the file types, that an error answer is never cached
-for long, and the game through `/ws`. `--server-commit` is the commit the server was built from,
+Every profile checks the page, a table's link, the file types, and the game through `/ws`. The
+policy is checked on the server's own answer, `/version`, and on errors too. `--server-commit` is the commit the server was built from,
 which its welcome reports; leave it out to skip that check. `--timeout` is the seconds to wait for
 the page, and again for the game (10 by default). `node tools/smoke.mjs --copies` checks, with no
 server, that this image's Caddyfile and the server's two proxy examples all send the same

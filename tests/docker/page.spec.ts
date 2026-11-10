@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { PAGE_CSP } from "../../tools/smoke.mjs";
 
 // The page under the policy the image sends. A violation, a script error, a failed request or an
 // error answer means the page needs something the policy refuses, or the image does not serve.
@@ -24,7 +25,8 @@ test("the page starts a solo game under the image's content-security-policy", as
     });
   });
 
-  await page.goto("/?solo=4&speed=4");
+  const response = await page.goto("/?solo=4&speed=4");
+  expect(response?.headers()["content-security-policy"]).toBe(PAGE_CSP);
   await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
   await page.locator(".hand .hcard").first().waitFor();
 

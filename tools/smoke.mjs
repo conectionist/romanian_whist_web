@@ -30,11 +30,11 @@ export function cspCopies(root = here) {
 
 const PROFILES = {
   // Our Caddy in front of the page and the server.
-  web: { headers: true, woff2: ["font/woff2"], compression: "required" },
+  web: { headers: true, woff2: ["font/woff2"], compression: "required", errorCache: "none" },
   // The server alone, serving the page itself.
-  server: { headers: false, woff2: ["font/woff2", "application/font-woff2"], compression: "reported" },
+  server: { headers: false, woff2: ["font/woff2", "application/font-woff2"], compression: "reported", errorCache: "short" },
   // The server behind a proxy that carries the examples' headers.
-  proxy: { headers: true, woff2: ["font/woff2", "application/font-woff2"], compression: "reported" },
+  proxy: { headers: true, woff2: ["font/woff2", "application/font-woff2"], compression: "reported", errorCache: "none" },
 };
 
 const TABLE_CODE = "K7QM4P";
@@ -127,7 +127,8 @@ export async function checkPage(baseUrl, profileName, { serverCommit, timeoutMs 
 
   if (profile.headers) {
     await check("the content-security-policy is the page's, on every kind of answer", async () => {
-      for (const path of ["/", `/t/${TABLE_CODE}`, script, "/avatars.json", "/assets/nope.js", "/nope.svg"]) {
+      // /version is the server's answer, which the proxy passes on.
+      for (const path of ["/", `/t/${TABLE_CODE}`, script, "/avatars.json", "/assets/nope.js", "/nope.svg", "/version"]) {
         const response = await get(baseUrl, path);
         expectEqual(`the policy of ${path} (${response.status})`, response.headers.get("content-security-policy"), PAGE_CSP);
         expectEqual(`x-content-type-options of ${path}`, response.headers.get("x-content-type-options"), "nosniff");
@@ -148,15 +149,17 @@ export async function checkPage(baseUrl, profileName, { serverCommit, timeoutMs 
     });
   }
 
-  // A long caching rule on an error would keep a fault in a browser for as long.
-  await check("an error answer is never cached for long", async () => {
-    for (const path of ["/assets/nope.js", "/nope.svg", `/t/${TABLE_CODE.toLowerCase()}`]) {
+  // A caching rule on an error would keep a fault in a browser for as long. Where the caching rules
+  // are ours, an error has none; the server alone may set its own, which must not be long.
+  const noRule = profile.errorCache === "none";
+  await check(noRule ? "an error answer has no caching rule" : "an error answer is never cached for long", async () => {
+    for (const path of ["/assets/nope.js", "/nope.svg", `/t/${TABLE_CODE.toLowerCase()}`, "/ws"]) {
       const response = await get(baseUrl, path);
       if (response.status < 400) {
         throw new Error(`${path} gave ${response.status}, expected an error`);
       }
       const cache = response.headers.get("cache-control") ?? "";
-      if (LONG_CACHE.test(cache)) {
+      if (noRule ? cache !== "" : LONG_CACHE.test(cache)) {
         throw new Error(`${path} (${response.status}) has cache-control: ${cache}`);
       }
     }

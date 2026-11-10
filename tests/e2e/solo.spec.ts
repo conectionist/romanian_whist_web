@@ -130,6 +130,74 @@ test.describe("with the cards flying", () => {
     expect(problems).toEqual([]);
   });
 
+  test("a blind card keeps its back until the server says it was played, then flies from the middle back", async ({ page }) => {
+    const problems: string[] = [];
+    page.on("pageerror", (error) => problems.push(error.message));
+
+    // What each flight over the felt started from, as it started.
+    await page.addInitScript(() => {
+      const starts: { transform: string; opacity: number; height: number }[] = [];
+      const seen = new Set<Animation>();
+      (window as unknown as { starts: typeof starts }).starts = starts;
+      const watch = () => {
+        for (const animation of document.getAnimations()) {
+          const effect = animation.effect as KeyframeEffect | null;
+          if (effect?.target?.closest(".trick") && !seen.has(animation)) {
+            seen.add(animation);
+            const first = effect.getKeyframes()[0];
+            starts.push({ transform: String(first.transform), opacity: Number(first.opacity), height: (effect.target as HTMLElement).offsetHeight });
+          }
+        }
+        requestAnimationFrame(watch);
+      };
+      requestAnimationFrame(watch);
+    });
+
+    // Every one-card round is a Forehead round, so the first deal is blind.
+    await page.goto("/?solo=4&seed=42&speed=4&forehead=all");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+
+    const asked = page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable");
+    for (;;) {
+      await asked.first().waitFor();
+      if ((await page.locator(".bidstrip:not([hidden])").count()) === 0) {
+        break;
+      }
+      await page.locator(".bidstrip:not([hidden]) .opt:not(:disabled)").first().click();
+      await expect(asked).toHaveCount(0);
+    }
+
+    // One back, a card that is not shown to you.
+    await expect(page.locator(".hand .hcard:not([hidden])")).toHaveCount(1);
+    expect(await page.locator(".hand .hcard.playable").getAttribute("data-card")).toBeNull();
+    const backHeight = await page.locator(".hand .hcard.playable").evaluate((back) => (back as HTMLElement).offsetHeight);
+
+    // Clicked in the page, so what is counted is what the click itself left behind. The card is not
+    // known yet, so none flies; the back is still in the fan.
+    const clicked = await page.evaluate(() => {
+      (document.querySelector(".hand .hcard.playable") as HTMLElement).click();
+      return {
+        backs: document.querySelectorAll(".hand .hcard:not([hidden])").length,
+        flying: document.getAnimations().filter((animation) => (animation.effect as KeyframeEffect | null)?.target?.closest(".trick")).length,
+      };
+    });
+    expect(clicked).toEqual({ backs: 1, flying: 0 });
+
+    // The server's word: the card is on the felt, and the back has gone.
+    await expect(page.locator(".trick .card:not([hidden])")).not.toHaveCount(0);
+    await expect(page.locator(".hand .hcard:not([hidden])")).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
+
+    // A computer player's card leaves its panel small and faint, and a swept card starts at its own
+    // size; yours starts opaque, at the size of the card in the fan.
+    const starts = await page.evaluate(() => (window as unknown as { starts: { transform: string; opacity: number; height: number }[] }).starts);
+    const fromFan = starts.filter((start) => start.opacity === 1 && !start.transform.endsWith("scale(1)"));
+    expect(fromFan).toHaveLength(1);
+    const scale = Number(/scale\(([\d.]+)\)/.exec(fromFan[0].transform)?.[1]);
+    expect(scale).toBeCloseTo(backHeight / fromFan[0].height, 1);
+    expect(problems).toEqual([]);
+  });
+
   test("a solo game is played with the cards flying, and the table lands where the server says", async ({ page }) => {
     // The computer players move at the desktop's default speed, a few seconds a round.
     test.setTimeout(90_000);

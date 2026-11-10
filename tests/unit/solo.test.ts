@@ -20,6 +20,13 @@ describe("a solo game from the address", () => {
     expect(soloRequestFrom("?solo=3&seed=7&speed=0")).toEqual({ players: 3, seed: 7, speed: 0 });
   });
 
+  it("reads &forehead=all, and nothing else for it", () => {
+    expect(soloRequestFrom("?solo=4&forehead=all")).toEqual({ players: 4, foreheadAll: true });
+    expect(soloRequestFrom("?solo=4&forehead=some")).toEqual({ players: 4 });
+    expect(soloSettings({ players: 4, foreheadAll: true }).allOneCardForehead).toBe(true);
+    expect(soloSettings({ players: 4 }).allOneCardForehead).toBe(false);
+  });
+
   it("ignores a speed that is not one of the five", () => {
     expect(soloRequestFrom("?solo=4&speed=5")).toEqual({ players: 4 });
     expect(soloRequestFrom("?solo=4&speed=fast")).toEqual({ players: 4 });

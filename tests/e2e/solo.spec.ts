@@ -131,16 +131,34 @@ test.describe("with the cards flying", () => {
   });
 
   test("a solo game is played with the cards flying, and the table lands where the server says", async ({ page }) => {
+    // The computer players move at the desktop's default speed, a few seconds a round.
+    test.setTimeout(90_000);
     const problems: string[] = [];
     page.on("pageerror", (error) => problems.push(error.message));
 
+    // Every card that was ever in the air over the felt, counted as they go.
+    await page.addInitScript(() => {
+      const flown = new Set<Animation>();
+      (window as unknown as { flown: Set<Animation> }).flown = flown;
+      window.setInterval(() => {
+        for (const animation of document.getAnimations()) {
+          if ((animation.effect as KeyframeEffect | null)?.target?.closest(".trick")) {
+            flown.add(animation);
+          }
+        }
+      }, 10);
+    });
+
     await page.goto("/?solo=4&seed=42");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
-    for (let decisions = 0; decisions < 8; decisions++) {
+    // A bid, a card, and the next round's bid: the first trick has been played in between.
+    for (let decisions = 0; decisions < 3; decisions++) {
       await decide(page);
-      await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable")).toHaveCount(0);
+      await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable:not([hidden])")).toHaveCount(0);
       await waitForTurn(page);
     }
+    // Your card and the three computer players' flew; the queue did not catch up on them.
+    expect(await page.evaluate(() => (window as unknown as { flown: Set<Animation> }).flown.size)).toBeGreaterThanOrEqual(4);
     // Every flight has landed by the next question, and the table is whole.
     await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
     await expect(page.locator(".seat:not([hidden])")).toHaveCount(4);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { HandView } from "../../src/play/model";
-import { isPlayable, slotCount, slotKey } from "../../src/table/hand";
+import { isPlayable, restingSlot, slotCount, slotKey } from "../../src/table/hand";
 
 const onTurn: HandView = {
   entries: [
@@ -43,5 +43,18 @@ describe("the hand's rule for what can be played", () => {
   it("counts the cards, or the backs", () => {
     expect(slotCount(onTurn)).toBe(4);
     expect(slotCount({ entries: [], backs: 3, positions: [0, 1, 2], playable: true })).toBe(3);
+  });
+
+  it("rests a card in the slot it holds", () => {
+    expect(restingSlot(onTurn, "KC")).toBe(1);
+    expect(restingSlot(onTurn, "QD")).toBe(3);
+    expect(restingSlot(onTurn, "AS")).toBeNull();
+  });
+
+  it("rests a blind card in the middle back, whatever its name", () => {
+    const blind = (backs: number): HandView => ({ entries: [], backs, positions: [], playable: true });
+    expect(restingSlot(blind(1), "KC")).toBe(0);
+    expect(restingSlot(blind(3), "KC")).toBe(1);
+    expect(restingSlot(blind(4), "KC")).toBe(1);
   });
 });

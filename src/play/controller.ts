@@ -23,6 +23,8 @@ interface PendingPlay {
   prompt: number;
   // Null in a blind round, where there is no card to show.
   card: Card | null;
+  // How many backs the hand showed, in a blind round.
+  backs: number;
 }
 
 interface PendingBid {
@@ -33,7 +35,8 @@ const REFUSALS: readonly ErrorCode[] = ["illegal", "stalePrompt", "notYourTurn"]
 
 // A click sends the answer and shows it taken before the server has said so: your card moves at once,
 // the server's word that it was played confirms it without moving it again, and an error puts it
-// back. A bid hides the strip the same way.
+// back. A bid hides the strip the same way. A card stays taken out of your hand until the server's word
+// that it was played, which comes after its prompt is closed.
 export class Controller {
   private play: PendingPlay | null = null;
   private bid: PendingBid | null = null;
@@ -63,7 +66,7 @@ export class Controller {
     if (!this.deps.send({ type: "play", prompt: prompt.id, index })) {
       return;
     }
-    this.play = { prompt: prompt.id, card };
+    this.play = { prompt: prompt.id, card, backs: model.hand.backs };
     if (card !== null) {
       this.deps.table.playOwn(card);
     }
@@ -95,31 +98,49 @@ export class Controller {
         if (this.bid?.prompt === message.id) {
           this.bid = null;
         }
-        if (this.play?.prompt === message.id) {
-          // Taken by you, and the card is on its way; or the timer ran out, and another card played.
-          if (message.by === "computer" && this.play.card !== null) {
-            this.deps.table.recallOwn(this.play.card);
-          }
-          this.play = null;
+        // Taken by you, the card is still on its way; the timer ran out, and another card played.
+        if (this.play?.prompt === message.id && message.by === "computer") {
+          this.drop();
         }
         break;
       case "game":
-        if (this.play !== null && message.event.kind === "cardPlayed" && message.snapshot?.you === message.event.seat) {
-          this.play = null;
+        switch (message.event.kind) {
+          case "cardPlayed":
+            if (this.play !== null && message.snapshot?.you === message.event.seat) {
+              this.play = null;
+            }
+            break;
+          case "gameStarted":
+          case "gameOver":
+          case "gameStopped":
+            this.drop();
+            break;
+          default:
+            break;
+        }
+        break;
+      case "tableState":
+        if (message.state === "closed") {
+          this.drop();
         }
         break;
       case "error":
         if (REFUSALS.includes(message.code)) {
-          if (this.play?.card != null) {
-            this.deps.table.recallOwn(this.play.card);
-          }
-          this.play = null;
-          this.bid = null;
+          this.drop();
         }
         break;
       default:
         break;
     }
+  }
+
+  // Forgets what was answered, and calls back a card that went early without being taken.
+  private drop(): void {
+    if (this.play?.card != null) {
+      this.deps.table.recallOwn(this.play.card);
+    }
+    this.play = null;
+    this.bid = null;
   }
 
   // The table as it is while an answer waits to be taken: the card played has left your hand, and
@@ -130,16 +151,16 @@ export class Controller {
     }
     const adjusted: TableModel = { ...model, prompt: null };
     if (this.play !== null) {
-      const played = this.play.card;
-      // A blind card is the whole hand: there is nothing left once it is played.
-      const keep = model.hand.entries.map((entry) => played === null || entry.card !== played);
+      const { card: played, backs } = this.play;
+      // A blind card is the whole hand, and its back stays until the snapshot takes it: the card is
+      // not known to show, so the back is what is left to see.
       adjusted.hand =
         played === null
-          ? { entries: [], backs: 0, positions: [], playable: false }
+          ? { entries: [], backs, positions: Array.from({ length: backs }, (_, slot) => slot), playable: false }
           : {
-              entries: model.hand.entries.filter((_, at) => keep[at]),
+              entries: model.hand.entries.filter((entry) => entry.card !== played),
               backs: model.hand.backs,
-              positions: model.hand.positions.filter((_, at) => keep[at]),
+              positions: model.hand.positions.filter((_, at) => model.hand.entries[at].card !== played),
               playable: false,
             };
     }

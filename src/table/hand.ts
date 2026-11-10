@@ -28,6 +28,16 @@ export function slotCount(hand: HandModel): number {
   return hand.backs > 0 ? hand.backs : hand.entries.length;
 }
 
+// The slot a card rests in, which it leaves for the felt. In a blind round there is no card to name,
+// and the fan's middle back is the one that goes.
+export function restingSlot(hand: HandModel, card: Card): number | null {
+  if (hand.backs > 0) {
+    return (hand.backs - 1) >> 1;
+  }
+  const at = hand.entries.findIndex((entry) => entry.card === card);
+  return at < 0 ? null : at;
+}
+
 interface Slot {
   view: CardView;
   slot: number;
@@ -42,6 +52,7 @@ export class HandView {
   private readonly slots = new Map<string, Slot>();
   private onPlay: (slot: number) => void = () => undefined;
   private count = 0;
+  private shown: HandModel = { entries: [], backs: 0, positions: [], playable: false };
 
   constructor() {
     this.element = el("div", { class: "hand" });
@@ -74,6 +85,7 @@ export class HandView {
     this.element.hidden = !visible;
     const count = slotCount(hand);
     this.count = count;
+    this.shown = hand;
     const size = sizeForHeight(handCardHeight);
     const used = new Set<string>();
 
@@ -113,7 +125,8 @@ export class HandView {
 
   // Where this card rests in the fan, for a card that leaves it for the felt.
   restingPlacement(card: Card): Placement | null {
-    const entry = this.slots.get(card);
+    const slot = restingSlot(this.shown, card);
+    const entry = slot === null ? undefined : this.slots.get(slotKey(this.shown, slot));
     if (entry === undefined || entry.view.element.hidden) {
       return null;
     }

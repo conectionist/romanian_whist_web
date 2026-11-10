@@ -6,7 +6,7 @@ import { decode } from "../../src/net/decode";
 import type { ClientMessage, ServerMessage } from "../../src/net/protocol";
 import { Controller } from "../../src/play/controller";
 import { modelOf } from "../../src/play/model";
-import { Store, type Change } from "../../src/play/store";
+import { NO_CHANGE, Store } from "../../src/play/store";
 
 const LOOK = join(dirname(fileURLToPath(import.meta.url)), "../../libs/romanian_whist_server/protocol/look");
 
@@ -16,7 +16,18 @@ function syncFor(name: string, change: (state: any) => void = () => undefined): 
   return decode(JSON.stringify({ type: "sync", seq: 0, ...state }));
 }
 
-const NO_CHANGE: Change = { kind: "error", event: null, fresh: false };
+const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), "../../libs/romanian_whist_server/protocol/fixtures");
+
+// A game message with this event, over table 4's snapshot, which is this viewer's own.
+function gameMessage(event: object): ServerMessage {
+  const snapshot = JSON.parse(readFileSync(join(LOOK, "table-4-players.json"), "utf8")).state.snapshot;
+  return decode(JSON.stringify({ type: "game", seq: 9, game: 1, event, snapshot }));
+}
+
+function closedTable(): ServerMessage {
+  const message = JSON.parse(readFileSync(join(FIXTURES, "tableState.json"), "utf8"));
+  return decode(JSON.stringify({ ...message, state: "closed" }));
+}
 
 function setup(name: string, change?: (state: any) => void, accepts = true) {
   const store = new Store();
@@ -54,7 +65,7 @@ describe("a click on your hand", () => {
     expect(run.sent).toEqual([{ type: "play", prompt: 23, index: 0 }]);
     expect(run.played).toEqual(["KC"]);
     expect(run.redraws()).toBe(1);
-    expect(run.controller.pendingPlay).toEqual({ prompt: 23, card: "KC" });
+    expect(run.controller.pendingPlay).toEqual({ prompt: 23, card: "KC", backs: 0 });
   });
 
   it("sends nothing for a card that cannot be played", () => {
@@ -98,6 +109,7 @@ describe("a click on your hand", () => {
     const run = setup("table-4-players");
     run.controller.onPlay(1);
     run.apply({ type: "promptClosed", seq: 1, id: 23, by: "you" });
+    expect(run.controller.pendingPlay).not.toBeNull();
     const snapshot = JSON.parse(readFileSync(join(LOOK, "table-4-players.json"), "utf8")).state.snapshot;
     snapshot.table.cards.push({ card: "KC", seat: 0, winning: false });
     run.apply(decode(JSON.stringify({ type: "game", seq: 2, game: 1, event: { kind: "cardPlayed", seat: 0, card: "KC" }, snapshot })));
@@ -145,15 +157,70 @@ describe("a click on your hand", () => {
     expect(run.controller.pendingPlay).toBeNull();
   });
 
-  it("plays a blind card without showing it, and empties the hand", () => {
+  it("keeps the card out of your hand until the server says it was played, through its prompt closing", () => {
+    const run = setup("table-4-players");
+    run.controller.onPlay(1);
+    run.apply({ type: "promptClosed", seq: 1, id: 23, by: "you" });
+    expect(run.controller.pendingPlay).toEqual({ prompt: 23, card: "KC", backs: 0 });
+    // The hand now comes from the snapshot, which still holds the card.
+    const model = run.controller.adjust(modelOf(run.store.state));
+    expect(model?.hand.entries.map((entry) => entry.card)).toEqual(["8H", "7C", "QD"]);
+    expect(model?.hand.positions).toEqual([3, 2, 1]);
+    expect(model?.hand.playable).toBe(false);
+  });
+
+  it("is done when the server says it was played: the hand is the snapshot's again", () => {
+    const run = setup("table-4-players");
+    run.controller.onPlay(1);
+    run.apply({ type: "promptClosed", seq: 1, id: 23, by: "you" });
+    run.apply(gameMessage({ kind: "cardPlayed", seat: 0, card: "KC" }));
+    expect(run.controller.pendingPlay).toBeNull();
+  });
+
+  it("is not done by another seat's card", () => {
+    const run = setup("table-4-players");
+    run.controller.onPlay(1);
+    run.apply(gameMessage({ kind: "cardPlayed", seat: 2, card: "7S" }));
+    expect(run.controller.pendingPlay).not.toBeNull();
+  });
+
+  it("forgets what it sent when the game ends, stops, starts again or its table closes, and calls the card back", () => {
+    const ends: [string, () => ServerMessage][] = [
+      ["gameStarted", () => gameMessage({ kind: "gameStarted" })],
+      ["gameStopped", () => gameMessage({ kind: "gameStopped" })],
+      [
+        "gameOver",
+        () =>
+          gameMessage({
+            kind: "gameOver",
+            standings: [{ seat: 0, name: "Player", score: 23, place: 1 }],
+            winners: [{ seat: 0, name: "Player", score: 23, place: 1 }],
+          }),
+      ],
+      ["a closed table", closedTable],
+    ];
+    for (const [label, end] of ends) {
+      const run = setup("table-4-players");
+      run.controller.onPlay(1);
+      run.apply(end());
+      expect(run.controller.pendingPlay, label).toBeNull();
+      expect(run.recalled, label).toEqual(["KC"]);
+    }
+  });
+
+  it("plays a blind card without showing it, and keeps its back until the snapshot takes it", () => {
     const run = setup("table-4-players", (state) => {
       state.prompt = { id: 24, kind: "play", deadline: null, handSize: 1, legal: [0], blind: true };
     });
     run.controller.onPlay(0);
     expect(run.sent).toEqual([{ type: "play", prompt: 24, index: 0 }]);
     expect(run.played).toEqual([]);
-    const model = run.controller.adjust(modelOf(run.store.state));
-    expect(model?.hand).toEqual({ entries: [], backs: 0, positions: [], playable: false });
+    expect(run.controller.adjust(modelOf(run.store.state))?.hand).toEqual({ entries: [], backs: 1, positions: [0], playable: false });
+    // Its prompt closing takes the hand from the snapshot, which has none to show; the back stays.
+    run.apply({ type: "promptClosed", seq: 1, id: 24, by: "you" });
+    expect(run.controller.adjust(modelOf(run.store.state))?.hand).toEqual({ entries: [], backs: 1, positions: [0], playable: false });
+    run.apply(gameMessage({ kind: "cardPlayed", seat: 0, card: "KC" }));
+    expect(run.controller.adjust(modelOf(run.store.state))?.hand.backs).toBe(0);
   });
 });
 
@@ -180,6 +247,17 @@ describe("a click on a bid", () => {
     run.controller.onBid(1);
     run.apply({ type: "promptClosed", seq: 2, id: 1, by: "you" });
     expect(run.controller.pendingBid).toBeNull();
+  });
+
+  it("is forgotten when the game stops", () => {
+    const run = setup("bidding");
+    run.controller.onBid(1);
+    run.apply(gameMessage({ kind: "gameStopped" }));
+    expect(run.controller.pendingBid).toBeNull();
+    // The next game's first question is answered, and not held back by the last one's.
+    run.apply({ type: "prompt", seq: 9, id: 2, kind: "bet", deadline: null, hand: ["9C"], max: 1, forbidden: null, first: true, roundType: "normal" });
+    run.controller.onBid(0);
+    expect(run.sent).toHaveLength(2);
   });
 
   it("does not bid where a card is asked for", () => {

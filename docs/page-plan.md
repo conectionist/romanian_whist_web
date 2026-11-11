@@ -859,8 +859,9 @@ of code `e2eef2e`):
 ### Phase 7: sheets and menus — L
 
 - **Work:**
-  - the submodule has moved to the server's `21b905d` (the Docker image's merge), which serves the
-    page's WebP pictures and JSON files, so this step is done;
+  - first, the submodule moves to the head of the server's parent branch, `df37bd8` or later. It
+    is at `21b905d` (the Docker image's merge), which already serves the page's WebP pictures and
+    JSON files, so the move only brings the server's plan up to date;
   - the reference pictures are the `sheet-*`, `menu` and `language` shots from the same CI run as
     phase 6's (desktop commit `03a3244`, in `shots/` on the desktop's throwaway branch
     `ccr-209c0806-o444sp`). If the desktop's look changes, the workflow there takes them again;

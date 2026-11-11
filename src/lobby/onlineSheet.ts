@@ -25,7 +25,7 @@ export class OnlineSheet implements Sheet {
   private readonly meta = el("div", { class: "sheet-meta" });
   private readonly name = textField({ name: "profileName", max: MAX_NAME_LENGTH, label: t("lobby", "Your name") });
   private readonly gender = new Choose<Gender>("profileGender", t("lobby", "Your name"), genderChoices(), "male");
-  private readonly faces = el("div", { class: "faces", attrs: { role: "radiogroup", "aria-label": t("lobby", "Portrait") } });
+  private readonly faces = el("div", { class: "portrait-choices", attrs: { role: "radiogroup", "aria-label": t("lobby", "Portrait") } });
   private readonly code = textField({ name: "tableCode", max: 40, label: t("lobby", "Table code"), placeholder: "ABC234" });
   private readonly codeRow: HTMLElement[];
   private readonly error = el("div", { class: "ng-error", attrs: { role: "alert" } });
@@ -118,7 +118,7 @@ export class OnlineSheet implements Sheet {
       ...ids.map((id) => {
         const picture = el("img", { attrs: { alt: "", draggable: "false" } });
         setSrc(picture, portraitUrl(id) ?? null);
-        const button = el("button", { class: "face", attrs: { type: "button", role: "radio", "aria-label": id.replace(/-/g, " ") }, data: { face: id } }, picture);
+        const button = el("button", { class: "portrait-choice", attrs: { type: "button", role: "radio", "aria-label": id.replace(/-/g, " ") }, data: { face: id } }, picture);
         setAttr(button, "aria-checked", id === this.avatar ? "true" : "false");
         button.addEventListener("click", () => {
           this.avatar = id;

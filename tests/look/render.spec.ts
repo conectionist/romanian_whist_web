@@ -124,6 +124,21 @@ test("a card that is played flies to the felt, and a trick is swept to its winne
   expect(problems).toEqual([]);
 });
 
+test("the lobby's styles leave the cards as the table draws them", async ({ page }) => {
+  // The look page loads every stylesheet the live page does, the lobby's among them: a class of the
+  // lobby that a card also wears would shrink the card's face, and give it a border.
+  await page.setViewportSize({ width: 1920, height: 1034 });
+  await page.goto("/look.html?shot=hand-4-cards");
+  await page.waitForSelector("body[data-ready]");
+  const face = await page.locator(".hand .hcard .face").first().evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { width: node.getBoundingClientRect().width, border: style.borderTopWidth, overflow: style.overflow };
+  });
+  expect(face.width).toBeGreaterThan(100);
+  expect(face.border).toBe("0px");
+  expect(face.overflow).toBe("visible");
+});
+
 test("the menu bar has the desktop's four items, 46 pixels high, and Exit is live over a game", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/look.html?shot=table-4-players");

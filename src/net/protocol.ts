@@ -226,6 +226,13 @@ export type ServerMessage =
 export type ClientMessage =
   | { type: "hello"; protocol: number; token?: string; lang: "en" | "ro" }
   | { type: "createSolo"; settings: Settings }
+  | { type: "createTable"; settings: Settings; profile: Profile }
+  | { type: "joinTable"; code: string; profile: Profile }
+  | ({ type: "updateProfile" } & Profile)
+  | { type: "takeSeat"; seat: number }
+  | { type: "setSeat"; seat: number; kind: "open" }
+  | { type: "setSeat"; seat: number; kind: "computer"; level: Level }
+  | { type: "updateSettings"; settings: Settings }
   | { type: "bet"; prompt: number; value: number }
   | { type: "play"; prompt: number; index: number }
   | { type: "continue"; round: number }

@@ -7,6 +7,7 @@ import type {
   RoundResult,
   ServerMessage,
   Snapshot,
+  Standing,
   TableState,
 } from "../net/protocol";
 
@@ -23,6 +24,12 @@ export interface LiveHold extends Hold {
   deadlineAt: number | null;
 }
 
+// How a game ended, from its gameOver event: the final standings and who won.
+export interface Result {
+  standings: Standing[];
+  winners: Standing[];
+}
+
 // What the page knows of the game, as the server last said it.
 export interface StoreState {
   table: TableState | null;
@@ -35,6 +42,10 @@ export interface StoreState {
   // Prompts that were closed: an id that is closed stays closed.
   closedPrompts: number[];
   lastError: { code: ErrorCode; detail?: string } | null;
+  // The final standings, from the gameOver event of this game; a sync does not carry them.
+  result: Result | null;
+  // Whether this game ended with gameStopped: the server could not go on with it.
+  stopped: boolean;
 }
 
 // What a message changed, for the table to animate: the event of a game message, and whether the
@@ -58,6 +69,8 @@ export function emptyStore(): StoreState {
     held: null,
     closedPrompts: [],
     lastError: null,
+    result: null,
+    stopped: false,
   };
 }
 
@@ -81,6 +94,8 @@ export function applySync(message: Extract<ServerMessage, { type: "sync" }>, rec
     held: message.held === null ? null : liveHold(message.held, receivedAt),
     closedPrompts: [],
     lastError: null,
+    result: null,
+    stopped: false,
   };
 }
 
@@ -98,6 +113,8 @@ export function applyGame(state: StoreState, message: Extract<ServerMessage, { t
       next.held = null;
       next.prompt = null;
       next.closedPrompts = [];
+      next.result = null;
+      next.stopped = false;
       break;
     case "roundScored":
       next.history = [...state.history, event.result];
@@ -115,8 +132,12 @@ export function applyGame(state: StoreState, message: Extract<ServerMessage, { t
       next.held = null;
       break;
     case "gameOver":
+      next.result = { standings: event.standings, winners: event.winners };
+      next.held = null;
+      next.prompt = null;
+      break;
     case "gameStopped":
-      // A prompt is live until the end of the game.
+      next.stopped = true;
       next.held = null;
       next.prompt = null;
       break;
@@ -141,7 +162,11 @@ export function applyPromptClosed(state: StoreState, id: number): StoreState {
   return { ...state, prompt: null, closedPrompts: [...state.closedPrompts, id] };
 }
 
+// A closed table's state is the last message from it: nothing of its game is kept.
 export function applyTableState(state: StoreState, table: TableState): StoreState {
+  if (table.state === "closed") {
+    return { ...emptyStore(), lastError: state.lastError };
+  }
   return { ...state, table };
 }
 

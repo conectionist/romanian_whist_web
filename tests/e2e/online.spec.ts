@@ -211,7 +211,8 @@ test.describe("with the cards flying", () => {
     });
 
     // Every one-card round is a Forehead round, so the first deal is blind.
-    await createTable(alice, "Alice", { seats: 2, others: ["computer"], timer: "10000", allOnesForehead: true, speed: "fastest" });
+    // At the table's default speed, so the computer player's moves are drawn one by one and not skipped.
+    await createTable(alice, "Alice", { seats: 2, others: ["computer"], timer: "10000", allOnesForehead: true });
     await sheet(alice, "lobby").locator('[data-action="start"]').click();
     await expect(alice.locator("body")).toHaveAttribute("data-status", "at a table");
 
@@ -237,11 +238,12 @@ test.describe("with the cards flying", () => {
 
     // Nothing is clicked: the timer closes the prompt and the computer player plays the card.
     await expect(blind).toHaveCount(0, { timeout: 20_000 });
-    await expect(alice.locator(".trick .card:not([hidden])")).not.toHaveCount(0);
     await expect(mine.locator(".ring")).toBeHidden();
+    const recorded = () => alice.evaluate(() => (window as unknown as { samples: { backs: number; felt: number }[] }).samples);
+    await expect.poll(async () => (await recorded()).some((sample) => sample.backs === 0 && sample.felt > 0)).toBe(true);
 
     // The back was in the hand until the card was on the felt: never a moment with neither.
-    const samples = await alice.evaluate(() => (window as unknown as { samples: { backs: number; felt: number }[] }).samples);
+    const samples = await recorded();
     const gone = samples.findIndex((sample, index) => index > 0 && sample.backs === 0 && samples[index - 1].backs > 0);
     expect(gone, JSON.stringify(samples)).toBeGreaterThan(0);
     expect(samples[gone].felt, JSON.stringify(samples.slice(Math.max(0, gone - 3), gone + 2))).toBeGreaterThan(samples[gone - 1].felt);

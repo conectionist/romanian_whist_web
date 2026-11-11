@@ -189,6 +189,9 @@ def main():
     write('sheet-settings', fixture('sheet-settings.png', state(), sheet='settings'))
     write('sheet-history', fixture('sheet-history.png', state(history=history()), sheet='history'))
     write('sheet-last-trick', fixture('sheet-last-trick.png', state(lastTrick=last_trick()), sheet='last-trick'))
+    # The main menu is the window at no table: the whole 1920 x 1080 picture, menu bar and all.
+    write('menu', {'shot': {'file': 'menu.png', 'width': 1920, 'height': 1080, 'view': 'window'},
+                   'state': None, 'page': 'menu'})
 
 
 if __name__ == '__main__':

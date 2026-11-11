@@ -183,6 +183,12 @@ select.field option {
   border-radius: 9px;
 }
 
+/* At twice the size the desktop's lettering sits a pixel lower against its ornaments, which half a
+   pixel of the unscaled plaque is. */
+.medal.plaque .medal-letters {
+  transform: translateY(0.55px);
+}
+
 .medal.plaque .club {
   position: absolute;
   top: 50%;
@@ -194,11 +200,11 @@ select.field option {
 }
 
 .medal.plaque .club.left {
-  left: 16px;
+  left: 18.5px;
 }
 
 .medal.plaque .club.right {
-  right: 16px;
+  right: 18.5px;
 }
 
 .menu-buttons {

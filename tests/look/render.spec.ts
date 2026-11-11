@@ -152,6 +152,8 @@ test("a sheet is placed on whole pixels in the middle of the page below the bar,
   // A window 900 wide and 500 tall: the sheet keeps 16 from the edges and its body scrolls.
   await page.setViewportSize({ width: 900, height: 500 });
   await expect(sheet).toHaveCSS("overflow-y", "auto");
+  // The sheet is placed by an observer of the page's size, a moment after the window changes.
+  await expect.poll(async () => (await sheet.boundingBox())!.y).toBe(16);
   const small = (await sheet.boundingBox())!;
   expect(small.width).toBe(720);
   expect(small.height).toBe(500 - 32);
@@ -159,7 +161,7 @@ test("a sheet is placed on whole pixels in the middle of the page below the bar,
   expect(await sheet.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
 
   await page.setViewportSize({ width: 600, height: 500 });
-  expect((await sheet.boundingBox())!.width).toBe(600 - 32);
+  await expect.poll(async () => (await sheet.boundingBox())!.width).toBe(600 - 32);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 

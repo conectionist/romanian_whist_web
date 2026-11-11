@@ -23,6 +23,7 @@ import "../table/styles/cards.css";
 import "../table/styles/hud.css";
 import "../table/styles/strip.css";
 import "../sheets/styles/sheet.css";
+import "../lobby/styles/lobby.css";
 
 // A look fixture: the desktop picture it pairs with, and the sync's fields the picture shows. The
 // page's own, in tests/look/fixtures, may also name a sheet that is open over the table, server
@@ -101,18 +102,17 @@ async function main(): Promise<void> {
 
   // Draws the state a fixture holds, as a sync would, at once, and what it says is open over it.
   const show = async (fixture: Fixture) => {
-    if (fixture.state === null) {
-      return;
+    if (fixture.state !== null) {
+      order = fixture.shot.handOrder;
+      const message = decode(JSON.stringify({ type: "sync", seq: 0, ...fixture.state }));
+      await draw(store.apply(message, 0));
+      for (const [index, text] of (fixture.messages ?? []).entries()) {
+        await draw(store.apply(decode(JSON.stringify({ seq: index + 1, ...(text as object) })), 0));
+      }
+      const asked = fixture.sheet;
+      ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null };
+      sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", problem: "" });
     }
-    order = fixture.shot.handOrder;
-    const message = decode(JSON.stringify({ type: "sync", seq: 0, ...fixture.state }));
-    await draw(store.apply(message, 0));
-    for (const [index, text] of (fixture.messages ?? []).entries()) {
-      await draw(store.apply(decode(JSON.stringify({ seq: index + 1, ...(text as object) })), 0));
-    }
-    const asked = fixture.sheet;
-    ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null };
-    sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", problem: "" });
     menuPage.show(fixture.page === "menu");
     bar?.update(menuStateFor(store.state, true));
   };

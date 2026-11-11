@@ -1,6 +1,6 @@
 import { t } from "../i18n/t";
 import type { Gender, Profile } from "../net/protocol";
-import { MAX_NAME_LENGTH } from "./setup";
+import { MAX_NAME_LENGTH, isReservedName, nameError, reservedError } from "./setup";
 import { avatarCatalogue, facesFor } from "./catalogue";
 
 // Who you are at an online table: a name, a gender and a portrait, kept in the browser so the next
@@ -66,7 +66,10 @@ export function profileError(profile: Profile): string | null {
   if ([...profile.name].length > MAX_NAME_LENGTH) {
     return t("newgame", "Names are at most %1 characters.", [MAX_NAME_LENGTH]);
   }
-  return null;
+  if (isReservedName(profile.name)) {
+    return reservedError();
+  }
+  return nameError([profile.name]);
 }
 
 // The six characters of a table's code, A to Z and 0 to 9, as a person may have typed or pasted them:

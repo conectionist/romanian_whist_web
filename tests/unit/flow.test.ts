@@ -326,7 +326,66 @@ describe("New Game", () => {
     expect(types(sent.messages)).toEqual(["createSolo"]);
     expect(sent.messages[0]).toMatchObject({ settings: { botSpeed: 4, seed: 9 } });
     expect(memory.setup()).toBe(asked);
+  });
+
+  it("keeps the sheet up, waiting, until the server answers with the table", () => {
+    const { flow, sent, receive } = setup("sheet-pause", (sync) => {
+      sync.table = null;
+      sync.snapshot = null;
+    });
+    flow.openMenu("new-game");
+    flow.deal(defaults(seededRandom(1)));
+    expect(flow.shown()).toBe("new-game");
+    expect(flow.asking()).toBe(true);
+    receive(message(serverFixture("tableState"), 2));
+    expect(flow.asking()).toBe(false);
     expect(flow.ui.menu).toBeNull();
+    expect(types(sent.messages)).toEqual(["createSolo"]);
+  });
+
+  it("keeps the sheet up over the table it left when the new game is refused, for another try", () => {
+    const { flow, receive } = setup("sheet-pause");
+    flow.openMenu("new-game");
+    flow.deal(defaults(seededRandom(1)));
+    expect(flow.shown()).toBe("new-game");
+    // The old table's own messages do not close the sheet: it waits for the new one.
+    receive(message({ ...serverFixture("tableState"), paused: true }, 2));
+    expect(flow.shown()).toBe("new-game");
+    receive(message({ ...serverFixture("tableState"), state: "closed" }, 3));
+    expect(flow.asking()).toBe(true);
+    receive(message({ type: "error", code: "badMessage", detail: "name" }, 4));
+    expect(flow.asking()).toBe(false);
+    expect(flow.lostTable()).toBe(true);
+    expect(flow.shown()).toBe("new-game");
+  });
+
+  it("asks before leaving an online table for a new game, and Stay goes back to the sheet", () => {
+    const online = (sync: any) => {
+      sync.table.mode = "online";
+    };
+    const stays = setup("sheet-pause", online);
+    stays.flow.openMenu("new-game");
+    stays.flow.deal(defaults(seededRandom(1)));
+    expect(stays.flow.shown()).toBe("leave");
+    expect(stays.sent.messages).toEqual([]);
+    stays.flow.resume();
+    expect(stays.flow.shown()).toBe("new-game");
+    expect(stays.sent.messages).toEqual([]);
+
+    const leaves = setup("sheet-pause", online);
+    leaves.flow.openMenu("new-game");
+    leaves.flow.deal(defaults(seededRandom(1)));
+    leaves.flow.mainMenu();
+    expect(types(leaves.sent.messages)).toEqual(["leaveTable", "createSolo"]);
+    expect(leaves.flow.shown()).toBe("new-game");
+    // A later Exit is the plain question again.
+    const plain = setup("sheet-pause", online);
+    plain.flow.openMenu("new-game");
+    plain.flow.deal(defaults(seededRandom(1)));
+    plain.flow.escape();
+    plain.flow.exit();
+    plain.flow.mainMenu();
+    expect(types(plain.sent.messages)).toEqual(["leaveTable"]);
   });
 
   it("leaves the table first when there is one, a game running or ended, and then makes the new game", () => {

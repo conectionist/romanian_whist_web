@@ -6,6 +6,8 @@ import {
   defaultLevel,
   estimatedMinutes,
   firstError,
+  isReservedName,
+  nameError,
   levelName,
   loadSetup,
   opponentRange,
@@ -219,5 +221,24 @@ describe("what is remembered between games", () => {
     };
     expect(() => saveSetup(setup(), refusing)).not.toThrow();
     expect(loadSetup(refusing)).toBeNull();
+  });
+});
+
+describe("names the server refuses", () => {
+  it("are refused before a table is left for them: a control or bidirectional character", () => {
+    expect(nameError(["Ana", "Bo\u202Egdan"])).toBe("A name cannot hold control characters.");
+    expect(nameError(["Ana\u0007"])).toBe("A name cannot hold control characters.");
+    expect(nameError(["Ana", "Ștefan"])).toBeNull();
+  });
+
+  it("are refused when they read as a low-risk or ducking player and the seat is not one", () => {
+    expect(isReservedName("Ducking Dan")).toBe(true);
+    expect(isReservedName("low-risk Lia")).toBe(true);
+    expect(isReservedName("Duck")).toBe(false);
+    const made = defaults(seededRandom(1));
+    const named = (level: typeof made.bots[0]["level"]) => ({ ...made, bots: [{ ...made.bots[0], name: "Ducking Dan", level }, ...made.bots.slice(1)] });
+    expect(firstError(named("cyborg"))).toContain("Ducking");
+    expect(firstError(named("ducking"))).toBeNull();
+    expect(firstError({ ...made, human: { ...made.human, name: "LowRisk" } })).toContain("LowRisk");
   });
 });

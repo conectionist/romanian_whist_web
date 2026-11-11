@@ -225,7 +225,7 @@ function render(): void {
   const noTable = synced && !atTable(state);
   const waiting = state.held === null ? "" : holdNote(state.held.waitingFor, seatingOf(state), secondsLeft());
   const link = state.table === null ? "" : linkFor(state.table.code, window.location.origin);
-  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting });
+  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking() });
   menuBar.update(menuStateFor(state, true));
   menuPage.show(noTable);
   // The table under a sheet or the menu page takes neither clicks nor the keyboard.
@@ -279,7 +279,8 @@ const queue = new PlaybackQueue(
       if (message.type === "error") {
         // A refusal is said once, in words: in the sheet that asked, and else in the strip under the
         // bar. A late answer to a prompt is not worth saying.
-        const text = errorText(message.code, message.detail);
+        const lost = flow.lostTable() ? ` ${t("errors", "The table you left for it is gone.")}` : "";
+        const text = errorText(message.code, message.detail) + lost;
         if (message.code !== "stalePrompt" && message.code !== "notYourTurn" && !sheets.refuse(text)) {
           notices.set("error", text, { kind: "error", liveMs: 6000 });
         }

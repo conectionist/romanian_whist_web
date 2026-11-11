@@ -6,7 +6,7 @@ import { settingsFor, type Setup } from "../lobby/setup";
 import type { ClientMessage, Level, Profile, ServerMessage } from "../net/protocol";
 import { continueRound, createTable, joinTable, takeSeat, updateSettings } from "../net/send";
 import type { Pace } from "./motion";
-import { NOTHING_ASKED, atTable, canExit, canPause, gameOn, holdAwaitsYou, isOnline, isSolo, sheetFor, wantsPause, type MenuSheet, type SheetName, type UiState } from "./sheets";
+import { NOTHING_ASKED, atTable, canExit, canLeave, canPause, gameOn, holdAwaitsYou, isOnline, isSolo, sheetFor, wantsPause, type MenuSheet, type SheetName, type UiState } from "./sheets";
 import type { Store } from "./store";
 
 // What the page remembers between visits: the last New Game and who you are online.
@@ -41,6 +41,12 @@ export class Flow {
   private continued: number | null = null;
   // Set when a way out of the table goes, until the table is gone: nothing is shown for a table being left.
   private leaving = false;
+  // Set from the asking for a table until the server's answer: the sheet that asked stays up for it.
+  private asked = false;
+  // Whether a table was left for the one asked for, which a refusal then cannot give back.
+  private leftForIt = false;
+  // What Leave table goes on to when the question was raised by a sheet, and the sheet Stay returns to.
+  private afterLeave: { sheet: MenuSheet; run(): void } | null = null;
 
   constructor(private readonly deps: FlowDeps) {}
 
@@ -50,7 +56,21 @@ export class Flow {
 
   // The sheet that is up now.
   shown(): SheetName | null {
+    // The sheet that asked for a table is the one thing shown while the table before it goes.
+    if (this.asked && this.ui.menu !== null) {
+      return this.ui.menu;
+    }
     return this.leaving ? null : sheetFor(this.state, this.ui);
+  }
+
+  // Whether a sheet waits for the server's word on the table it asked for.
+  asking(): boolean {
+    return this.asked;
+  }
+
+  // Whether the table that was left for a refused one is gone for good.
+  lostTable(): boolean {
+    return this.leftForIt;
   }
 
   // Whether Continue has already gone out for the round that is held.
@@ -89,8 +109,14 @@ export class Flow {
         }
         break;
       case "error":
-        // A refusal may be of the way out itself, and then the table is still there to show.
-        this.leaving = false;
+        if (!this.asked) {
+          // A refusal may be of the way out itself, and then the table is still there to show.
+          this.leaving = false;
+        } else if (!atTable(this.state)) {
+          // The table asked for was refused: the sheet stays, for another try.
+          this.asked = false;
+          this.leaving = false;
+        }
         break;
       case "game":
         if (message.event.kind === "gameStarted") {
@@ -111,8 +137,15 @@ export class Flow {
     }
     // Once there is a table the sheets that made one have done their work, and the address no longer
     // asks to join one.
-    if (atTable(this.state) && (this.ui.menu === "online" || this.ui.menu === "create-table" || this.ui.joinCode !== null)) {
-      this.ui = { ...this.ui, menu: this.ui.menu === "online" || this.ui.menu === "create-table" ? null : this.ui.menu, joinCode: null };
+    const made = atTable(this.state) && !this.leaving;
+    if (made && (this.ui.menu === "online" || this.ui.menu === "create-table" || this.ui.joinCode !== null || this.asked)) {
+      const done = this.ui.menu === "online" || this.ui.menu === "create-table" || this.asked;
+      this.ui = { ...this.ui, menu: done ? null : this.ui.menu, joinCode: null };
+      this.asked = false;
+      this.leftForIt = false;
+    }
+    if (!this.ui.pauseMenu) {
+      this.afterLeave = null;
     }
     this.hold();
   }
@@ -169,7 +202,8 @@ export class Flow {
   }
 
   resume(): void {
-    this.ask({ ...this.ui, pauseMenu: false });
+    const back = this.afterLeave?.sheet ?? null;
+    this.ask({ ...this.ui, pauseMenu: false, menu: back ?? this.ui.menu });
   }
 
   continueRound(): void {
@@ -190,6 +224,13 @@ export class Flow {
   // Leaves the table, and with it any hold: the table closes, or at an online table a computer takes
   // the seat, so there is nothing to let go.
   mainMenu(): void {
+    if (this.afterLeave !== null) {
+      const next = this.afterLeave;
+      this.afterLeave = null;
+      this.ui = { ...this.ui, menu: next.sheet, pauseMenu: false };
+      next.run();
+      return;
+    }
     if (this.deps.send({ type: "leaveTable" })) {
       this.leaving = true;
       this.paused = false;
@@ -208,17 +249,32 @@ export class Flow {
       return false;
     }
     this.leaving = true;
+    this.leftForIt = true;
     this.paused = false;
     return true;
   }
 
-  // New Game's Deal: the setup is remembered for the next, and the game made. Over a game that is
-  // running or has ended, that table is left first.
+  // Sends the asking for a table, after leaving the one the person is at. The sheet that asked stays
+  // up until the server answers: a table closes it, and a refusal is said in it.
+  private askFor(message: ClientMessage): void {
+    this.leftForIt = false;
+    if (this.leaveFirst() && this.deps.send(message)) {
+      this.asked = true;
+    }
+    this.deps.changed();
+  }
+
+  // New Game's Deal: the setup is remembered for the next, and the game made. Over a solo game that
+  // is running or has ended, that table is left first, as the desktop's New Game replaces its game.
+  // At an online table other people are playing, so the person is asked first.
   deal(setup: Setup): void {
     this.deps.memory.keepSetup(setup);
-    if (this.leaveFirst() && this.deps.send({ type: "createSolo", settings: settingsFor(setup, this.deps.random) })) {
-      this.ui = { ...this.ui, menu: null, pauseMenu: false };
-      this.deps.changed();
+    const make = () => this.askFor({ type: "createSolo", settings: settingsFor(setup, this.deps.random) });
+    if (isOnline(this.state) && canLeave(this.state)) {
+      this.afterLeave = { sheet: "new-game", run: make };
+      this.ask({ ...this.ui, menu: null, pauseMenu: true });
+    } else {
+      make();
     }
   }
 
@@ -230,17 +286,14 @@ export class Flow {
 
   createTable(setup: TableSetup): void {
     const profile = this.deps.memory.profile();
-    if (profile !== null && this.leaveFirst()) {
-      this.deps.send(createTable(tableSettingsFor(setup, profile, this.deps.random), profile));
-      this.deps.changed();
+    if (profile !== null) {
+      this.askFor(createTable(tableSettingsFor(setup, profile, this.deps.random), profile));
     }
   }
 
   join(code: string, profile: Profile): void {
     this.deps.memory.keepProfile(profile);
-    if (this.leaveFirst()) {
-      this.deps.send(joinTable(code, profile));
-    }
+    this.askFor(joinTable(code, profile));
   }
 
   // The lobby's controls, each a message for the table. Only the host's are accepted by the server;

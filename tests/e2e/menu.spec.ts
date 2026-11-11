@@ -161,6 +161,31 @@ test.describe("New Game", () => {
     await waitForTurn(page);
   });
 
+  test("keeps its sheet up with the server's word when the server refuses the game", async ({ page }) => {
+    const problems: string[] = [];
+    page.on("pageerror", (error) => problems.push(error.message));
+    await menu(page);
+    await page.locator('[data-menu-page="new-game"]').click();
+    const game = sheet(page, "new-game");
+    // A full-width A is another letter to the page and the same name to the server.
+    await game.locator('input[name="humanName"]').fill("\uFF21na");
+    await game.locator('input[name="botName0"]').fill("Ana");
+    await expect(game.getByRole("button", { name: "Deal" })).toBeEnabled();
+    await game.getByRole("button", { name: "Deal" }).click();
+    await expect(game.locator(".ng-error")).not.toHaveText("");
+    await expect(game).toBeVisible();
+    await expect(page.locator('.notice[data-notice="error"]')).toHaveCount(0);
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    // What was typed is still there, and a change takes the server's word away and deals.
+    await expect(game.locator('input[name="botName0"]')).toHaveValue("Ana");
+    await game.locator('input[name="humanName"]').fill("Hana");
+    await expect(game.locator(".ng-error")).toHaveText("");
+    await game.getByRole("button", { name: "Deal" }).click();
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+    await expect(game).toHaveCount(0);
+    expect(problems).toEqual([]);
+  });
+
   test("is asked by Rules and Settings at no table for the setup it keeps, and they change it", async ({ page }) => {
     await menu(page);
     await page.locator('[data-menu="rules"]').click();

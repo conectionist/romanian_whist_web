@@ -80,6 +80,8 @@ export interface RenderContext {
   address: string;
   // Who the round hold waits for, in words.
   waiting: string;
+  // Whether the sheet that asked for a table still waits for the server's word on it.
+  asking: boolean;
 }
 
 // The sheets over the layer. Each is made once, and filled from the store when it is shown.
@@ -186,11 +188,17 @@ export class Sheets {
           this.lobby.update(state.table, context.address);
         }
         break;
+      case "new-game":
+        this.newGame.busy(context.asking);
+        break;
+      case "online":
+        this.online.busy(context.asking);
+        break;
+      case "create-table":
+        this.createTable.busy(context.asking);
+        break;
       case "settings":
       case "pause":
-      case "new-game":
-      case "online":
-      case "create-table":
         break;
     }
     // A sheet that is just up takes its starting values once: the controls are the player's while it
@@ -203,9 +211,11 @@ export class Sheets {
   // The server refused what the sheet that is up asked for. Whether a sheet took the word: one that
   // asked says it where the person is looking, and otherwise it is for the page to say.
   refuse(text: string): boolean {
-    if (this.layer.current === this.online) {
-      this.online.refuse(text);
-      return true;
+    for (const asker of [this.online, this.createTable, this.newGame]) {
+      if (this.layer.current === asker) {
+        asker.refuse(text);
+        return true;
+      }
     }
     return false;
   }

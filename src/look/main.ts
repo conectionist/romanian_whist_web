@@ -111,7 +111,7 @@ async function main(): Promise<void> {
       }
       const asked = fixture.sheet;
       ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null };
-      sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "" });
+      sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", asking: false });
     }
     menuPage.show(fixture.page === "menu");
     bar?.update(menuStateFor(store.state, true));

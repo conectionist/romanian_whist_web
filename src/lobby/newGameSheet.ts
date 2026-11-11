@@ -4,7 +4,7 @@ import type { Gender } from "../net/protocol";
 import type { Sheet } from "../sheets/layer";
 import { SheetButton, actions } from "../sheets/parts";
 import { drawName, nameCatalogue, type Random } from "./catalogue";
-import { Box, Choose, formRow, hint, numberField, textField, type Choice } from "./controls";
+import { Box, Choose, Refusal, formRow, hint, numberField, textField, type Choice } from "./controls";
 import { OptionsBlock } from "./options";
 import {
   LANGUAGE,
@@ -73,6 +73,8 @@ export class NewGameSheet implements Sheet {
   // What the dialog was opened on, which a row added later takes its opponent from.
   private initial: Setup | null = null;
   private current: Setup | null = null;
+  private readonly refusal: Refusal;
+  private waiting = false;
 
   constructor(
     actions_: NewGameActions,
@@ -99,6 +101,7 @@ export class NewGameSheet implements Sheet {
       this.error,
       actions(this.cancel, this.deal),
     );
+    this.refusal = new Refusal(this.element, () => this.refresh());
     this.cancel.onClick(() => actions_.cancel());
     this.deal.onClick(() => {
       const setup = this.read();
@@ -140,7 +143,20 @@ export class NewGameSheet implements Sheet {
       row.element.remove();
     }
     this.buildRows();
+    this.refusal.clear();
     this.refresh();
+  }
+
+  refuse(text: string): void {
+    this.refusal.set(text);
+  }
+
+  // The server is asked and has not answered: the button waits with it, so one click is one table.
+  busy(waiting: boolean): void {
+    if (waiting !== this.waiting) {
+      this.waiting = waiting;
+      this.refresh();
+    }
   }
 
   // The setup as the controls show it.
@@ -271,8 +287,8 @@ export class NewGameSheet implements Sheet {
     this.current = setup;
     setText(this.options.summary, summaryText(setup));
     const wrong = firstError(setup);
-    setText(this.error, wrong ?? "");
-    this.deal.disabled = wrong !== null;
+    setText(this.error, this.refusal.or(wrong ?? ""));
+    this.deal.disabled = wrong !== null || this.waiting;
     this.humanName.disabled = setup.spectator;
     this.humanGender.element.disabled = setup.spectator;
     this.humanLabel.classList.toggle("off", setup.spectator);

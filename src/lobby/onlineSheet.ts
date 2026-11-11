@@ -37,6 +37,7 @@ export class OnlineSheet implements Sheet {
   private fixed: string | null = null;
   private served = "";
   private readonly refusal: Refusal;
+  private waiting = false;
 
   constructor(private readonly handlers: OnlineActions) {
     this.codeRow = formRow(t("lobby", "Table code"), this.code, hint(t("lobby", "from a link or a friend")));
@@ -104,6 +105,14 @@ export class OnlineSheet implements Sheet {
     this.refusal.set(text);
   }
 
+  // The server is asked and has not answered: the button waits with it, so one click is one table.
+  busy(waiting: boolean): void {
+    if (waiting !== this.waiting) {
+      this.waiting = waiting;
+      this.refresh();
+    }
+  }
+
   profile(): Profile {
     return { name: this.name.value, gender: this.gender.value, avatar: this.avatar };
   }
@@ -137,8 +146,8 @@ export class OnlineSheet implements Sheet {
   private refresh(): void {
     const wrong = profileError(this.profile());
     const code = this.fixed ?? normalizeCode(this.code.value);
-    this.create.disabled = wrong !== null;
-    this.join.disabled = wrong !== null || codeError(code) !== null;
+    this.create.disabled = wrong !== null || this.waiting;
+    this.join.disabled = wrong !== null || codeError(code) !== null || this.waiting;
     // Said once, and not on every key: the first thing a person needs is to be told what is missing.
     const shown = this.fixed === null && this.code.value === "" ? "" : (codeError(code) ?? "");
     const next = this.refusal.or(wrong !== null && this.name.value !== "" ? wrong : shown);

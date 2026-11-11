@@ -230,8 +230,25 @@ function length(name: string): number {
 // What is wrong with these names, or nothing: each is something, no longer than a panel shows, and no
 // two are alike. Stricter than the engine, which takes two names equal byte for byte: "Ana" and "ana"
 // share nothing there and everything on a scoreboard.
+// Characters that can make one name display as another, which the server refuses in a name.
+const DECEPTIVE = /[\p{Cc}\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
+
+// The Reckoners take a seat so named for a low-risk or a ducking computer player, so only those two
+// may be called it.
+export function isReservedName(name: string): boolean {
+  const key = name.toLocaleLowerCase().replace(/[^\p{L}]/gu, "");
+  return key.includes("lowrisk") || key.includes("ducking");
+}
+
+export function reservedError(): string {
+  return t("newgame", 'Only a low-risk or a ducking computer player may have "LowRisk" or "Ducking" in its name.');
+}
+
 export function nameError(names: readonly string[]): string | null {
   for (const name of names) {
+    if (DECEPTIVE.test(name)) {
+      return t("newgame", "A name cannot hold control characters.");
+    }
     // A name of spaces is empty to a reader, and the engine would put a blank on the panel.
     if (name.trim() === "") {
       return t("newgame", "Every player needs a name.");
@@ -256,7 +273,12 @@ export function firstError(setup: Setup): string | null {
   if (seats < MIN_SEATS || seats > MAX_SEATS) {
     return t("newgame", "A game needs between %1 and %2 players.", [MIN_SEATS, MAX_SEATS]);
   }
-  return nameError([...(setup.spectator ? [] : [setup.human.name]), ...setup.bots.map((bot) => bot.name)]);
+  const wrong = nameError([...(setup.spectator ? [] : [setup.human.name]), ...setup.bots.map((bot) => bot.name)]);
+  if (wrong !== null) {
+    return wrong;
+  }
+  const named = (!setup.spectator && isReservedName(setup.human.name)) || setup.bots.some((bot) => bot.level !== "low-risk" && bot.level !== "ducking" && isReservedName(bot.name));
+  return named ? reservedError() : null;
 }
 
 // The people and computer players of a setup, in seat order, each with the level they play at.

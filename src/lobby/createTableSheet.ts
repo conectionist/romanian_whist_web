@@ -4,7 +4,7 @@ import type { Gender, Level, Profile } from "../net/protocol";
 import type { Sheet } from "../sheets/layer";
 import { SheetButton, actions } from "../sheets/parts";
 import { drawName, nameCatalogue, type Random } from "./catalogue";
-import { Choose, formRow, hint, numberField, textField, type Choice } from "./controls";
+import { Choose, Refusal, formRow, hint, numberField, textField, type Choice } from "./controls";
 import { genderChoices, levelChoices } from "./newGameSheet";
 import { OptionsBlock } from "./options";
 import { DEFAULT_TURN_TIMER, TURN_TIMERS, defaultTable, tableError, tableSettingsFor, timerLabel, withSeats, type OtherSeat, type TableSetup } from "./online";
@@ -46,6 +46,8 @@ export class CreateTableSheet implements Sheet {
   private readonly create = new SheetButton(t("lobby", "Create"), "primary", "create");
   private host: Profile = { name: "", gender: "male", avatar: "" };
   private setup: TableSetup | null = null;
+  private readonly refusal: Refusal;
+  private waiting = false;
 
   constructor(
     handlers: CreateActions,
@@ -68,6 +70,7 @@ export class CreateTableSheet implements Sheet {
       this.error,
       actions(this.cancel, this.create),
     );
+    this.refusal = new Refusal(this.element, () => this.refresh());
     this.cancel.onClick(() => handlers.cancel());
     this.create.onClick(() => {
       const made = this.read();
@@ -92,7 +95,20 @@ export class CreateTableSheet implements Sheet {
       row.element.remove();
     }
     this.setup.others.forEach((seat, index) => this.addRow(index, seat));
+    this.refusal.clear();
     this.refresh();
+  }
+
+  refuse(text: string): void {
+    this.refusal.set(text);
+  }
+
+  // The server is asked and has not answered: the button waits with it, so one click is one table.
+  busy(waiting: boolean): void {
+    if (waiting !== this.waiting) {
+      this.waiting = waiting;
+      this.refresh();
+    }
   }
 
   read(): TableSetup {
@@ -177,8 +193,8 @@ export class CreateTableSheet implements Sheet {
     this.setup = made;
     const wrong = tableError(made, this.host);
     setText(this.options.summary, summaryOf(tableSettingsFor(made, this.host)));
-    setText(this.error, wrong ?? "");
-    this.create.disabled = wrong !== null;
+    setText(this.error, this.refusal.or(wrong ?? ""));
+    this.create.disabled = wrong !== null || this.waiting;
   }
 
   focusDefault(): void {

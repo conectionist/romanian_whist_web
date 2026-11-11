@@ -34,3 +34,19 @@ describe("what the menu bar offers", () => {
     expect(menuStateFor(storeFor("sheet-pause").state, false).newGame).toBe(false);
   });
 });
+
+describe("what the menu bar offers at an online table", () => {
+  const online = (state: "lobby" | "playing") =>
+    storeFor("sheet-pause", (sync) => {
+      sync.table.mode = "online";
+      sync.table.state = state;
+      if (state === "lobby") {
+        sync.snapshot = null;
+      }
+    }).state;
+
+  it("keeps Exit live in the lobby and in a game in play, where it offers to leave", () => {
+    expect(menuStateFor(online("lobby"), true).exit).toBe(true);
+    expect(menuStateFor(online("playing"), true).exit).toBe(true);
+  });
+});

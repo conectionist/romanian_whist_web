@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SeatView } from "../../src/play/model";
-import { nameLineFor, pillFor } from "../../src/table/seatPanel";
+import { countdownFor, nameLineFor, pillFor } from "../../src/table/seatPanel";
 
 function seat(overrides: Partial<SeatView> = {}): SeatView {
   return {
@@ -66,5 +66,34 @@ describe("the name line", () => {
   it("keeps a name exactly as the server cleaned it", () => {
     const name = "Ștefan <b>&amp;</b> %1";
     expect(nameLineFor(seat({ name }), false).name).toBe(name);
+  });
+});
+
+describe("the ring round your panel for a turn's last seconds", () => {
+  it("is nothing with no timer, and nothing until 15 seconds are left", () => {
+    expect(countdownFor(null, 0)).toBeNull();
+    expect(countdownFor(60000, 44000)).toBeNull();
+    expect(countdownFor(60000, 45000)).toEqual({ seconds: 15, fraction: 1, urgent: false });
+  });
+
+  it("empties as the seconds go, and counts a part of a second as the whole", () => {
+    expect(countdownFor(60000, 52500)).toEqual({ seconds: 8, fraction: 0.5, urgent: false });
+    expect(countdownFor(60000, 59001)).toMatchObject({ seconds: 1 });
+  });
+
+  it("is urgent for the last five, with the seconds written as well as the colour", () => {
+    expect(countdownFor(60000, 55000)).toMatchObject({ seconds: 5, urgent: true });
+    expect(countdownFor(60000, 54999)).toMatchObject({ seconds: 6, urgent: false });
+  });
+
+  it("is gone once the time is up", () => {
+    expect(countdownFor(60000, 60000)).toEqual({ seconds: 0, fraction: 0, urgent: true });
+    expect(countdownFor(60000, 60001)).toBeNull();
+  });
+
+  it("counts from the time the page was told, which the prompt's deadline already is", () => {
+    // A prompt received at 1000 ms with 20 s to go has its deadline at 21000.
+    expect(countdownFor(1000 + 20000, 1000 + 4000)).toBeNull();
+    expect(countdownFor(1000 + 20000, 1000 + 6000)).toMatchObject({ seconds: 14 });
   });
 });

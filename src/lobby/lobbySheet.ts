@@ -111,9 +111,12 @@ export class LobbySheet implements Sheet {
     TURN_TIMERS.map((ms): Choice<string> => ({ value: String(ms), label: timerLabel(ms) })),
     "60000",
   );
+  private readonly settingsHead = el("summary", { class: "lobby-settings-head" });
+  // The host's controls for the game, folded away until they are wanted, so the seats and Start stay in view.
   private readonly hostControls = el(
-    "div",
+    "details",
     { class: "lobby-host" },
+    this.settingsHead,
     ...this.options.elements,
     el("div", { class: "ng-grid ng-more" }, ...formRow(t("lobby", "Seats"), this.seatCount), ...formRow(t("lobby", "Stands in"), this.replacement.element), ...formRow(t("lobby", "A turn may take"), this.timer.element)),
   );
@@ -191,6 +194,7 @@ export class LobbySheet implements Sheet {
     this.hostControls.hidden = !view.isHost;
     this.guestSummary.hidden = view.isHost;
     setText(this.guestSummary, summaryOf(view.settings));
+    setText(this.settingsHead, `${t("lobby", "Game settings")}: ${summaryOf(view.settings)}`);
     if (view.isHost && !this.hostControls.contains(document.activeElement)) {
       this.options.write(view.settings);
       this.seatCount.value = String(view.seats.length);

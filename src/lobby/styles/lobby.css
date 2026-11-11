@@ -476,3 +476,22 @@ select.field option {
   gap: 8px;
   margin-left: auto;
 }
+
+.lobby-settings-head {
+  margin-top: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sheet-head-rule);
+  font-family: var(--f-head);
+  font-size: 19px;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.lobby-host[open] .lobby-settings-head {
+  color: var(--gold-bright);
+}
+
+.lobby-settings-head:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 3px;
+}

@@ -182,3 +182,51 @@ describe("whether the game should be held for what is up", () => {
     expect(wantsPause(state, asked({ pauseMenu: true }))).toBe(false);
   });
 });
+
+describe("the online table's sheets", () => {
+  const online = (state: "lobby" | "playing", change: (sync: any) => void = () => undefined) =>
+    storeFor("sheet-pause", (sync) => {
+      sync.table.mode = "online";
+      sync.table.state = state;
+      if (state === "lobby") {
+        sync.snapshot = null;
+      }
+      change(sync);
+    }).state;
+
+  it("is the lobby until the game starts, and Exit's offer to leave over it", () => {
+    expect(sheetFor(online("lobby"), NOTHING_ASKED)).toBe("lobby");
+    expect(sheetFor(online("lobby"), asked({ pauseMenu: true }))).toBe("leave");
+  });
+
+  it("is no sheet over a game in play, and the offer to leave, never the pause menu, when Exit is used", () => {
+    expect(sheetFor(online("playing"), NOTHING_ASKED)).toBeNull();
+    expect(sheetFor(online("playing"), asked({ pauseMenu: true }))).toBe("leave");
+  });
+
+  it("puts a sheet from the menu bar over the lobby, and the lobby comes back", () => {
+    const state = online("lobby");
+    expect(sheetFor(state, asked({ menu: "rules" }))).toBe("rules");
+    expect(sheetFor(state, asked({ menu: null }))).toBe("lobby");
+  });
+
+  it("does not hold an online game for a sheet, as it cannot be paused", () => {
+    expect(wantsPause(online("playing"), asked({ menu: "rules" }))).toBe(false);
+  });
+
+  it("shows the join sheet for a table the address names, at no table, and nothing once there is one", () => {
+    const none = storeFor("sheet-pause", (sync) => {
+      sync.table = null;
+      sync.snapshot = null;
+    }).state;
+    expect(sheetFor(none, { ...NOTHING_ASKED, joinCode: "JFXB3J" })).toBe("online");
+    expect(sheetFor(none, { ...NOTHING_ASKED, menu: "rules", joinCode: "JFXB3J" })).toBe("rules");
+    expect(sheetFor(online("lobby"), { ...NOTHING_ASKED, joinCode: "JFXB3J" })).toBe("lobby");
+  });
+
+  it("is the end of the game for a finished online table", () => {
+    expect(sheetFor(online("playing", (sync) => {
+      sync.table.state = "finished";
+    }), NOTHING_ASKED)).toBe("game-over");
+  });
+});

@@ -277,3 +277,211 @@ describe("the settings", () => {
     expect(types(sent.messages)).toEqual(["updateSettings"]);
   });
 });
+
+// A table of the screenshot tool's, made an online one in its lobby or its game.
+function online(state: "lobby" | "playing", change: (sync: any) => void = () => undefined) {
+  return (sync: any) => {
+    sync.table.mode = "online";
+    sync.table.state = state;
+    sync.table.host = 0;
+    sync.table.code = "JFXB3J";
+    if (state === "lobby") {
+      sync.snapshot = null;
+    }
+    change(sync);
+  };
+}
+
+describe("New Game", () => {
+  it("makes a game at no table with createSolo alone, and keeps the setup for the next", () => {
+    const { flow, sent, memory } = setup("sheet-pause", (sync) => {
+      sync.table = null;
+      sync.snapshot = null;
+    });
+    const asked = { ...memory.setup(), botSpeed: 4, seed: 9 };
+    flow.openMenu("new-game");
+    flow.deal(asked);
+    expect(types(sent.messages)).toEqual(["createSolo"]);
+    expect(sent.messages[0]).toMatchObject({ settings: { botSpeed: 4, seed: 9 } });
+    expect(memory.setup()).toBe(asked);
+    expect(flow.ui.menu).toBeNull();
+  });
+
+  it("leaves the table first when there is one, a game running or ended, and then makes the new game", () => {
+    const running = setup("sheet-pause");
+    running.flow.openMenu("new-game");
+    running.flow.deal(running.memory.setup());
+    // The game was held for the dialog and is not let go: its table closes.
+    expect(types(running.sent.messages)).toEqual(["pause", "leaveTable", "createSolo"]);
+    const ended = setup("sheet-game-over");
+    ended.flow.deal(ended.memory.setup());
+    expect(types(ended.sent.messages)).toEqual(["leaveTable", "createSolo"]);
+    expect(ended.flow.shown()).toBeNull();
+  });
+
+  it("holds a game that is running while the dialog is up, and lets it go when the dialog is cancelled", () => {
+    const { flow, sent } = setup("sheet-pause");
+    flow.openMenu("new-game");
+    expect(flow.shown()).toBe("new-game");
+    flow.closeMenu();
+    expect(types(sent.messages)).toEqual(["pause", "resume"]);
+  });
+
+  it("does not send createSolo when the connection is down, and keeps the sheet up", () => {
+    const { flow, sent } = setup("sheet-pause", (sync) => {
+      sync.table = null;
+      sync.snapshot = null;
+    }, false);
+    flow.openMenu("new-game");
+    flow.deal(flow.ui.menu === "new-game" ? defaults(seededRandom(1)) : defaults(seededRandom(2)));
+    expect(sent.messages).toEqual([]);
+    expect(flow.shown()).toBe("new-game");
+  });
+});
+
+describe("Play online", () => {
+  const nobody = (sync: any) => {
+    sync.table = null;
+    sync.snapshot = null;
+  };
+  const me = { name: "Hana", gender: "female" as const, avatar: "woman-long-red-hair" };
+
+  it("keeps who you are, and joins a table by its code", () => {
+    const { flow, sent, memory } = setup("sheet-pause", nobody);
+    flow.openMenu("online");
+    flow.join("JFXB3J", me);
+    expect(sent.messages).toEqual([{ type: "joinTable", code: "JFXB3J", profile: me }]);
+    expect(memory.profile()).toEqual(me);
+    // The sheet stays up, to say what the server answers, until there is a table.
+    expect(flow.shown()).toBe("online");
+  });
+
+  it("goes on to the table's own sheet with who you are kept, and makes the table with them", () => {
+    const { flow, sent, memory } = setup("sheet-pause", nobody);
+    flow.openMenu("online");
+    flow.chooseCreate(me);
+    expect(flow.shown()).toBe("create-table");
+    flow.createTable({
+      seats: 2,
+      others: [{ kind: "open" }],
+      structure: "1-8-1",
+      foreheadAndHidden: true,
+      allOneCardForehead: false,
+      botSpeed: 2,
+      waitAfterRound: false,
+      replacement: "reckoner-beta",
+      turnTimer: 10000,
+    });
+    expect(memory.profile()).toEqual(me);
+    expect(sent.messages).toHaveLength(1);
+    expect(sent.messages[0]).toMatchObject({ type: "createTable", profile: me, settings: { turnTimer: 10000, seats: [{ kind: "open" }, { kind: "open" }] } });
+  });
+
+  it("closes the sheets that made a table once the table arrives, and forgets the address's code", () => {
+    const { flow, receive } = setup("sheet-pause", nobody);
+    flow.askToJoin("JFXB3J");
+    expect(flow.shown()).toBe("online");
+    flow.openMenu("online");
+    receive(syncOf({ ...serverFixture("sync"), table: { ...serverFixture("sync").table, mode: "online", state: "lobby" }, snapshot: null }));
+    expect(flow.ui.menu).toBeNull();
+    expect(flow.ui.joinCode).toBeNull();
+    expect(flow.shown()).toBe("lobby");
+  });
+
+  it("asks who you are for the table an address names, only when there is no table, and lets that be cancelled", () => {
+    const none = setup("sheet-pause", nobody);
+    none.flow.askToJoin("JFXB3J");
+    expect(none.flow.shown()).toBe("online");
+    none.flow.cancelJoin();
+    expect(none.flow.shown()).toBeNull();
+    const seated = setup("sheet-pause");
+    seated.flow.askToJoin("JFXB3J");
+    expect(seated.flow.shown()).toBeNull();
+  });
+
+  it("leaves the table you are at before making or joining another", () => {
+    const { flow, sent } = setup("sheet-game-over");
+    flow.join("JFXB3J", me);
+    expect(types(sent.messages)).toEqual(["leaveTable", "joinTable"]);
+  });
+});
+
+describe("an online table's lobby", () => {
+  it("is shown while the game has not started, and Exit offers Leave table over it", () => {
+    const { flow, sent } = setup("sheet-pause", online("lobby"));
+    expect(flow.shown()).toBe("lobby");
+    flow.exit();
+    expect(flow.shown()).toBe("leave");
+    expect(sent.messages).toEqual([]);
+    flow.resume();
+    expect(flow.shown()).toBe("lobby");
+    flow.mainMenu();
+    expect(types(sent.messages)).toEqual(["leaveTable"]);
+  });
+
+  it("sends the host's choices as messages for the table", () => {
+    const { flow, sent } = setup("sheet-pause", online("lobby", (sync) => {
+      sync.table.seats[3] = { kind: "open" };
+      sync.table.seats[4] = { kind: "open" };
+      sync.table.settings.seats[3] = { kind: "open" };
+      sync.table.settings.seats[4] = { kind: "open" };
+    }));
+    flow.takeSeat(3);
+    flow.chooseSeat(4, "cyborg");
+    flow.changeSeatCount(5);
+    flow.changeReplacement("ducking");
+    flow.changeTurnTimer(10000);
+    flow.changeOptions({ structure: "8-1-8", foreheadAndHidden: false, allOneCardForehead: true, botSpeed: 3, waitAfterRound: true });
+    flow.fillSeats("low-risk");
+    flow.playAgain();
+    expect(types(sent.messages)).toEqual(["takeSeat", "setSeat", "updateSettings", "updateSettings", "updateSettings", "updateSettings", "setSeat", "setSeat", "startGame"]);
+    expect(sent.messages[1]).toEqual({ type: "setSeat", seat: 4, kind: "computer", level: "cyborg" });
+    expect(sent.messages[4]).toMatchObject({ settings: { turnTimer: 10000 } });
+    expect(sent.messages[5]).toMatchObject({ settings: { structure: "8-1-8", allOneCardForehead: true, botSpeed: 3, waitAfterRound: true } });
+    expect(sent.messages.slice(6, 8).map((each) => (each as { seat: number }).seat)).toEqual([3, 4]);
+  });
+});
+
+describe("at an online table in play", () => {
+  it("has no pause: Esc offers to leave, and the game is never held", () => {
+    const { flow, sent } = setup("sheet-pause", online("playing"));
+    flow.escape();
+    expect(flow.shown()).toBe("leave");
+    flow.escape();
+    expect(flow.shown()).toBeNull();
+    flow.openMenu("history");
+    expect(sent.messages).toEqual([]);
+  });
+
+  it("leaves with leaveTable, the table's computer player taking the seat", () => {
+    const { flow, sent } = setup("sheet-pause", online("playing"));
+    flow.exit();
+    flow.mainMenu();
+    expect(types(sent.messages)).toEqual(["leaveTable"]);
+    expect(flow.shown()).toBeNull();
+  });
+
+  it("does not change the table's speed or wait from the settings sheet, nor the next game's", () => {
+    const { flow, sent, kept, memory } = setup("sheet-pause", online("playing"));
+    const before = memory.setup();
+    flow.changeSettings({ botSpeed: 4, waitAfterRound: true, pace: "slow" });
+    expect(kept).toEqual(["slow"]);
+    expect(sent.messages).toEqual([]);
+    expect(memory.setup()).toBe(before);
+  });
+});
+
+describe("the settings sheet's changes", () => {
+  it("are kept for the next New Game, at a solo table or at none", () => {
+    const solo = setup("sheet-pause");
+    solo.flow.changeSettings({ botSpeed: 4, waitAfterRound: true, pace: "off" });
+    expect(solo.memory.setup()).toMatchObject({ botSpeed: 4, waitAfterRound: true });
+    const none = setup("sheet-pause", (sync) => {
+      sync.table = null;
+      sync.snapshot = null;
+    });
+    none.flow.changeSettings({ botSpeed: 0, waitAfterRound: false, pace: "quick" });
+    expect(none.memory.setup()).toMatchObject({ botSpeed: 0, waitAfterRound: false });
+    expect(none.sent.messages).toEqual([]);
+  });
+});

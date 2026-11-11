@@ -7,6 +7,9 @@ import { NOTHING_ASKED, sheetFor, type MenuSheet, type UiState } from "../play/s
 import { Store } from "../play/store";
 import { MenuBar, menuStateFor } from "../menu/menuBar";
 import { NO_ACTIONS, Sheets } from "../sheets/host";
+import { MenuPage } from "../lobby/menuPage";
+import { defaults } from "../lobby/setup";
+import { seededRandom } from "../lobby/catalogue";
 import { loadFonts } from "../table/fonts";
 import { TableScene } from "../table/renderer";
 import { TABLE_PICTURES } from "../table/tableTop";
@@ -28,6 +31,8 @@ interface Fixture {
   shot: { file: string; width: number; height: number; view: "window" | "table"; raised?: string; handOrder?: string[] };
   state: Record<string, unknown> | null;
   sheet?: "pause" | MenuSheet;
+  // The page that is shown when there is no table: the main menu.
+  page?: "menu";
   messages?: unknown[];
 }
 
@@ -83,11 +88,9 @@ async function main(): Promise<void> {
   const store = new Store();
 
   // The sheets, as the live page has them, asking for nothing.
-  const sheets = new Sheets(NO_ACTIONS, {
-    rules: () => ({ seats: 4, structure: "1-8-1", foreheadAndHidden: true, allOneCardForehead: false }),
-    settings: () => ({ botSpeed: 2, waitAfterRound: false, pace: storedPace() }),
-  });
-  frame.append(sheets.layer.element);
+  const sheets = new Sheets(NO_ACTIONS, { setup: () => defaults(seededRandom(1)), profile: () => null, pace: storedPace }, seededRandom(1));
+  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined });
+  frame.append(menuPage.element, sheets.layer.element);
   let ui: UiState = NOTHING_ASKED;
   let order: readonly string[] | undefined;
 
@@ -108,8 +111,9 @@ async function main(): Promise<void> {
       await draw(store.apply(decode(JSON.stringify({ seq: index + 1, ...(text as object) })), 0));
     }
     const asked = fixture.sheet;
-    ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause" };
-    sheets.render(sheetFor(store.state, ui), store.state, false);
+    ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null };
+    sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", problem: "" });
+    menuPage.show(fixture.page === "menu");
     bar?.update(menuStateFor(store.state, true));
   };
 

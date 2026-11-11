@@ -5,7 +5,7 @@ import { cardLabel } from "../table/cards";
 import { DASH } from "../table/hudText";
 import { cardsText, roundTypeText } from "../table/roundText";
 import type { Sheet } from "./layer";
-import { SheetButton, SheetTable, actions, sheetNumber, suitedLine, type Tone, type TableFields } from "./parts";
+import { SheetButton, SheetTable, actions, joinNames, sheetNumber, suitedLine, type Tone, type TableFields } from "./parts";
 import { nameOf, type Seating } from "./seating";
 
 // The round sheet, src/ui/RoundSheet.cpp: what the round just scored was worth, per seat.
@@ -101,6 +101,19 @@ export function fieldsFor(result: RoundResult, seating: Seating): RoundFields {
   };
 }
 
+// Who the round hold waits for, and for how long, as the sheet says it: "Waiting for Ana and Bogdan: 23
+// s". Nothing when it waits for nobody in particular, as in a watched solo game, or has no deadline.
+export function holdNote(waitingFor: readonly number[], seating: Seating, secondsLeft: number | null): string {
+  if (waitingFor.length === 0) {
+    return "";
+  }
+  const names = waitingFor.map((seat) => nameOf(seating, seat));
+  const who = joinNames(names);
+  return secondsLeft === null
+    ? t("online", "Waiting for %1.", [who])
+    : t("online", "Waiting for %1: %2 s", [who, Math.max(0, Math.ceil(secondsLeft))]);
+}
+
 export interface RoundActions {
   history(): void;
   continueRound(): void;
@@ -114,6 +127,7 @@ export class RoundSheet implements Sheet {
   private readonly warning = el("div", { class: "sheet-note streak", attrs: { role: "status" } });
   private readonly history = new SheetButton(t("roundsheet", "Round history"), "quiet", "history");
   private readonly continueButton = new SheetButton(t("roundsheet", "Continue"), "primary", "continue");
+  private readonly hold = el("div", { class: "sheet-note hold", attrs: { role: "status" } });
   private shownMeta = "";
 
   constructor(handlers: RoundActions) {
@@ -125,6 +139,7 @@ export class RoundSheet implements Sheet {
       this.meta,
       this.table.element,
       this.warning,
+      this.hold,
       actions(this.history, this.continueButton),
     );
     this.title.id = "sheet-round-title";
@@ -132,7 +147,10 @@ export class RoundSheet implements Sheet {
     this.continueButton.onClick(handlers.continueRound);
   }
 
-  update(fields: RoundFields, options: { continueDisabled: boolean }): void {
+  // `waiting` says who the game waits for at an online table and for how long: nothing in a solo game.
+  update(fields: RoundFields, options: { continueDisabled: boolean; waiting?: string }): void {
+    setText(this.hold, options.waiting ?? "");
+    this.hold.hidden = (options.waiting ?? "") === "";
     setText(this.title, fields.title);
     if (fields.meta !== this.shownMeta) {
       this.shownMeta = fields.meta;

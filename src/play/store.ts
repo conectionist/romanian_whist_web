@@ -39,6 +39,8 @@ export interface StoreState {
   lastTrick: LastTrick | null;
   prompt: LivePrompt | null;
   held: LiveHold | null;
+  // The page's clock when the table's state last arrived: a waitingFor deadline counts down from then.
+  tableAt: number;
   // Prompts that were closed: an id that is closed stays closed.
   closedPrompts: number[];
   lastError: { code: ErrorCode; detail?: string } | null;
@@ -67,6 +69,7 @@ export function emptyStore(): StoreState {
     lastTrick: null,
     prompt: null,
     held: null,
+    tableAt: 0,
     closedPrompts: [],
     lastError: null,
     result: null,
@@ -92,6 +95,7 @@ export function applySync(message: Extract<ServerMessage, { type: "sync" }>, rec
     lastTrick: message.lastTrick,
     prompt: message.prompt === null ? null : livePrompt(message.prompt, receivedAt),
     held: message.held === null ? null : liveHold(message.held, receivedAt),
+    tableAt: receivedAt,
     closedPrompts: [],
     lastError: null,
     result: null,
@@ -163,11 +167,11 @@ export function applyPromptClosed(state: StoreState, id: number): StoreState {
 }
 
 // A closed table's state is the last message from it: nothing of its game is kept.
-export function applyTableState(state: StoreState, table: TableState): StoreState {
+export function applyTableState(state: StoreState, table: TableState, receivedAt = 0): StoreState {
   if (table.state === "closed") {
     return { ...emptyStore(), lastError: state.lastError };
   }
-  return { ...state, table };
+  return { ...state, table, tableAt: receivedAt };
 }
 
 export function applyHeld(state: StoreState, hold: Hold, receivedAt: number): StoreState {
@@ -191,7 +195,7 @@ export function apply(state: StoreState, message: ServerMessage, receivedAt: num
       return { state: applyPromptClosed(state, message.id), change: { kind: "promptClosed", event: null, fresh: false } };
     case "tableState": {
       const { type: _type, seq: _seq, ...table } = message;
-      return { state: applyTableState(state, table), change: { kind: "tableState", event: null, fresh: false } };
+      return { state: applyTableState(state, table, receivedAt), change: { kind: "tableState", event: null, fresh: false } };
     }
     case "held":
       return { state: applyHeld(state, message, receivedAt), change: { kind: "held", event: null, fresh: false } };

@@ -3,7 +3,7 @@ import { t } from "../i18n/t";
 import type { Snapshot, Standing } from "../net/protocol";
 import type { Result, StoreState } from "../play/store";
 import type { Sheet } from "./layer";
-import { SheetButton, SheetTable, actions, sheetNumber, type TableFields } from "./parts";
+import { SheetButton, SheetTable, actions, joinNames, sheetNumber, type TableFields } from "./parts";
 
 // The end of the game, src/ui/GameOverPanel.cpp: the final standings, who won, and the ways on.
 
@@ -24,13 +24,7 @@ export function winnerAnnouncement(winners: readonly Standing[]): string {
       ? t("gameover", "%1 wins with a score of %2.", [name, points])
       : t("gameover", "%1 wins with %n points.", [name], { n: points });
   }
-  let names = "";
-  winners.forEach((winner, index) => {
-    if (index > 0) {
-      names += index + 1 === winners.length ? t("gameover", " and ") : t("gameover", ", ");
-    }
-    names += winner.name;
-  });
+  const names = joinNames(winners.map((winner) => winner.name));
   return points < 0
     ? t("gameover", "%1 tie for first with a score of %2.", [names, points])
     : t("gameover", "%1 tie for first with %n points.", [names], { n: points });

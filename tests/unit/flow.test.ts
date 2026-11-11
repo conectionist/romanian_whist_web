@@ -1,8 +1,26 @@
 import { describe, expect, it } from "vitest";
-import type { ClientMessage, ServerMessage } from "../../src/net/protocol";
-import { Flow } from "../../src/play/flow";
+import type { ClientMessage, Profile, ServerMessage } from "../../src/net/protocol";
+import { seededRandom } from "../../src/lobby/catalogue";
+import { defaults, type Setup } from "../../src/lobby/setup";
+import { Flow, type Memory } from "../../src/play/flow";
 import type { Pace } from "../../src/play/motion";
 import { serverFixture, message, sender, storeFor, syncOf } from "./support/sheetState";
+
+// What the page keeps, held in memory.
+export function fakeMemory(): Memory {
+  let setup: Setup = defaults(seededRandom(3));
+  let profile: Profile | null = null;
+  return {
+    setup: () => setup,
+    keepSetup: (kept) => {
+      setup = kept;
+    },
+    profile: () => profile,
+    keepProfile: (kept) => {
+      profile = kept;
+    },
+  };
+}
 
 // A flow over a store that holds a fixture's table, with what it sent and what it kept.
 function setup(name: string, change?: (sync: any) => void, accepts = true) {
@@ -10,13 +28,14 @@ function setup(name: string, change?: (sync: any) => void, accepts = true) {
   const sent = sender(accepts);
   const kept: Pace[] = [];
   let redrawn = 0;
-  const flow = new Flow({ send: sent.send, store, changed: () => (redrawn += 1), keepPace: (pace) => kept.push(pace) });
+  const memory = fakeMemory();
+  const flow = new Flow({ send: sent.send, store, changed: () => (redrawn += 1), keepPace: (pace) => kept.push(pace), memory });
   // As the queue does: the message is applied to the store, and then the flow is told of it.
   const receive = (body: ServerMessage) => {
     store.apply(body, 0);
     flow.onApply(body);
   };
-  return { store, sent, kept, flow, receive, redrawn: () => redrawn };
+  return { store, sent, kept, flow, receive, memory, redrawn: () => redrawn };
 }
 
 const types = (messages: ClientMessage[]) => messages.map((each) => each.type);

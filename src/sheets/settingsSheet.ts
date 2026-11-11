@@ -30,7 +30,7 @@ export interface SettingsActions {
 
 // A slider and its words: "Bot speed", "Slow", the slider, "Instant". The words of every row sit in
 // the columns of one grid, so the sliders start and end together.
-class Slider {
+export class Slider {
   readonly nodes: HTMLElement[];
   private readonly input: HTMLInputElement;
   private readonly last: number;
@@ -128,9 +128,10 @@ export class SettingsSheet implements Sheet {
     this.wait.checked = values.waitAfterRound;
   }
 
-  // The bot speed is the table's, and an online guest does not set it.
-  showBotSpeed(shown: boolean): void {
+  // The bot speed and the wait are the table's: at an online table they were fixed when it was made.
+  showTable(shown: boolean): void {
     this.speed.hide(!shown);
+    this.wait.closest("label")?.toggleAttribute("hidden", !shown);
   }
 
   private announce(): void {

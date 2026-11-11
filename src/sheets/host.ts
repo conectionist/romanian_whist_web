@@ -1,17 +1,28 @@
+import { CreateTableSheet } from "../lobby/createTableSheet";
+import { youSeatOf } from "../lobby/lobby";
+import { LobbySheet, type LobbyActions } from "../lobby/lobbySheet";
+import { NewGameSheet } from "../lobby/newGameSheet";
+import type { TableSetup } from "../lobby/online";
+import { OnlineSheet } from "../lobby/onlineSheet";
+import { defaultProfile } from "../lobby/profile";
+import { rulesOf, type Setup } from "../lobby/setup";
+import type { Profile } from "../net/protocol";
 import type { MenuSheet, SheetName } from "../play/sheets";
+import { isOnline, inLobby } from "../play/sheets";
 import type { StoreState } from "../play/store";
 import { SettingsSheet, type SettingsValues } from "./settingsSheet";
 import { GameOverSheet, failureFields, fieldsFor as gameOverFields, resultFor } from "./gameOverSheet";
 import { HistorySheet, fieldsFor as historyFields } from "./historySheet";
 import { LastTrickSheet, fieldsFor as lastTrickFields } from "./lastTrickSheet";
 import { SheetLayer } from "./layer";
+import { LeaveSheet } from "./leaveSheet";
 import { PauseSheet } from "./pauseSheet";
 import { RoundSheet, fieldsFor as roundFields } from "./roundSheet";
-import { RulesSheet, configOf, linesFor, type RulesConfig } from "./rulesSheet";
+import { RulesSheet, configOf, linesFor } from "./rulesSheet";
 import { seatingOf } from "./seating";
 
 // What the sheets do, which the page binds to the flow and the look tool leaves empty.
-export interface SheetActions {
+export interface SheetActions extends LobbyActions {
   closeMenu(): void;
   openMenu(sheet: MenuSheet): void;
   continueRound(): void;
@@ -19,26 +30,61 @@ export interface SheetActions {
   mainMenu(): void;
   resume(): void;
   settingsChanged(values: SettingsValues): void;
+  deal(setup: Setup): void;
+  chooseCreate(profile: Profile): void;
+  createTable(setup: TableSetup): void;
+  join(code: string, profile: Profile): void;
+  cancelJoin(): void;
 }
+
+const none = () => undefined;
 
 export const NO_ACTIONS: SheetActions = {
-  closeMenu: () => undefined,
-  openMenu: () => undefined,
-  continueRound: () => undefined,
-  playAgain: () => undefined,
-  mainMenu: () => undefined,
-  resume: () => undefined,
-  settingsChanged: () => undefined,
+  closeMenu: none,
+  openMenu: none,
+  continueRound: none,
+  playAgain: none,
+  mainMenu: none,
+  resume: none,
+  settingsChanged: none,
+  deal: none,
+  chooseCreate: none,
+  createTable: none,
+  join: none,
+  cancelJoin: none,
+  takeSeat: none,
+  seat: none,
+  seatCount: none,
+  options: none,
+  replacement: none,
+  turnTimer: none,
+  fill: none,
+  start: none,
+  leave: none,
 };
 
-// What the sheets show when there is no table to read it from: the game New Game would deal, and the
-// speed the player last chose.
-export interface Defaults {
-  rules(): RulesConfig;
-  settings(): SettingsValues;
+// What the sheets start from when no table says: the last New Game, who you are, and the pace chosen.
+export interface Remembered {
+  setup(): Setup;
+  profile(): Profile | null;
+  pace(): SettingsValues["pace"];
 }
 
-// The seven sheets over the layer. Each is made once, and filled from the store when it is shown.
+// What a render knows besides the store.
+export interface RenderContext {
+  // Whether Continue has already gone out for the round held.
+  continued: boolean;
+  // The table the address names that the person has not joined.
+  joinCode: string | null;
+  // The link to the table, for sharing.
+  address: string;
+  // Who the round hold waits for, in words.
+  waiting: string;
+  // What the server last said went wrong, for the sheet that asked.
+  problem: string;
+}
+
+// The sheets over the layer. Each is made once, and filled from the store when it is shown.
 export class Sheets {
   readonly layer: SheetLayer;
   private readonly round: RoundSheet;
@@ -48,11 +94,17 @@ export class Sheets {
   private readonly rules: RulesSheet;
   private readonly settings: SettingsSheet;
   private readonly pause: PauseSheet;
+  private readonly leave: LeaveSheet;
+  private readonly newGame: NewGameSheet;
+  private readonly online: OnlineSheet;
+  private readonly createTable: CreateTableSheet;
+  private readonly lobby: LobbySheet;
   private readonly byName: Record<SheetName, { element: HTMLElement; focusDefault(): void }>;
 
   constructor(
     actions: SheetActions,
-    private readonly defaults: Defaults,
+    private readonly memory: Remembered,
+    random: () => number = Math.random,
   ) {
     this.round = new RoundSheet({ history: () => actions.openMenu("history"), continueRound: () => actions.continueRound() });
     this.history = new HistorySheet({ close: () => actions.closeMenu() });
@@ -65,6 +117,15 @@ export class Sheets {
     this.rules = new RulesSheet({ close: () => actions.closeMenu() });
     this.settings = new SettingsSheet({ changed: (values) => actions.settingsChanged(values), done: () => actions.closeMenu() });
     this.pause = new PauseSheet({ resume: () => actions.resume(), mainMenu: () => actions.mainMenu() });
+    this.leave = new LeaveSheet({ leave: () => actions.mainMenu(), stay: () => actions.resume() });
+    this.newGame = new NewGameSheet({ deal: (setup) => actions.deal(setup), cancel: () => actions.closeMenu() }, random);
+    this.online = new OnlineSheet({
+      create: (profile) => actions.chooseCreate(profile),
+      join: (code, profile) => actions.join(code, profile),
+      cancel: () => actions.cancelJoin(),
+    });
+    this.createTable = new CreateTableSheet({ create: (setup) => actions.createTable(setup), cancel: () => actions.closeMenu() }, random);
+    this.lobby = new LobbySheet(actions);
     this.byName = {
       round: this.round,
       history: this.history,
@@ -73,13 +134,17 @@ export class Sheets {
       rules: this.rules,
       settings: this.settings,
       pause: this.pause,
+      leave: this.leave,
+      "new-game": this.newGame,
+      online: this.online,
+      "create-table": this.createTable,
+      lobby: this.lobby,
     };
     this.layer = new SheetLayer(Object.values(this.byName));
   }
 
-  // Shows this sheet, or none, filled from the store. `continued` is whether Continue has already
-  // gone out for the round held.
-  render(name: SheetName | null, state: StoreState, continued: boolean): void {
+  // Shows this sheet, or none, filled from the store.
+  render(name: SheetName | null, state: StoreState, context: RenderContext): void {
     if (name === null) {
       this.layer.show(null);
       return;
@@ -95,7 +160,7 @@ export class Sheets {
           this.layer.show(null);
           return;
         }
-        this.round.update(roundFields(result, seating), { continueDisabled: continued });
+        this.round.update(roundFields(result, seating), { continueDisabled: context.continued, waiting: context.waiting });
         break;
       }
       case "history":
@@ -106,24 +171,62 @@ export class Sheets {
         break;
       case "game-over": {
         const result = resultFor(state);
-        this.gameOver.update(state.stopped || result === null || state.snapshot?.status === "stopped" ? failureFields() : gameOverFields(result));
+        const failed = state.stopped || result === null || state.snapshot?.status === "stopped";
+        // A guest at an online table does not start the next game: only the host's Play again would be heard.
+        const host = state.table !== null && youSeatOf(state.table) === state.table.host;
+        this.gameOver.update(failed ? failureFields() : gameOverFields(result), { canPlayAgain: !isOnline(state) || host });
         break;
       }
       case "rules":
-        this.rules.update(linesFor(state.table === null ? this.defaults.rules() : configOf(state.table.settings)));
+        this.rules.update(linesFor(state.table === null ? rulesOf(this.memory.setup()) : configOf(state.table.settings)));
+        break;
+      case "leave":
+        this.leave.update(!inLobby(state));
+        break;
+      case "lobby":
+        if (state.table !== null) {
+          this.lobby.update(state.table, context.address);
+        }
         break;
       case "settings":
       case "pause":
+      case "new-game":
+      case "online":
+      case "create-table":
         break;
     }
-    // The sheet that is just up takes its starting values once: the controls are the player's while
-    // it is open, and the table's word on them would take a control out of a hand that is moving it.
-    if (this.layer.show(this.byName[name]) && name === "settings") {
-      this.settings.setValues(
-        state.table === null
-          ? this.defaults.settings()
-          : { ...this.defaults.settings(), botSpeed: state.table.settings.botSpeed, waitAfterRound: state.table.settings.waitAfterRound },
-      );
+    // A sheet that is just up takes its starting values once: the controls are the player's while it
+    // is open, and the table's word on them would take a control out of a hand that is moving it.
+    if (this.layer.show(this.byName[name])) {
+      this.opened(name, state, context);
     }
+    if (name === "online") {
+      this.online.showError(context.problem);
+    }
+  }
+
+  private opened(name: SheetName, state: StoreState, context: RenderContext): void {
+    switch (name) {
+      case "settings": {
+        const solo = state.table === null ? this.memory.setup() : state.table.settings;
+        const values: SettingsValues = { botSpeed: solo.botSpeed, waitAfterRound: solo.waitAfterRound, pace: this.memory.pace() };
+        this.settings.setValues(values);
+        // At an online table the speed and the wait are the table's and were fixed when it was made.
+        this.settings.showTable(!isOnline(state));
+        break;
+      }
+      case "new-game":
+        this.newGame.open(this.memory.setup());
+        break;
+      case "online":
+        this.online.open(this.memory.profile() ?? defaultProfile(), context.joinCode);
+        break;
+      case "create-table":
+        this.createTable.open(this.memory.profile() ?? defaultProfile());
+        break;
+      default:
+        break;
+    }
+    this.layer.current?.focusDefault();
   }
 }

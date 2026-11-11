@@ -3,7 +3,7 @@ import { svg } from "./el";
 // The desktop's line icons, src/paint/Icons.cpp: a 24 unit square, stroked 1.8 in the colour of the
 // text they stand beside, which is why they are elements and not pictures.
 
-export type IconName = "round-history" | "last-trick" | "new-game" | "settings" | "rules" | "exit";
+export type IconName = "round-history" | "last-trick" | "new-game" | "settings" | "rules" | "exit" | "online";
 
 function paths(...d: string[]): SVGElement[] {
   return d.map((each) => svg("path", { attrs: { d: each } }));
@@ -29,6 +29,12 @@ function shapes(name: IconName): SVGElement[] {
       return paths("M4 5c3-1.5 5.5-1.5 8 0v15c-2.5-1.5-5-1.5-8 0z", "M20 5c-3-1.5-5.5-1.5-8 0v15c2.5-1.5 5-1.5 8 0z");
     case "exit":
       return paths("M14 4H5v16h9", "M10 12h10M16 8l4 4-4 4");
+    // A globe, for playing with others: the page's own, which the desktop has no use for.
+    case "online":
+      return [
+        svg("circle", { attrs: { cx: "12", cy: "12", r: "9" } }),
+        ...paths("M3 12h18", "M12 3c3 3 3 15 0 18", "M12 3c-3 3-3 15 0 18"),
+      ];
   }
 }
 

@@ -1,7 +1,7 @@
 import { el } from "../dom/el";
 import { icon, type IconName } from "../dom/icons";
 import { t } from "../i18n/t";
-import { canPause } from "../play/sheets";
+import { canExit } from "../play/sheets";
 import type { StoreState } from "../play/store";
 
 // The menu bar, src/ui/MenuBar.cpp: New Game, Settings and Rules at the left and Exit at the right,
@@ -15,11 +15,12 @@ export interface MenuState {
   exit: boolean;
 }
 
-// What the bar offers: Exit is greyed wherever the pause menu would refuse to open, which is on the
-// main menu, over the end of a game and over a round sheet that holds the game, rather than live and
-// doing nothing. New Game is greyed only where this page cannot start a game.
+// What the bar offers: Exit is greyed wherever the pause menu, or at an online table the offer to
+// leave, would refuse to open: on the main menu, over the end of a game and over a round sheet that
+// holds the game, rather than live and doing nothing. New Game is greyed only where this page cannot
+// start a game.
 export function menuStateFor(state: StoreState, canStart: boolean): MenuState {
-  return { newGame: canStart, settings: true, rules: true, exit: canPause(state) };
+  return { newGame: canStart, settings: true, rules: true, exit: canExit(state) };
 }
 
 export interface MenuActions {

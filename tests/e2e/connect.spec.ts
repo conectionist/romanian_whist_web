@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("the page loads from the server, says hello, and draws the empty table at no table", async ({ page }) => {
+test("the page loads from the server, says hello, and shows the main menu over the empty table at no table", async ({ page }) => {
   const problems: string[] = [];
   page.on("pageerror", (error) => problems.push(error.message));
 
@@ -9,10 +9,14 @@ test("the page loads from the server, says hello, and draws the empty table at n
   await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
   expect(await page.evaluate(() => window.localStorage.getItem("whist.token"))).toMatch(/^[A-Za-z0-9_-]{22}$/);
 
-  // The room, the rim, the felt and the round logo; no seats and no corner panels.
+  // The room, the rim, the felt and the round logo under the menu page; no seats and no corner panels.
   await expect(page.locator(".wood")).toBeVisible();
   await expect(page.locator(".felt")).toBeVisible();
-  await expect(page.locator(".medal-letters div")).toHaveText(["Romanian", "Whist"]);
+  await expect(page.locator(".table-top .medal-letters div")).toHaveText(["Romanian", "Whist"]);
+  // The main menu: the plaque, New Game and Play online, and no Quit, which a page cannot do.
+  await expect(page.locator(".menu-page")).toBeVisible();
+  await expect(page.locator(".menu-page .medal-letters div")).toHaveText(["Romanian", "Whist"]);
+  await expect(page.locator(".menu-btn span")).toHaveText(["New Game", "Play online"]);
   await expect(page.locator(".seat:not([hidden])")).toHaveCount(0);
   await expect(page.locator(".hud")).toBeHidden();
 

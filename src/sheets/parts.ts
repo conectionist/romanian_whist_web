@@ -1,5 +1,6 @@
 import { el, setText } from "../dom/el";
 import { renderSuited } from "../dom/runs";
+import { t } from "../i18n/t";
 
 // The parts every sheet is made of, src/ui/Overlay.cpp: lines of a role, buttons, and tables.
 
@@ -7,6 +8,19 @@ import { renderSuited } from "../dom/runs";
 // wide as a digit in tabular figures. A hyphen is narrower, and one column would carry two kinds.
 export function sheetNumber(value: number): string {
   return value < 0 ? `−${-value}` : String(value);
+}
+
+// "Ana", "Ana and Bogdan", "Ana, Bogdan and Dan": the last name joined with "and" however many there
+// are. The separators are translated too, since a language may not join a list with ", " and " and ".
+export function joinNames(names: readonly string[]): string {
+  let joined = "";
+  names.forEach((name, index) => {
+    if (index > 0) {
+      joined += index + 1 === names.length ? t("gameover", " and ") : t("gameover", ", ");
+    }
+    joined += name;
+  });
+  return joined;
 }
 
 export type Kind = "primary" | "quiet";

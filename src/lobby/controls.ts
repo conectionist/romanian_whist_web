@@ -114,3 +114,28 @@ export function formRow(label: string, ...controls: (Node | string)[]): HTMLElem
 export function hint(text: string): HTMLElement {
   return el("span", { class: "sheet-note", text });
 }
+
+// The server's word on the last try. It stands in the sheet's error line in place of the sheet's own
+// until the person changes something, since it was said of what they had typed then.
+export class Refusal {
+  private text = "";
+
+  constructor(sheet: HTMLElement, private readonly changed: () => void) {
+    // Capturing, so the word is gone before the control's own listener draws the line again.
+    sheet.addEventListener("input", () => this.clear(), true);
+    sheet.addEventListener("change", () => this.clear(), true);
+  }
+
+  set(text: string): void {
+    this.text = text;
+    this.changed();
+  }
+
+  clear(): void {
+    this.text = "";
+  }
+
+  or(own: string): string {
+    return this.text === "" ? own : this.text;
+  }
+}

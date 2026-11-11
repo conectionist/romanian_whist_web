@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linkFor, pathFor, tableCodeFrom } from "../../src/lobby/address";
+import { addressMove, linkFor, pathFor, tableCodeFrom } from "../../src/lobby/address";
 import { codeError, faceFor, loadProfile, normalizeCode, profileError, saveProfile } from "../../src/lobby/profile";
 
 describe("a table's address", () => {
@@ -20,6 +20,36 @@ describe("a table's address", () => {
     expect(pathFor(null)).toBe("/");
     expect(tableCodeFrom(pathFor("JFXB3J"))).toBe("JFXB3J");
     expect(linkFor("JFXB3J", "https://whist.example.org")).toBe("https://whist.example.org/t/JFXB3J");
+  });
+});
+
+describe("the address following the table", () => {
+  const at = { code: "JFXB3J", pushed: true };
+
+  it("adds one entry for a table that was made or joined from elsewhere, and none after", () => {
+    expect(addressMove("/", "JFXB3J", null, false)).toEqual({ kind: "push", path: "/t/JFXB3J", entered: at });
+    expect(addressMove("/t/JFXB3J", "JFXB3J", at, false)).toEqual({ kind: "none" });
+    // Back has moved the address away: it is not pushed again behind the person's back.
+    expect(addressMove("/", "JFXB3J", at, false)).toEqual({ kind: "none" });
+  });
+
+  it("adds none for a table whose link was followed or reloaded", () => {
+    expect(addressMove("/t/JFXB3J", "JFXB3J", null, false)).toEqual({ kind: "mark", entered: { code: "JFXB3J", pushed: false } });
+  });
+
+  it("goes back over the entry it added when the table is left, and rewrites one it did not add", () => {
+    expect(addressMove("/t/JFXB3J", null, at, false)).toEqual({ kind: "back" });
+    expect(addressMove("/t/JFXB3J", null, { code: "JFXB3J", pushed: false }, false)).toEqual({ kind: "replace", path: "/" });
+  });
+
+  it("keeps a table's address while the page asks to join it, and drops it when that is over", () => {
+    expect(addressMove("/t/ZZZZ22", null, null, true)).toEqual({ kind: "none" });
+    expect(addressMove("/t/ZZZZ22", null, null, false)).toEqual({ kind: "replace", path: "/" });
+    expect(addressMove("/", null, null, false)).toEqual({ kind: "none" });
+  });
+
+  it("moves to another table's address when the table changes", () => {
+    expect(addressMove("/t/JFXB3J", "ABC234", at, false)).toEqual({ kind: "push", path: "/t/ABC234", entered: { code: "ABC234", pushed: true } });
   });
 });
 

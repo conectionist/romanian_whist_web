@@ -101,14 +101,44 @@ test.describe("with nothing moving", () => {
     await expect(join.locator(".sheet-title")).toHaveText("Join table ZZZZ22");
     await join.locator('input[name="profileName"]').fill("Dora");
     await join.getByRole("button", { name: "Join", exact: true }).click();
+    // Said once, where the person is looking, and until they change what it was said of.
     await expect(join.locator(".ng-error")).toHaveText("There is no table with that code.");
-    await expect(page.locator('.notice[data-notice="error"]')).toHaveText("There is no table with that code.");
+    await expect(page.locator('.notice[data-notice="error"]')).toHaveCount(0);
+    await join.locator('input[name="profileName"]').fill("Dora B");
+    await expect(join.locator(".ng-error")).toHaveText("");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
     // The address is the table's still, so a person who mistyped it reads it there.
     await expect(page).toHaveURL(/\/t\/ZZZZ22$/);
     await join.getByRole("button", { name: "Cancel" }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator(".menu-page")).toBeVisible();
+    expect(problems).toEqual([]);
+  });
+
+  test("Back at an online table asks before leaving it, and Leave table goes back to where the person came from", async ({ page }) => {
+    const problems: string[] = [];
+    page.on("pageerror", (error) => problems.push(error.message));
+    const code = await createTable(page, "Alice", { seats: 2, others: ["open"] });
+    const here = new RegExp(`/t/${code}$`);
+    await page.goBack();
+    const leave = sheet(page, "leave");
+    await expect(leave.locator(".sheet-title")).toHaveText("Leave the table?");
+    await expect(page).toHaveURL(here);
+    await leave.getByRole("button", { name: "Stay" }).click();
+    await expect(sheet(page, "lobby")).toBeVisible();
+    await expect(page).toHaveURL(here);
+    // The address holds still while the table is drawn again and again.
+    await page.waitForTimeout(600);
+    await expect(page).toHaveURL(here);
+
+    await page.goBack();
+    await leave.getByRole("button", { name: "Leave table" }).click();
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await expect(page.locator(".menu-page")).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
+    // Forward is the table's address again, which asks to join it and takes no seat by itself.
+    await page.goForward();
+    await expect(sheet(page, "online").locator(".sheet-title")).toHaveText(`Join table ${code}`);
     expect(problems).toEqual([]);
   });
 

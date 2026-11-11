@@ -5,7 +5,7 @@ import type { Gender, Profile } from "../net/protocol";
 import type { Sheet } from "../sheets/layer";
 import { SheetButton, actions } from "../sheets/parts";
 import { facesFor } from "./catalogue";
-import { Choose, formRow, hint, textField } from "./controls";
+import { Choose, Refusal, formRow, hint, textField } from "./controls";
 import { genderChoices } from "./newGameSheet";
 import { codeError, faceFor, normalizeCode, profileError } from "./profile";
 import { MAX_NAME_LENGTH } from "./setup";
@@ -36,6 +36,7 @@ export class OnlineSheet implements Sheet {
   // The table the address names, when it names one.
   private fixed: string | null = null;
   private served = "";
+  private readonly refusal: Refusal;
 
   constructor(private readonly handlers: OnlineActions) {
     this.codeRow = formRow(t("lobby", "Table code"), this.code, hint(t("lobby", "from a link or a friend")));
@@ -55,6 +56,7 @@ export class OnlineSheet implements Sheet {
       this.error,
       actions(this.cancel, this.create, this.join),
     );
+    this.refusal = new Refusal(this.element, () => this.refresh());
     this.name.addEventListener("input", () => this.refresh());
     this.gender.onChange(() => {
       this.avatar = faceFor(this.gender.value, this.avatar);
@@ -92,13 +94,14 @@ export class OnlineSheet implements Sheet {
       node.hidden = code !== null;
     }
     this.create.element.hidden = code !== null;
+    this.refusal.clear();
+    this.served = "";
     this.error.textContent = "";
     this.refresh();
   }
 
-  // The server's answer to the last try, in words.
-  showError(text: string): void {
-    setText(this.error, text);
+  refuse(text: string): void {
+    this.refusal.set(text);
   }
 
   profile(): Profile {
@@ -122,6 +125,8 @@ export class OnlineSheet implements Sheet {
         setAttr(button, "aria-checked", id === this.avatar ? "true" : "false");
         button.addEventListener("click", () => {
           this.avatar = id;
+          this.refusal.clear();
+          this.refresh();
           this.paintFaces();
         });
         return button;
@@ -136,7 +141,7 @@ export class OnlineSheet implements Sheet {
     this.join.disabled = wrong !== null || codeError(code) !== null;
     // Said once, and not on every key: the first thing a person needs is to be told what is missing.
     const shown = this.fixed === null && this.code.value === "" ? "" : (codeError(code) ?? "");
-    const next = wrong !== null && this.name.value !== "" ? wrong : shown;
+    const next = this.refusal.or(wrong !== null && this.name.value !== "" ? wrong : shown);
     if (next !== this.served) {
       this.served = next;
       setText(this.error, next);

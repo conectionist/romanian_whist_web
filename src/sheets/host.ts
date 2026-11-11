@@ -80,8 +80,6 @@ export interface RenderContext {
   address: string;
   // Who the round hold waits for, in words.
   waiting: string;
-  // What the server last said went wrong, for the sheet that asked.
-  problem: string;
 }
 
 // The sheets over the layer. Each is made once, and filled from the store when it is shown.
@@ -200,9 +198,16 @@ export class Sheets {
     if (this.layer.show(this.byName[name])) {
       this.opened(name, state, context);
     }
-    if (name === "online") {
-      this.online.showError(context.problem);
+  }
+
+  // The server refused what the sheet that is up asked for. Whether a sheet took the word: one that
+  // asked says it where the person is looking, and otherwise it is for the page to say.
+  refuse(text: string): boolean {
+    if (this.layer.current === this.online) {
+      this.online.refuse(text);
+      return true;
     }
+    return false;
   }
 
   private opened(name: SheetName, state: StoreState, context: RenderContext): void {

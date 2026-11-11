@@ -15,7 +15,7 @@ import { holdNote } from "./sheets/roundSheet";
 import { seatingOf } from "./sheets/seating";
 import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
-import { pathFor, linkFor, tableCodeFrom } from "./lobby/address";
+import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
 import { Notices, connectionText, errorText, presenceNews, waitingText } from "./lobby/notices";
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
 import { loadProfile, saveProfile } from "./lobby/profile";
@@ -103,8 +103,6 @@ const memory: Memory = {
 };
 
 const notices = new Notices();
-// What the server last refused while the sheet that asked is up, for that sheet to say.
-let problem = "";
 // Whether the page has been told yet that it is at a table or at none: until then it shows neither.
 let synced = false;
 let wasConnected = false;
@@ -132,14 +130,8 @@ const sheets = new Sheets(
     deal: (setup) => flow.deal(setup),
     chooseCreate: (kept) => flow.chooseCreate(kept),
     createTable: (setup) => flow.createTable(setup),
-    join: (code, kept) => {
-      problem = "";
-      flow.join(code, kept);
-    },
-    cancelJoin: () => {
-      problem = "";
-      flow.cancelJoin();
-    },
+    join: (code, kept) => flow.join(code, kept),
+    cancelJoin: () => flow.cancelJoin(),
     takeSeat: (seat) => flow.takeSeat(seat),
     seat: (seat, choice) => flow.chooseSeat(seat, choice),
     seatCount: (count) => flow.changeSeatCount(count),
@@ -168,16 +160,59 @@ scene.onLastTrick(() => flow.openMenu("last-trick"));
 
 // The address follows the table: an online table's is /t/<code>, and the page at no table is at the
 // root, unless it was asked to join the table the address names.
+let entered: Entered | null = null;
+// Set while the browser goes back from a table that was left, which it does in its own time.
+let goingBack = false;
+
 function followAddress(): void {
   const table = store.state.table;
-  const wanted = table !== null && table.mode === "online" ? pathFor(table.code) : null;
-  const at = window.location.pathname;
-  if (wanted !== null && at !== wanted) {
-    window.history.pushState(null, "", wanted);
-  } else if (wanted === null && table === null && synced && flow.ui.joinCode === null && tableCodeFrom(at) !== null) {
-    window.history.replaceState(null, "", pathFor(null) + window.location.search);
+  if (!synced || goingBack) {
+    return;
+  }
+  const code = table !== null && table.mode === "online" ? table.code : null;
+  const move = addressMove(window.location.pathname, code, entered, flow.ui.joinCode !== null);
+  switch (move.kind) {
+    case "push":
+      window.history.pushState(null, "", move.path);
+      entered = move.entered;
+      break;
+    case "mark":
+      entered = move.entered;
+      break;
+    case "back":
+      entered = null;
+      goingBack = true;
+      window.history.back();
+      break;
+    case "replace":
+      entered = null;
+      window.history.replaceState(null, "", move.path + window.location.search);
+      break;
+    case "none":
+      break;
   }
 }
+
+// Back and Forward. Back from a table asks before leaving it, with the address put back for Stay;
+// at no table, a table's address asks to join it and any other drops that question.
+window.addEventListener("popstate", () => {
+  goingBack = false;
+  const table = store.state.table;
+  if (table !== null && table.mode === "online") {
+    if (window.location.pathname !== pathFor(table.code)) {
+      window.history.pushState(null, "", pathFor(table.code));
+      entered = { code: table.code, pushed: true };
+      flow.exit();
+    }
+    return;
+  }
+  const code = tableCodeFrom(window.location.pathname);
+  if (table === null && code !== null) {
+    flow.askToJoin(code);
+  } else if (flow.ui.joinCode !== null) {
+    flow.cancelJoin();
+  }
+});
 
 function secondsLeft(): number | null {
   const held = store.state.held;
@@ -190,16 +225,11 @@ function render(): void {
   const noTable = synced && !atTable(state);
   const waiting = state.held === null ? "" : holdNote(state.held.waitingFor, seatingOf(state), secondsLeft());
   const link = state.table === null ? "" : linkFor(state.table.code, window.location.origin);
-  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, problem });
+  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting });
   menuBar.update(menuStateFor(state, true));
   menuPage.show(noTable);
   // The table under a sheet or the menu page takes neither clicks nor the keyboard.
   view.root.inert = shown !== null || noTable;
-  if (shown === "online" || shown === "create-table") {
-    // The sheet that asked has its word on what went wrong.
-  } else {
-    problem = "";
-  }
   followAddress();
   notices.set("waiting", waitingText(state.table, state.tableAt, performance.now()), { kind: "wait" });
   notices.set("connection", connectionText(lastStatus, wasConnected), {
@@ -247,13 +277,10 @@ const queue = new PlaybackQueue(
       controller.onApply(message, change);
       flow.onApply(message);
       if (message.type === "error") {
-        // A refusal is said once, in words: where the person is looking if a sheet asked, and else in
-        // the strip under the bar.
+        // A refusal is said once, in words: in the sheet that asked, and else in the strip under the
+        // bar. A late answer to a prompt is not worth saying.
         const text = errorText(message.code, message.detail);
-        if (flow.shown() === "online" || flow.shown() === "create-table") {
-          problem = text;
-        }
-        if (message.code !== "stalePrompt" && message.code !== "notYourTurn") {
+        if (message.code !== "stalePrompt" && message.code !== "notYourTurn" && !sheets.refuse(text)) {
           notices.set("error", text, { kind: "error", liveMs: 6000 });
         }
       }

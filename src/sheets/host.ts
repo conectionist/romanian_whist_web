@@ -8,7 +8,7 @@ import { defaultProfile } from "../lobby/profile";
 import { rulesOf, type Setup } from "../lobby/setup";
 import type { Profile } from "../net/protocol";
 import type { MenuSheet, SheetName } from "../play/sheets";
-import { isOnline, inLobby } from "../play/sheets";
+import { holdAwaitsYou, isOnline, inLobby } from "../play/sheets";
 import type { StoreState } from "../play/store";
 import { SettingsSheet, type SettingsValues } from "./settingsSheet";
 import { GameOverSheet, failureFields, fieldsFor as gameOverFields, resultFor } from "./gameOverSheet";
@@ -160,7 +160,7 @@ export class Sheets {
           this.layer.show(null);
           return;
         }
-        this.round.update(roundFields(result, seating), { continueDisabled: context.continued, waiting: context.waiting });
+        this.round.update(roundFields(result, seating), { continueDisabled: context.continued || !holdAwaitsYou(state), waiting: context.waiting });
         break;
       }
       case "history":

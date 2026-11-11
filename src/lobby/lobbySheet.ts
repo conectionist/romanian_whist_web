@@ -8,7 +8,7 @@ import { Choose, formRow, numberField, type Choice } from "./controls";
 import { levelChoices } from "./newGameSheet";
 import { TURN_TIMERS, timerLabel } from "./online";
 import { OptionsBlock, type Options } from "./options";
-import { fewestSeats, lobbyFor, presenceText, summaryOf, type LobbySeat, type LobbyView } from "./lobby";
+import { fewestSeats, lobbyFor, presenceText, seatCountFrom, summaryOf, type LobbySeat, type LobbyView } from "./lobby";
 import { MAX_SEATS, MIN_SEATS, levelName } from "./setup";
 
 // An online table's lobby: its code and link, who sits where, and, for its host, the seats and the
@@ -80,7 +80,7 @@ class SeatRow {
 
     // Anyone may move to an open seat. The host may also make a seat open, or a computer player, as
     // long as nobody sits in it.
-    this.take.element.hidden = seat.kind !== "open" || view.youSeat === null;
+    this.take.element.hidden = seat.kind !== "open";
     const changeable = view.isHost && seat.kind !== "human";
     this.kind.element.hidden = !changeable;
     if (changeable) {
@@ -149,7 +149,14 @@ export class LobbySheet implements Sheet {
     this.leave.onClick(() => handlers.leave());
     this.start.onClick(() => handlers.start());
     this.fill.onClick(() => handlers.fill(this.fillLevel.value));
-    this.seatCount.addEventListener("change", () => handlers.seatCount(Math.trunc(Number(this.seatCount.value))));
+    this.seatCount.addEventListener("change", () => {
+      const count = seatCountFrom(this.seatCount.value);
+      if (count === null) {
+        this.seatCount.value = String(this.view?.seats.length ?? "");
+      } else {
+        handlers.seatCount(count);
+      }
+    });
     this.replacement.onChange(() => handlers.replacement(this.replacement.value));
     this.timer.onChange(() => handlers.turnTimer(Number(this.timer.value)));
     this.options.onChange(() => handlers.options(this.options.read()));
@@ -212,8 +219,6 @@ export class LobbySheet implements Sheet {
         ? t("lobby", "One seat is still open: ask someone to join, or fill it with a computer player.")
         : view.isHost && view.open > 1
           ? t("lobby", "%1 seats are still open: ask people to join, or fill them with computer players.", [view.open])
-          : view.youSeat === null
-          ? t("lobby", "You have no seat. Take an open one.")
           : "",
     );
   }

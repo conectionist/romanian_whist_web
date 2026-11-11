@@ -86,6 +86,13 @@ export function settingsChange(table: TableState, change: Partial<Settings>): Cl
   return updateSettings({ ...table.settings, ...change });
 }
 
+// What a seat-count field holds, or null when it holds no whole number: an emptied field is not a
+// request for the fewest seats.
+export function seatCountFrom(text: string): number | null {
+  const count = Number(text.trim());
+  return text.trim() === "" || !Number.isInteger(count) ? null : count;
+}
+
 export function withSeatCount(table: TableState, count: number): ClientMessage {
   const seats = Math.min(Math.max(Math.trunc(count), MIN_SEATS), MAX_SEATS);
   const next = table.settings.seats.slice(0, seats);

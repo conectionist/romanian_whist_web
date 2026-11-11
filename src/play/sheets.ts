@@ -71,6 +71,16 @@ export function canExit(state: Pick<StoreState, "table" | "snapshot" | "result" 
   return canPause(state) || canLeave(state);
 }
 
+// Whether the round hold waits for this viewer's Continue. A solo game's waits for whoever is at it,
+// a watcher included; an online table's names the seats it still waits for.
+export function holdAwaitsYou(state: Pick<StoreState, "table" | "snapshot" | "held">): boolean {
+  if (state.held === null) {
+    return false;
+  }
+  const you = state.snapshot?.you ?? null;
+  return isSolo(state) || (you !== null && state.held.waitingFor.includes(you));
+}
+
 export function sheetFor(state: StoreState, ui: UiState): SheetName | null {
   if (ui.menu !== null) {
     return ui.menu;

@@ -161,6 +161,20 @@ describe("Continue", () => {
     expect(sent.messages.map((each) => (each as { round: number }).round)).toEqual([9, 10]);
   });
 
+  it("is not sent for an online hold that no longer waits for your seat, as after a reload", () => {
+    const awaited = setup("sheet-round", (sync) => {
+      sync.table.mode = "online";
+    });
+    awaited.flow.continueRound();
+    expect(types(awaited.sent.messages)).toEqual(["continue"]);
+    const done = setup("sheet-round", (sync) => {
+      sync.table.mode = "online";
+      sync.held.waitingFor = [1, 2];
+    });
+    done.flow.continueRound();
+    expect(done.sent.messages).toEqual([]);
+  });
+
   it("does nothing when the round is not held, or the message was not sent", () => {
     const none = setup("sheet-pause");
     none.flow.continueRound();
@@ -186,6 +200,14 @@ describe("the ways on from the end of a game", () => {
     receive(message({ ...serverFixture("tableState"), state: "closed" }, 3));
     expect(flow.shown()).toBeNull();
     expect(sent.messages).toEqual([{ type: "leaveTable" }]);
+  });
+
+  it("show the table again when the way out is refused", () => {
+    const { flow, receive } = setup("sheet-game-over");
+    flow.mainMenu();
+    expect(flow.shown()).toBeNull();
+    receive(message({ type: "error", code: "rateLimited" }, 3));
+    expect(flow.shown()).toBe("game-over");
   });
 
   it("send leaveTable from the pause menu without a resume after it, which a table that is gone would refuse", () => {
@@ -397,6 +419,14 @@ describe("Play online", () => {
     const seated = setup("sheet-pause");
     seated.flow.askToJoin("JFXB3J");
     expect(seated.flow.shown()).toBeNull();
+  });
+
+  it("lets Esc close the sheet an address asked for", () => {
+    const { flow } = setup("sheet-pause", nobody);
+    flow.askToJoin("JFXB3J");
+    flow.escape();
+    expect(flow.shown()).toBeNull();
+    expect(flow.ui.joinCode).toBeNull();
   });
 
   it("leaves the table you are at before making or joining another", () => {

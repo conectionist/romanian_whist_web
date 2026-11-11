@@ -6,7 +6,7 @@ import { settingsFor, type Setup } from "../lobby/setup";
 import type { ClientMessage, Level, Profile, ServerMessage } from "../net/protocol";
 import { continueRound, createTable, joinTable, takeSeat, updateSettings } from "../net/send";
 import type { Pace } from "./motion";
-import { NOTHING_ASKED, atTable, canExit, canPause, gameOn, isOnline, isSolo, sheetFor, wantsPause, type MenuSheet, type SheetName, type UiState } from "./sheets";
+import { NOTHING_ASKED, atTable, canExit, canPause, gameOn, holdAwaitsYou, isOnline, isSolo, sheetFor, wantsPause, type MenuSheet, type SheetName, type UiState } from "./sheets";
 import type { Store } from "./store";
 
 // What the page remembers between visits: the last New Game and who you are online.
@@ -88,6 +88,10 @@ export class Flow {
           this.ui = { ...this.ui, menu: keeps ? this.ui.menu : null, pauseMenu: false };
         }
         break;
+      case "error":
+        // A refusal may be of the way out itself, and then the table is still there to show.
+        this.leaving = false;
+        break;
       case "game":
         if (message.event.kind === "gameStarted") {
           this.continued = null;
@@ -149,6 +153,8 @@ export class Flow {
   escape(): void {
     if (this.ui.menu !== null) {
       this.closeMenu();
+    } else if (this.ui.joinCode !== null && !atTable(this.state)) {
+      this.cancelJoin();
     } else if (this.ui.pauseMenu || canExit(this.state)) {
       this.ask({ ...this.ui, pauseMenu: !this.ui.pauseMenu });
     }
@@ -168,7 +174,7 @@ export class Flow {
 
   continueRound(): void {
     const held = this.state.held;
-    if (held === null || this.continuedHold()) {
+    if (held === null || this.continuedHold() || !holdAwaitsYou(this.state)) {
       return;
     }
     if (this.deps.send(continueRound(held.round))) {

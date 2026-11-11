@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Presence, TableState } from "../../src/net/protocol";
-import { fewestSeats, fillMessages, lobbyFor, presenceText, seatChoice, settingsChange, summaryOf, withSeatCount, youSeatOf } from "../../src/lobby/lobby";
+import { fewestSeats, fillMessages, lobbyFor, presenceText, seatChoice, seatCountFrom, settingsChange, summaryOf, withSeatCount, youSeatOf } from "../../src/lobby/lobby";
 import { decode } from "../../src/net/decode";
 import { serverFixture } from "./support/sheetState";
 
@@ -130,5 +130,16 @@ describe("the one line that says what a table deals", () => {
   it("says no timer for none, and the number of seconds for the rest", () => {
     expect(summaryOf({ ...table("tableState.online").settings, turnTimer: 0 })).toBe("1-8-1 · 23 rounds · no turn timer");
     expect(summaryOf({ ...table("tableState.online").settings, turnTimer: 10000 })).toBe("1-8-1 · 23 rounds · 10 s a turn");
+  });
+});
+
+describe("the seat-count field", () => {
+  it("reads a whole number, and nothing from a field that is empty or holds anything else", () => {
+    expect(seatCountFrom("4")).toBe(4);
+    expect(seatCountFrom(" 6 ")).toBe(6);
+    expect(seatCountFrom("")).toBeNull();
+    expect(seatCountFrom("  ")).toBeNull();
+    expect(seatCountFrom("3.5")).toBeNull();
+    expect(seatCountFrom("many")).toBeNull();
   });
 });

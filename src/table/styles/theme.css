@@ -64,6 +64,7 @@
 
   --menu-top: #2e1c10;
   --menu-bottom: #1a1009;
+  --menu-hover: rgba(201, 164, 92, 0.13);
   --menu-glint: rgba(201, 164, 92, 0.22);
   --menu-shadow: rgba(0, 0, 0, 0.45);
 

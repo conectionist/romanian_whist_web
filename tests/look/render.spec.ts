@@ -123,3 +123,58 @@ test("a card that is played flies to the felt, and a trick is swept to its winne
   expect(swept.after).toBe(0);
   expect(problems).toEqual([]);
 });
+
+test("the menu bar has the desktop's four items, 46 pixels high, and Exit is live over a game", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/look.html?shot=table-4-players");
+  await page.waitForSelector("body[data-ready]");
+
+  const bar = page.locator(".menu-band");
+  expect((await bar.boundingBox())?.height).toBe(46);
+  await expect(bar.locator(".menu-item span")).toHaveText(["New Game", "Settings", "Rules", "Exit"]);
+  await expect(bar.locator(".menu-item svg")).toHaveCount(4);
+  await expect(bar.locator(".menu-item:disabled")).toHaveCount(0);
+  // Exit is at the far right, 16 from the edge.
+  const exit = await bar.locator('[data-menu="exit"]').boundingBox();
+  expect(Math.round(1920 - (exit!.x + exit!.width))).toBe(16);
+});
+
+test("a sheet is placed on whole pixels in the middle of the page below the bar, and narrows and scrolls in a small window", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1034 });
+  await page.goto("/look.html?shot=sheet-history");
+  await page.waitForSelector("body[data-ready]");
+  const sheet = page.locator(".sheet:not([hidden])");
+  const box = (await sheet.boundingBox())!;
+  expect(box.width).toBe(720);
+  expect(Number.isInteger(box.x) && Number.isInteger(box.y)).toBe(true);
+  expect(box.x).toBe(600);
+
+  // A window 900 wide and 500 tall: the sheet keeps 16 from the edges and its body scrolls.
+  await page.setViewportSize({ width: 900, height: 500 });
+  await expect(sheet).toHaveCSS("overflow-y", "auto");
+  const small = (await sheet.boundingBox())!;
+  expect(small.width).toBe(720);
+  expect(small.height).toBe(500 - 32);
+  expect(small.y).toBe(16);
+  expect(await sheet.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
+
+  await page.setViewportSize({ width: 600, height: 500 });
+  expect((await sheet.boundingBox())!.width).toBe(600 - 32);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("the sheets take no focus ring for the button the page put the keyboard on, and show one for a Tab", async ({ page }) => {
+  await page.goto("/look.html?shot=sheet-round");
+  await page.waitForSelector("body[data-ready]");
+  const resting = await page.evaluate(() => {
+    const button = document.querySelector<HTMLElement>('.sheet:not([hidden]) [data-action="continue"]')!;
+    return { focused: document.activeElement === button, visible: button.matches(":focus-visible") };
+  });
+  expect(resting).toEqual({ focused: true, visible: false });
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => document.activeElement?.getAttribute("data-action"))).toBe("history");
+  expect(await page.evaluate(() => document.activeElement?.matches(":focus-visible"))).toBe(true);
+  // Tab stays inside the sheet: from the last control it goes round to the first.
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => document.activeElement?.getAttribute("data-action"))).toBe("continue");
+});

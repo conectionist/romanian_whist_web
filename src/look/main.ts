@@ -5,6 +5,7 @@ import { modelOf, type TableModel } from "../play/model";
 import { PACES, storedPace, type Pace } from "../play/motion";
 import { NOTHING_ASKED, sheetFor, type MenuSheet, type UiState } from "../play/sheets";
 import { Store } from "../play/store";
+import { MenuBar, menuStateFor } from "../menu/menuBar";
 import { NO_ACTIONS, Sheets } from "../sheets/host";
 import { loadFonts } from "../table/fonts";
 import { TableScene } from "../table/renderer";
@@ -68,8 +69,10 @@ async function main(): Promise<void> {
 
   const frame = el("div", { class: "window" });
   document.getElementById("app")?.append(frame);
-  if (first.shot.view === "window") {
-    frame.append(el("div", { class: "menu-band" }));
+  // The window has the menu bar over the table; the table alone has not.
+  const bar = first.shot.view === "window" ? new MenuBar({ newGame: () => undefined, settings: () => undefined, rules: () => undefined, exit: () => undefined }) : null;
+  if (bar !== null) {
+    frame.append(bar.element);
     frame.style.setProperty("--band", `${MENU_BAR}px`);
   }
   const view = new TableView(frame);
@@ -107,6 +110,7 @@ async function main(): Promise<void> {
     const asked = fixture.sheet;
     ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause" };
     sheets.render(sheetFor(store.state, ui), store.state, false);
+    bar?.update(menuStateFor(store.state, true));
   };
 
   // For the tests of motion: applies a server message as the queue would, and resolves when the

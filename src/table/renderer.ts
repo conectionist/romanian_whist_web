@@ -64,6 +64,15 @@ export class TableScene {
     view.top.append(this.bidStrip.element);
   }
 
+  // Told when a corner button is clicked.
+  onHistory(handler: () => void): void {
+    this.buttons.onHistory(handler);
+  }
+
+  onLastTrick(handler: () => void): void {
+    this.buttons.onLastTrick(handler);
+  }
+
   private ensureSeats(count: number): void {
     while (this.panels.length < count) {
       const rack = new RackView();

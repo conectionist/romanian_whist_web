@@ -6,19 +6,76 @@
   overflow: hidden;
 }
 
-/* A strip with the desktop's menu bar's look and none of its items, where the menu bar goes. */
+/* The desktop's menu bar, src/ui/MenuBar.cpp: 46 high with its border, the items 16 in from the sides
+   and 4 apart, centred in the 45 above the border. */
 .menu-band {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   height: 46px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 5px 16px 0;
   background: linear-gradient(180deg, var(--menu-top), var(--menu-bottom));
   border-bottom: 1px solid var(--panel-border);
   box-shadow:
     0 1px 0 var(--menu-glint),
     0 6px 16px var(--menu-shadow);
   z-index: 100;
+}
+
+/* An item: 34 high, padded 12, an 18 pixel icon 8 before its label, a rounded background under the
+   pointer. The icon is gold and the label cream, both gold-bright when lit, both muted when greyed. */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font-family: var(--f-head);
+  font-size: 17px;
+  color: var(--cream);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-item svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--gold);
+}
+
+.menu-item.far {
+  margin-left: auto;
+}
+
+.menu-item:not(:disabled):hover,
+.menu-item:not(:disabled):focus-visible {
+  background: var(--menu-hover);
+  color: var(--gold-bright);
+  outline: none;
+}
+
+.menu-item:not(:disabled):hover svg,
+.menu-item:not(:disabled):focus-visible svg {
+  color: var(--gold-bright);
+}
+
+.menu-item:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.menu-item:disabled svg {
+  color: var(--muted);
 }
 
 .view {

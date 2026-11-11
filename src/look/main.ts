@@ -1,9 +1,11 @@
 import { el } from "../dom/el";
 import { decode } from "../net/decode";
 import type { ServerMessage } from "../net/protocol";
-import { modelOf } from "../play/model";
-import { PACES, type Pace } from "../play/motion";
+import { modelOf, type TableModel } from "../play/model";
+import { PACES, storedPace, type Pace } from "../play/motion";
+import { NOTHING_ASKED, sheetFor, type MenuSheet, type UiState } from "../play/sheets";
 import { Store } from "../play/store";
+import { NO_ACTIONS, Sheets } from "../sheets/host";
 import { loadFonts } from "../table/fonts";
 import { TableScene } from "../table/renderer";
 import { TABLE_PICTURES } from "../table/tableTop";
@@ -16,17 +18,23 @@ import "../table/styles/rack.css";
 import "../table/styles/cards.css";
 import "../table/styles/hud.css";
 import "../table/styles/strip.css";
+import "../sheets/styles/sheet.css";
 
-// A look fixture: the desktop picture it pairs with, and the sync's fields the picture shows.
+// A look fixture: the desktop picture it pairs with, and the sync's fields the picture shows. The
+// page's own, in tests/look/fixtures, may also name a sheet that is open over the table, server
+// messages to apply after the state, and the order the desktop's tool lays out the hand in.
 interface Fixture {
-  shot: { file: string; width: number; height: number; view: "window" | "table"; raised?: string };
+  shot: { file: string; width: number; height: number; view: "window" | "table"; raised?: string; handOrder?: string[] };
   state: Record<string, unknown> | null;
+  sheet?: "pause" | MenuSheet;
+  messages?: unknown[];
 }
 
-const fixtures = import.meta.glob<Fixture>("../../libs/romanian_whist_server/protocol/look/*.json", {
-  eager: true,
-  import: "default",
-});
+// The server's, which are real games, and the page's own, which are built by hand.
+const fixtures = {
+  ...import.meta.glob<Fixture>("../../libs/romanian_whist_server/protocol/look/*.json", { eager: true, import: "default" }),
+  ...import.meta.glob<Fixture>("../../tests/look/fixtures/*.json", { eager: true, import: "default" }),
+};
 
 function fixtureNamed(name: string): Fixture {
   for (const [path, fixture] of Object.entries(fixtures)) {
@@ -39,6 +47,13 @@ function fixtureNamed(name: string): Fixture {
 
 // The menu bar is 46 px high in the desktop's window.
 const MENU_BAR = 46;
+
+// A hand in the order the desktop's tool lays it out, which is not the order a game deals: the page
+// sorts a hand by the trump and the suits.
+function inGivenOrder(model: TableModel, order: readonly string[]): TableModel {
+  const entries = order.flatMap((card) => model.hand.entries.filter((entry) => entry.card === card));
+  return { ...model, hand: { ...model.hand, entries, positions: entries.map((_, slot) => slot) } };
+}
 
 async function decoded(url: string): Promise<void> {
   const image = new Image();
@@ -64,14 +79,34 @@ async function main(): Promise<void> {
   const scene = new TableScene(view, { pace: () => pace });
   const store = new Store();
 
-  // Draws the state a fixture holds, as a sync would, at once.
+  // The sheets, as the live page has them, asking for nothing.
+  const sheets = new Sheets(NO_ACTIONS, {
+    rules: () => ({ seats: 4, structure: "1-8-1", foreheadAndHidden: true, allOneCardForehead: false }),
+    settings: () => ({ botSpeed: 2, waitAfterRound: false, pace: storedPace() }),
+  });
+  frame.append(sheets.layer.element);
+  let ui: UiState = NOTHING_ASKED;
+  let order: readonly string[] | undefined;
+
+  const draw = (change: Parameters<typeof scene.relayout>[1]) => {
+    const model = modelOf(store.state);
+    return scene.relayout(model !== null && order !== undefined ? inGivenOrder(model, order) : model, change, false);
+  };
+
+  // Draws the state a fixture holds, as a sync would, at once, and what it says is open over it.
   const show = async (fixture: Fixture) => {
     if (fixture.state === null) {
       return;
     }
+    order = fixture.shot.handOrder;
     const message = decode(JSON.stringify({ type: "sync", seq: 0, ...fixture.state }));
-    const change = store.apply(message, 0);
-    await scene.relayout(modelOf(store.state), change, false);
+    await draw(store.apply(message, 0));
+    for (const [index, text] of (fixture.messages ?? []).entries()) {
+      await draw(store.apply(decode(JSON.stringify({ seq: index + 1, ...(text as object) })), 0));
+    }
+    const asked = fixture.sheet;
+    ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause" };
+    sheets.render(sheetFor(store.state, ui), store.state, false);
   };
 
   // For the tests of motion: applies a server message as the queue would, and resolves when the

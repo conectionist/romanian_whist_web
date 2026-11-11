@@ -1,0 +1,184 @@
+import { describe, expect, it } from "vitest";
+import { NOTHING_ASKED, canPause, gameFinished, gameOn, sheetFor, wantsPause, type UiState } from "../../src/play/sheets";
+import { message, serverFixture, storeFor, syncOf } from "./support/sheetState";
+
+const asked = (change: Partial<UiState>): UiState => ({ ...NOTHING_ASKED, ...change });
+
+describe("which sheet is up", () => {
+  it("is none over a game being played with nothing asked for", () => {
+    const { state } = storeFor("sheet-pause");
+    expect(gameOn(state)).toBe(true);
+    expect(sheetFor(state, NOTHING_ASKED)).toBeNull();
+  });
+
+  it("is the round sheet while a round is held", () => {
+    expect(sheetFor(storeFor("sheet-round").state, NOTHING_ASKED)).toBe("round");
+  });
+
+  it("is the end of the game once it has ended", () => {
+    expect(sheetFor(storeFor("sheet-game-over").state, NOTHING_ASKED)).toBe("game-over");
+  });
+
+  it("is the pause menu when the player asked for it over a game being played", () => {
+    expect(sheetFor(storeFor("sheet-pause").state, asked({ pauseMenu: true }))).toBe("pause");
+  });
+
+  it("puts a sheet from the menu bar over whatever else is up, and the one under it comes back", () => {
+    for (const name of ["sheet-pause", "sheet-round", "sheet-game-over"]) {
+      const { state } = storeFor(name);
+      const under = sheetFor(state, NOTHING_ASKED);
+      for (const menu of ["history", "last-trick", "rules", "settings"] as const) {
+        expect(sheetFor(state, asked({ menu }))).toBe(menu);
+      }
+      expect(sheetFor(state, asked({ menu: null }))).toBe(under);
+    }
+  });
+
+  it("puts the pause menu under a sheet from the menu bar", () => {
+    const { state } = storeFor("sheet-pause");
+    expect(sheetFor(state, { menu: "rules", pauseMenu: true })).toBe("rules");
+    expect(sheetFor(state, { menu: null, pauseMenu: true })).toBe("pause");
+  });
+
+  it("is never the pause menu over a round sheet that holds the game: that sheet has its own way on", () => {
+    const { state } = storeFor("sheet-round");
+    expect(canPause(state)).toBe(false);
+    expect(sheetFor(state, asked({ pauseMenu: true }))).toBe("round");
+  });
+
+  it("is never the pause menu over a game that has ended", () => {
+    const { state } = storeFor("sheet-game-over");
+    expect(canPause(state)).toBe(false);
+    expect(sheetFor(state, asked({ pauseMenu: true }))).toBe("game-over");
+  });
+
+  it("is the end of the game, not the round sheet, when a hold and an ending are both in the store", () => {
+    const { state } = storeFor("sheet-round", (sync) => {
+      sync.table.state = "finished";
+    });
+    expect(gameFinished(state)).toBe(true);
+    expect(sheetFor(state, NOTHING_ASKED)).toBe("game-over");
+  });
+
+  it("is none at no table, but Rules and Settings can still be opened", () => {
+    const { state } = storeFor("sheet-pause", (sync) => {
+      sync.table = null;
+      sync.snapshot = null;
+    });
+    expect(sheetFor(state, NOTHING_ASKED)).toBeNull();
+    expect(sheetFor(state, asked({ pauseMenu: true }))).toBeNull();
+    expect(sheetFor(state, asked({ menu: "rules" }))).toBe("rules");
+    expect(sheetFor(state, asked({ menu: "settings" }))).toBe("settings");
+  });
+
+  it("is none in a table's lobby: no game is on", () => {
+    const { state } = storeFor("sheet-pause", (sync) => {
+      sync.table.state = "lobby";
+    });
+    expect(gameOn(state)).toBe(false);
+    expect(sheetFor(state, asked({ pauseMenu: true }))).toBeNull();
+  });
+
+  it("is the end of the game when a game stopped, and when a sync finds it stopped", () => {
+    const stopped = storeFor("sheet-pause");
+    stopped.apply(message({ type: "game", game: 1, snapshot: null, event: { kind: "gameStopped" } }), 1);
+    expect(sheetFor(stopped.state, NOTHING_ASKED)).toBe("game-over");
+    const found = storeFor("sheet-pause", (sync) => {
+      sync.snapshot.status = "stopped";
+    });
+    expect(sheetFor(found.state, NOTHING_ASKED)).toBe("game-over");
+  });
+
+  it("is the end of the game for a table that was reloaded once its game was over", () => {
+    const sync = serverFixture("sync");
+    sync.snapshot = serverFixture("game.gameOver").snapshot;
+    sync.table.state = "finished";
+    const reloaded = storeFor("sheet-pause");
+    reloaded.apply(syncOf(sync), 5);
+    expect(reloaded.state.result).toBeNull();
+    expect(sheetFor(reloaded.state, NOTHING_ASKED)).toBe("game-over");
+  });
+});
+
+describe("which sheet is up, as messages arrive in turn", () => {
+  const roundScored = serverFixture("game.roundScored");
+  const held = serverFixture("held");
+  const roundComplete = serverFixture("game.roundComplete");
+  const gameOver = serverFixture("game.gameOver");
+  const gameStarted = serverFixture("game.gameStarted");
+  const sync = serverFixture("sync");
+
+  it("follows a hold from the round scored to the next round", () => {
+    const store = storeFor("sheet-pause");
+    const seen: (string | null)[] = [];
+    const take = (body: object) => {
+      store.apply(message(body, 1), 0);
+      seen.push(sheetFor(store.state, NOTHING_ASKED));
+    };
+    take(roundScored);
+    take(held);
+    take(roundComplete);
+    expect(seen).toEqual([null, "round", null]);
+  });
+
+  it("follows a game from its last round to its end, and on to the next game", () => {
+    const store = storeFor("sheet-pause");
+    const seen: (string | null)[] = [];
+    const take = (body: object) => {
+      store.apply(message(body, 1), 0);
+      seen.push(sheetFor(store.state, NOTHING_ASKED));
+    };
+    take(held);
+    take(gameOver);
+    take(gameStarted);
+    expect(seen).toEqual(["round", "game-over", null]);
+  });
+
+  it("is re-derived from a sync that finds a hold, an ending or neither", () => {
+    const store = storeFor("sheet-pause");
+    const hold = structuredClone(sync);
+    hold.held = held;
+    delete hold.held.type;
+    delete hold.held.seq;
+    store.apply(syncOf(hold), 1);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBe("round");
+    store.apply(syncOf(sync), 2);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBeNull();
+    store.apply(message(gameOver, 3), 3);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBe("game-over");
+    // A sync forgets the standings the event gave, but the snapshot still says the game is over.
+    const ended = structuredClone(sync);
+    ended.snapshot = gameOver.snapshot;
+    store.apply(syncOf(ended), 4);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBe("game-over");
+  });
+
+  it("is none once the table closes", () => {
+    const store = storeFor("sheet-round");
+    store.apply(message({ ...serverFixture("tableState"), state: "closed" }, 9), 9);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBeNull();
+  });
+});
+
+describe("whether the game should be held for what is up", () => {
+  it("is so for the pause menu and for every sheet from the menu bar, in a solo game being played", () => {
+    const { state } = storeFor("sheet-pause");
+    expect(wantsPause(state, NOTHING_ASKED)).toBe(false);
+    expect(wantsPause(state, asked({ pauseMenu: true }))).toBe(true);
+    for (const menu of ["history", "last-trick", "rules", "settings"] as const) {
+      expect(wantsPause(state, asked({ menu }))).toBe(true);
+    }
+  });
+
+  it("is not so over a round hold, which is a wait of its own, or a game that has ended", () => {
+    expect(wantsPause(storeFor("sheet-round").state, asked({ menu: "rules" }))).toBe(false);
+    expect(wantsPause(storeFor("sheet-game-over").state, asked({ menu: "history" }))).toBe(false);
+  });
+
+  it("is not so for an online table, which cannot be paused", () => {
+    const { state } = storeFor("sheet-pause", (sync) => {
+      sync.table.mode = "online";
+    });
+    expect(wantsPause(state, asked({ pauseMenu: true }))).toBe(false);
+  });
+});

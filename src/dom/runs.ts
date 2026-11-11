@@ -65,3 +65,9 @@ export function renderRuns(container: HTMLElement, line: Line): void {
   });
   container.replaceChildren(...spans);
 }
+
+// A line of text with its suits coloured, set into the node as it is: no flex row, no elision.
+export function renderSuited(node: HTMLElement, text: string): void {
+  node.replaceChildren();
+  appendText(node, text);
+}

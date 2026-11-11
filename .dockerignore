@@ -1,0 +1,23 @@
+.git
+**/.git
+.github
+**/.env*
+**/.npmrc
+.cache
+.vscode
+.idea
+node_modules
+dist
+dist-look
+build
+test-results
+playwright-report
+blob-report
+libs
+docs
+# The type declaration of the smoke test, which a unit test imports and tsc checks, stays.
+tools/*
+!tools/smoke.d.mts
+*.md
+compose.yaml
+deploy/docker-compose.yml

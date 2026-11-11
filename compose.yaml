@@ -1,0 +1,24 @@
+# The page and the server, both built from this checkout, one image at a time: docker compose build
+# server, docker compose build web, docker compose up, then http://127.0.0.1:8000. The server's
+# folder needs git submodule update --init --recursive first.
+services:
+  server:
+    build:
+      context: libs/romanian_whist_server
+      args:
+        JOBS: ${WHIST_JOBS:-2}
+        WHIST_COMMIT: ${WHIST_SERVER_COMMIT:-}
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 30s
+
+  web:
+    build: .
+    depends_on:
+      server: { condition: service_healthy }
+    environment:
+      SITE_ADDRESS: ":80"
+      WHIST_SERVER_ADDRESS: server:8080
+    ports: ["127.0.0.1:8000:80"]

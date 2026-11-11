@@ -2,7 +2,8 @@
 
 > **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
 > draws the table and plays a solo game against the server (PR #3). The rest of the page, phases 7
-> and 8, is not built.**
+> and 8, is not built. Outside the phases, the page's Docker image is built, has had two reviews,
+> and waits for the owner's approval (PR #5, [§14](#the-docker-image-outcome)).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the
@@ -157,12 +158,16 @@ The repository:
 
 ```
 romanian_whist_web/                 AGPL-3.0-or-later, like the server and the engine
-├── libs/romanian_whist_server/     submodule: the server, for its fixtures and the end-to-end tests
+├── libs/romanian_whist_server/     submodule: the server, for its fixtures, the end-to-end tests,
+│                                   its image and the proxy examples
 ├── src/                            TypeScript: net, play, table, sheets, lobby, i18n
 ├── public/                         generated assets (§9), fonts and their licences
-├── tests/                          Vitest (units), Playwright (end to end, screenshots)
-├── tools/                          asset import, translation import, screenshot pairing
+├── tests/                          Vitest (units), Playwright (end to end, the image, screenshots)
+├── tools/                          asset import, translation import, screenshot pairing, smoke.mjs
+├── deploy/                         the image's Caddyfile, and the compose file for the page alone
 ├── docs/                           this plan, and the mock-up
+├── Dockerfile                      the page's image: Caddy serving the built page
+├── compose.yaml                    the page and the server, built from this checkout (§14)
 └── CLAUDE.md                       the owner's machine rules (§14)
 ```
 
@@ -330,12 +335,15 @@ sets the rules. The page's share:
 
 - Player-chosen text goes in only through `textContent`.
 - The page works under the strict Content-Security-Policy the server sends: no inline script, and
-  `connect-src 'self'`.
+  `connect-src 'self'`. Until the server's phase 9 sends it, the policy comes from the image's
+  Caddy, or, behind the user's own proxy, from the server's proxy examples. Every copy is the exact
+  string of `PAGE_CSP` in `tools/smoke.mjs`, which a unit test and the smoke test compare.
 - Every asset is served by the server itself, so the page makes no third-party requests. That is
   also a privacy point.
 - The token is kept in the browser's storage and sent only in `hello`, never in a URL or a log.
 - **The footer** links "Source" to the server at the commit `GET /version` gives, and to this
-  repository at the commit the page was built from, which the build writes into the page. The
+  repository at the commit the page was built from, which the build writes into the page. In the
+  image, that commit will come from a build argument, since the build context has no `.git`. The
   AGPL's section 13 needs both (the server plan's
   [§12](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#12-deployment-and-operations)).
 - **An About page** says what the page keeps: a chosen display name and a random token in the
@@ -415,14 +423,185 @@ checkout of the server beside this one.
   these packages, with an `edgesOut` error, so `package-lock.json` is made with npm 11.
 - **Day to day:** the Vite dev server (port 5173) passes `/ws` through to the server (port 8080).
   Or the server serves `dist/` itself, as it does in production.
-- **CI:** one Linux job, which builds the page and runs its unit tests. End-to-end tests and
-  screenshots run locally, at the end of a phase. From phase 6, which moves the submodule to a
-  server with fixtures, the job checks out the submodule too, without the submodule's own
-  submodules, so that §13.1's tests run.
+- **CI:** the Linux job builds the page and runs its unit tests. End-to-end tests and screenshots
+  run locally, at the end of a phase. From phase 6, which moves the submodule to a server with
+  fixtures, the job checks out the submodule too, without the submodule's own submodules, so that
+  §13.1's tests run. The `docker` job and the `publish` job are below.
+- **Docker.** The page is an image: `Dockerfile` builds it with Node 26 (npm 11) in a Debian stage,
+  because TypeScript 7 ships a glibc binary only, and serves `dist/` from `caddy:2.11.9-alpine`
+  with `deploy/Caddyfile`. The Linux job and the owner's machine stay on Node 24, where the
+  lockfile is made.
+  - **Caddyfile.** It serves the page, hides dotfiles, answers `/t/` and six capital letters or digits with
+    `index.html`, and passes `/ws` and `/version` to `WHIST_SERVER_ADDRESS`. It sends the
+    content-security-policy, `nosniff` and the referrer policy on every answer, errors included,
+    and the caching rules on successful ones only: `immutable` under `/assets/`, `no-cache` for
+    the page and a table's link, an hour for the rest.
+  - **Compose files.** `deploy/docker-compose.yml` runs the image alone, pointed at any server, with
+    a read-only root and only the right to bind ports 80 and 443.
+    The full stack and the setup behind the user's own proxy are the server's repository's
+    compose files, which this repository's CI runs from the submodule. `compose.yaml` builds the
+    server and the page from this checkout: `docker compose build server`, then
+    `docker compose build web`, then `docker compose up`, on port 8000.
+  - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
+    page, a table's link, the file types, the policy and caching headers, that an error is not
+    kept by a cache (or not for long, from the server alone), and a solo game through `/ws`,
+    using the server's smoke test. A browser check, `playwright.docker.config.ts`, loads the page
+    under the image's policy, and fails if the page arrives without it.
+  - **CI.** The `docker` job checks that this repository's compose files and the override its
+    README gives parse, builds both images, and runs the full stack with our Caddy, the own-proxy
+    setup directly and through the server's Caddy and nginx examples, this repository's compose
+    file pointed at that server over the Docker bridge and, with the README's override, over the
+    server's network, and the same file over HTTPS under its hardening. It holds the page's image
+    to its size budget. The `publish` job pushes the page's image from `master` and version tags,
+    never from a pull request.
+  - **Versioning.** The image's tag is the version in `package.json`; its labels carry the
+    protocol version and the server revision it was tested with. The server's plan has the rest
+    ([§12.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#121-with-docker-recommended)).
 - **Python** 3.12 with Pillow, for the mock-up's build script and the import tools.
 - **Pull requests:** change a PR's title or description with
   `gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -F body=@<file>`. `gh pr edit` fails on the
   owner's repositories with a "Projects (classic)" GraphQL error.
+
+### The Docker image: outcome
+
+Branch `web/docker`, off `ccr-209c0806-o444sp`, PR #5, "The page's Docker image". Commits:
+
+- **The build:** `5127b11` (the submodule moves to the server's `21b905d`), `300d361` (the image),
+  `cc14b63` (the smoke test), `e52efa5` (the browser check), `36c6ae6` (CI), `9b6de49` (the compose
+  files), `0b13b28` (the Docker rule in `CLAUDE.md`), `4dfd0fa` (the README), `bd7da9e` (the notes
+  in this plan) and `ff19fae` (the `.dockerignore` fault that CI found).
+- **After the first review:** `ab2da44`, `921bb9e`, `7f11be2`, `4b94d0e`, `46bd892` and `91229b7`.
+- **After the second review:** `1369279`, `b367449` and `f5bb03c`.
+- **This outcome,** in a commit of its own.
+
+**The owner's choices** (2026-11-10):
+
+- **The four from the start:** Caddy in the web image, serving the page and passing `/ws` on; the
+  registry ghcr.io; publishing from `master` and version tags; amd64 only.
+- **Two requests:** the latest stable versions (Node 26 for the image's build stage, Caddy 2.11.9),
+  and a deployment without a Caddy of ours, which is the server's
+  [§12.1.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#1211-behind-your-own-proxy).
+- **The plan's open questions,** all at their defaults. The ones that shape this page: the browser
+  check of the policy runs in CI; `/version` is proxied; there is no HSTS; the Linux job and the
+  owner's machine stay on Node 24.
+- **After the first review** (15 findings, none above severity 3): fix all as the implementer
+  recommended, skipping HSTS, the extra step that stops the server to check a 502, playing a bid and
+  a card in the browser check, and a concurrency group per commit; and a second review.
+- **After the second review** (13 findings, none above severity 2): fix all, as recommended. No third
+  review.
+
+**Built:**
+
+- **The submodule** moves from `a656cde` to `21b905d`, the merge of the server's Docker image. It
+  brings the server's image, its compose files and the proxy examples, which this repository's CI
+  runs from the submodule instead of copying.
+- **The image.** `Dockerfile`: a build stage on `node:26.13.0-trixie-slim` (npm 11.20), then
+  `caddy:2.11.9-alpine` holding `dist/` in `/srv` and `deploy/Caddyfile`, which the build validates.
+  It is 68 MB by its layers, 66 MB of that Caddy's Alpine base.
+- **`deploy/Caddyfile`.** It serves the page with dotfiles hidden, answers a table's link (`/t/` and
+  six capital letters or digits) with `index.html`, and passes `/ws` and `/version` to
+  `WHIST_SERVER_ADDRESS`. The policy, `nosniff` and the referrer policy are on every answer, errors
+  included. The caching rules are on 2xx and 304 answers only, so that an error is never cached.
+- **`tools/smoke.mjs`,** which checks a running page and plays a solo game through it with the
+  server's smoke test, in three profiles: `web` (our Caddy), `proxy` (a proxy with the server's
+  examples) and `server` (the server alone). `--copies` compares the policy in this Caddyfile and
+  the server's two proxy examples with `PAGE_CSP`.
+- **A browser check,** `playwright.docker.config.ts` and `tests/docker/page.spec.ts`, which loads
+  the page from a running stack under its policy.
+- **Compose files:** `deploy/docker-compose.yml` runs the image alone, pointed at any server, with a
+  read-only root and only the right to bind ports 80 and 443; `compose.yaml` builds the page and
+  the server from this checkout, one image at a time.
+- **CI:** the `docker` and `publish` jobs, below. **Docs:** the README's deployment sections, this
+  plan's §4, §12, §14 and phase 7, and a Docker rule in `CLAUDE.md`.
+
+**Versions:** Node 26.13.0 (Active LTS) with npm 11.20.0 on Debian trixie for the build stage, and
+Caddy 2.11.9. CI's proxies run Caddy 2.11.9 and nginx 1.30.6. The Caddy example in the server needs
+Caddy 2.9.1 or later, which the image's Caddy is well past.
+
+**Tests and checks:**
+
+- **The unit tests,** 320 in 24 files, with a test that every copy of the policy is `PAGE_CSP`, and
+  the end-to-end tests, 8, pass. The end-to-end run used the server binary from the server's
+  checkout, through `WHIST_SERVER`, since the submodule has no build here.
+- **The `web` profile** passes ten checks: the page; a table's link, which is the same page; a
+  lowercase and a seven-character link, which are not found; the file types, `woff2` included;
+  gzip; the policy, `nosniff` and the referrer policy on every kind of answer, `/version` included;
+  the caching rules; that an error is not kept by a cache; and the game through `/ws` with the
+  server's commit. The `proxy` profile runs the same except that gzip is only reported, and the
+  `server` profile checks no headers and holds an error to nothing long.
+- **Negative checks,** each on a copy, so nothing in the repository changed: the smoke test fails on
+  Caddy 2.6.2 with the Caddy example (a 404 gets the year-long cache), on nginx with a changed
+  policy, and, in the `web` and `proxy` profiles, on an hour's cache on a 404; a Caddy that adds
+  `no-store` to errors passes; the browser check fails when the stack says `font-src 'none'` and
+  when the page arrives with no policy header; the copies comparison names a drifted file.
+- **What CI runs.** The `build` job builds the page, runs the unit tests and the policy copies test.
+  The `docker` job:
+  - parses this repository's two compose files and the override the README gives, before anything
+    is built, and checks that the protocol version is the server's;
+  - builds the page's image and the server's, from the submodule;
+  - checks that the three copies of the policy are the same;
+  - runs the full stack with our Caddy: the `web` profile, the browser check, and a stop that leaves
+    the server with exit code 0;
+  - runs the own-proxy setup as shipped: the `server` profile directly and the `proxy` profile
+    through the Caddy and nginx examples;
+  - moves the server to the Docker bridge's address, as the README says, and runs this repository's
+    compose file against it, with the `web` profile, and again with the README's override joining
+    the server's network, with `server:8080`;
+  - runs the same compose file at `localhost`, to see automatic HTTPS answer 200, and 308 on HTTP,
+    under the file's hardening;
+  - holds the image to 85 MB.
+
+  The `publish` job, which a pull request never runs, pushes the page's image from `master` and
+  version tags.
+
+**Where the build departs from the plan:**
+
+- **The size budget is 85 MB, not 70 MB.** The plan estimated 55 MB, and the base alone is 66 MB.
+- **The policy is on Caddy's own error answers too,** through `handle_errors` and a snippet that
+  the site imports as well: an error that `file_server` gives skips a `header` directive, so the
+  plan's Caddyfile sent it on successful answers only.
+- **A check the plan did not list:** CI fails when the page's protocol version is not the server's.
+  The policy is also compared as files (`--copies`) and in a unit test, not only live.
+- **The image's Node stage was built only in CI.** Docker Hub's rate limit refused the Node image
+  here after one attempt. The page was built on the host into a stand-in on the same Caddy image,
+  and the context the `.dockerignore` leaves was built on the host. CI found one fault this way:
+  `tools/` was left out of the context, and a unit test imports the smoke test's declaration.
+- **`/ws` is left out of the policy checks.** The server's nginx example does not send the headers
+  on its `/ws` location, so the check failed there. It is a plain GET with no body.
+- **The page's container is hardened,** which the plan gave to the server's only: a read-only root,
+  a tmpfs on `/tmp`, and one capability, the right to bind ports 80 and 443.
+
+**The reviews,** each by a cold reviewer:
+
+- **The first,** 15 findings, none above severity 3. The ones that mattered: the page's compose
+  file could not reach a server that listens on loopback, which every documented setup does, and
+  CI never ran it; an hour's cache on an error passed the smoke test; the browser check passed
+  with no policy header; and the page's container was unhardened. The rest were wording, time
+  limits, a dead job output and the build order of the compose file's two images. All fixed but the
+  four skips above.
+- **The second,** 13 findings, none above severity 2: CI tested neither documented way to reach a
+  server, nor HTTPS under the hardening; the README's advice was incomplete (a firewall, a server
+  started before Docker, Linux only, which network); the failure logs were skipped when a job timed
+  out; a proxied error that says `no-store` would have failed the smoke test; and wording. All fixed.
+
+**Builds and CI.** The first run failed in the image's build, on the `.dockerignore` fault. The runs
+on `1369279`, after the first review's fixes, and on `f5bb03c`, after the second's, pass: `build`,
+`docker` and a skipped `publish`. In the `docker` job the page's image builds in under a minute and
+the server's, with a warm cache, in about 10 seconds; the whole job takes about 5 minutes with a
+cold cache and a minute and a half with a warm one. The commits after `f5bb03c` change only this
+plan.
+
+**Left for the server's phase 9:**
+
+- Keep `/version` out of the proxy examples' cache rules. It is a 404 today, so nothing is cached
+  yet, but the examples would give a 200 an hour.
+- Send the policy headers on the nginx example's `/ws` location, as the Caddy examples and this
+  Caddyfile do.
+
+**Not done, and not checked here:** publishing, which waits for the parents to reach `master`, and
+then both GHCR packages need setting to Public; the footer's commit as a build argument, which is
+phase 9's share of the page; and the bridge advice on Docker Desktop, which the README states from
+Docker's documentation and no test covers.
 
 ---
 
@@ -680,8 +859,8 @@ of code `e2eef2e`):
 ### Phase 7: sheets and menus — L
 
 - **Work:**
-  - first, the submodule moves to the server's `b6f59c7`, which serves the page's WebP pictures and
-    JSON files;
+  - the submodule has moved to the server's `21b905d` (the Docker image's merge), which serves the
+    page's WebP pictures and JSON files, so this step is done;
   - the reference pictures are the `sheet-*`, `menu` and `language` shots from the same CI run as
     phase 6's (desktop commit `03a3244`, in `shots/` on the desktop's throwaway branch
     `ccr-209c0806-o444sp`). If the desktop's look changes, the workflow there takes them again;

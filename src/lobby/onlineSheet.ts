@@ -102,7 +102,7 @@ export class OnlineSheet implements Sheet {
   }
 
   profile(): Profile {
-    return { name: this.name.value.trim() === "" ? this.name.value : this.name.value, gender: this.gender.value, avatar: this.avatar };
+    return { name: this.name.value, gender: this.gender.value, avatar: this.avatar };
   }
 
   private submit(): void {

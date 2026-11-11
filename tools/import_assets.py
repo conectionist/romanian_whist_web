@@ -9,7 +9,8 @@ imported. The output is committed, so the tool runs again only when the desktop'
 
 What it writes:
 
-    public/cards/<code>.webp        the 48 cards the protocol deals, at twice the hand's card height
+    public/cards/<code>.webp        the 48 cards the protocol deals, and the four twos no deck deals,
+                                    at twice the hand's card height
     public/portraits/<id>.webp|svg  the portraits avatars.json lists
     public/table/wood.webp, felt.webp
     public/fonts/<family>/*.woff2   with each family's OFL.txt
@@ -35,7 +36,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 PUBLIC = ROOT / 'public'
 MANIFEST = ROOT / 'src' / 'assets' / 'manifest.json'
 
-RANK_FILES = {'3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', 'T': '10',
+# The twos are in no deck, but the pictures of the sheets are taken over a hand that holds one.
+RANK_FILES = {'2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', 'T': '10',
               'J': 'jack', 'Q': 'queen', 'K': 'king', 'A': 'ace'}
 SUIT_FILES = {'C': 'clubs', 'D': 'diamonds', 'H': 'hearts', 'S': 'spades'}
 

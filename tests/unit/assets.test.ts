@@ -30,7 +30,11 @@ describe("the asset manifest", () => {
         expect(cardUrl(`${rank}${suit}`)).toBe(`/cards/${rank}${suit}.webp`);
       }
     }
-    expect(Object.keys(manifest.cards)).toHaveLength(48);
+    // And the four twos, which no deck deals: the pictures of the sheets sit over a hand that holds one.
+    for (const suit of "HDSC") {
+      expect(cardUrl(`2${suit}`)).toBe(`/cards/2${suit}.webp`);
+    }
+    expect(Object.keys(manifest.cards)).toHaveLength(52);
   });
 
   it("has a file for every URL, and no data: URL", () => {

@@ -94,6 +94,9 @@ describe("who went away, was replaced or came back", () => {
 
   it("tells nothing for what has not changed, for your own seat, or for another table", () => {
     expect(presenceNews(here, here)).toEqual([]);
+    // A seat that stays away, or stays replaced, is not news again with every state the table sends.
+    expect(presenceNews(away, away)).toEqual([]);
+    expect(presenceNews(replaced, replaced)).toEqual([]);
     expect(presenceNews(null, here)).toEqual([]);
     expect(presenceNews(here, { ...away, code: "OTHER1" })).toEqual([]);
     const yourself = { ...away, seats: away.seats.map((seat, index) => (index === 0 && seat.kind === "human" ? { ...seat, presence: "away" as const } : seat)) };

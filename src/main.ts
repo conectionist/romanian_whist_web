@@ -5,10 +5,13 @@ import type { ServerMessage } from "./net/protocol";
 import { socketUrl } from "./net/socket";
 import { Controller } from "./play/controller";
 import { modelOf } from "./play/model";
-import { currentPace } from "./play/motion";
+import { currentPace, storePace, storedPace } from "./play/motion";
+import { Flow } from "./play/flow";
 import { PlaybackQueue } from "./play/queue";
 import { NO_CHANGE, Store } from "./play/store";
 import { el } from "./dom/el";
+import { MenuBar, menuStateFor } from "./menu/menuBar";
+import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
 import { TableScene } from "./table/renderer";
 import { TableView } from "./table/view";
@@ -20,6 +23,7 @@ import "./table/styles/rack.css";
 import "./table/styles/cards.css";
 import "./table/styles/hud.css";
 import "./table/styles/strip.css";
+import "./sheets/styles/sheet.css";
 
 // The live page: the connection feeds the queue, which draws the table, and a click goes back
 // through the controller. A page is told what the connection is doing, and whether it is at a table,
@@ -32,6 +36,8 @@ function status(value: string): void {
 
 const frame = el("div", { class: "window" });
 document.getElementById("app")?.append(frame);
+// The menu bar is 46 pixels of the window, and the table takes the rest.
+frame.style.setProperty("--band", "46px");
 
 const view = new TableView(frame);
 const scene = new TableScene(view, { pace: currentPace });
@@ -64,17 +70,75 @@ const controller: Controller = new Controller({
 scene.hand.setHandler((slot) => controller.onPlay(slot));
 scene.bidStrip.setHandler((bet) => controller.onBid(bet));
 
+// The sheets and the menu bar. What the sheets show is drawn after the table has, so a round sheet
+// does not cover the last trick's sweep, and again whenever the player asks for another.
+const flow: Flow = new Flow({
+  send: (message) => connection.send(message),
+  store,
+  changed: () => render(),
+  keepPace: storePace,
+});
+
+const sheets = new Sheets(
+  {
+    closeMenu: () => flow.closeMenu(),
+    openMenu: (sheet) => flow.openMenu(sheet),
+    continueRound: () => flow.continueRound(),
+    playAgain: () => flow.playAgain(),
+    mainMenu: () => flow.mainMenu(),
+    resume: () => flow.resume(),
+    settingsChanged: (values) => flow.changeSettings(values),
+  },
+  {
+    rules: () => ({ seats: 4, structure: "1-8-1", foreheadAndHidden: true, allOneCardForehead: false }),
+    settings: () => ({ botSpeed: 2, waitAfterRound: false, pace: storedPace() }),
+  },
+);
+
+const menuBar = new MenuBar({
+  newGame: () => undefined,
+  settings: () => flow.openMenu("settings"),
+  rules: () => flow.openMenu("rules"),
+  exit: () => flow.exit(),
+});
+frame.append(menuBar.element, sheets.layer.element);
+
+scene.onHistory(() => flow.openMenu("history"));
+scene.onLastTrick(() => flow.openMenu("last-trick"));
+
+function render(): void {
+  const shown = flow.shown();
+  sheets.render(shown, store.state, flow.continuedHold());
+  menuBar.update(menuStateFor(store.state, false));
+  // The table under a sheet takes neither clicks nor the keyboard.
+  view.root.inert = shown !== null;
+}
+
+// Esc closes the sheet the menu bar or a corner button opened, and otherwise raises the pause menu,
+// or drops it again. A key held down acts once.
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !event.repeat) {
+    flow.escape();
+  }
+});
+
 const queue = new PlaybackQueue(
   store,
   {
-    relayout: (change, animate) => scene.relayout(controller.adjust(modelOf(store.state)), change, animate),
+    relayout: async (change, animate) => {
+      await scene.relayout(controller.adjust(modelOf(store.state)), change, animate);
+      render();
+    },
     finishMotion: () => scene.finishMotion(),
   },
   {
     pace: currentPace,
     hidden: () => document.visibilityState === "hidden",
     now: () => performance.now(),
-    onApply: (message, change) => controller.onApply(message, change),
+    onApply: (message, change) => {
+      controller.onApply(message, change);
+      flow.onApply(message);
+    },
   },
 );
 
@@ -100,6 +164,7 @@ function handle(message: ServerMessage): void {
 }
 
 status("connecting");
+render();
 void scene.relayout(null, { kind: "sync", event: null, fresh: true }, false);
 void loadFonts().then(() => scene.refit());
 connection.start();

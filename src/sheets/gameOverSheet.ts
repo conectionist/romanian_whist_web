@@ -126,6 +126,9 @@ export class GameOverSheet implements Sheet {
   private readonly history = new SheetButton(t("GameOverPanel", "Round history"), "quiet", "history");
   private readonly playAgain = new SheetButton(t("GameOverPanel", "Play again"), "primary", "play-again");
   private readonly buttons: HTMLElement;
+  // Which arrangement of the buttons is shown: put again only when it changes, since taking a button
+  // out of the page and putting it back takes the keyboard from it.
+  private arranged: boolean | null = null;
 
   constructor(handlers: GameOverActions) {
     this.table.element.classList.add("sheet-after-head");
@@ -155,11 +158,14 @@ export class GameOverSheet implements Sheet {
     const showPlayAgain = !fields.failed && options.canPlayAgain;
     this.playAgain.element.hidden = !showPlayAgain;
     this.mainMenu.setKind(showPlayAgain ? "quiet" : "primary");
-    this.buttons.replaceChildren(
-      ...(showPlayAgain
-        ? [this.mainMenu.element, this.history.element, this.playAgain.element]
-        : [this.history.element, this.mainMenu.element]),
-    );
+    if (this.arranged !== showPlayAgain) {
+      this.arranged = showPlayAgain;
+      this.buttons.replaceChildren(
+        ...(showPlayAgain
+          ? [this.mainMenu.element, this.history.element, this.playAgain.element]
+          : [this.history.element, this.mainMenu.element]),
+      );
+    }
   }
 
   focusDefault(): void {

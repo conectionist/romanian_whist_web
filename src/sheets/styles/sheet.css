@@ -422,6 +422,7 @@
 
 .check input {
   position: absolute;
+  z-index: 1;
   left: 0;
   top: 2px;
   width: 14px;

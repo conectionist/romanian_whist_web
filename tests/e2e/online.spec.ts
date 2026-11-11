@@ -112,6 +112,37 @@ test.describe("with nothing moving", () => {
     expect(problems).toEqual([]);
   });
 
+  test("Exit at an online table offers to leave or stay, and leaving puts a computer player in the seat at once", async ({ page: alice, browser }) => {
+    const problems: string[] = [];
+    alice.on("pageerror", (error) => problems.push(error.message));
+    const code = await createTable(alice, "Alice", { seats: 3, others: ["open", "computer"], speed: "fastest" });
+    const bob = await joinByLink(browser, code, "Bob");
+    await sheet(alice, "lobby").locator('[data-action="start"]').click();
+    await expect(alice.locator(".seat:not([hidden])")).toHaveCount(3);
+
+    // The game cannot be paused: what Exit raises says so, and Stay is the way back.
+    await alice.locator('[data-menu="exit"]').click();
+    const leave = sheet(alice, "leave");
+    await expect(leave.locator(".sheet-title")).toHaveText("Leave the table?");
+    await expect(leave.locator(".sheet-meta")).toHaveText("The game goes on without you: a computer player takes your seat.");
+    await expect(alice.locator("body")).toHaveAttribute("data-status", "at a table");
+    await leave.getByRole("button", { name: "Stay" }).click();
+    await expect(leave).toHaveCount(0);
+    await expect(seatOf(alice, "Alice").locator(".presence")).toBeHidden();
+
+    // Esc raises it again, and Leave table leaves: the page is at the main menu, and Bob is told.
+    await alice.keyboard.press("Escape");
+    await expect(leave).toBeVisible();
+    await leave.getByRole("button", { name: "Leave table" }).click();
+    await expect(alice.locator("body")).toHaveAttribute("data-status", "at no table");
+    await expect(alice.locator(".menu-page")).toBeVisible();
+    await expect(alice).toHaveURL(/\/$/);
+    await expect(seatOf(bob.page, "Alice").locator('.presence[data-state="replaced"]')).toHaveText("Replaced");
+    await expect(bob.page.locator('.notice[data-notice="news:Alice was replaced by a computer player."]')).toBeVisible();
+    expect(problems).toEqual([]);
+    await bob.context.close();
+  });
+
   test("a player who drops is waited for, then replaced by a computer player, and is given the seat back on return", async ({ page: alice, browser }) => {
     // The wait is the turn timer, at its shortest.
     test.setTimeout(120_000);

@@ -56,6 +56,33 @@ def table_state():
     }
 
 
+def lobby_state():
+    """A table in its lobby, as its host sees it: you, two open seats and a computer player, with every
+    control the host has."""
+    seats = [
+        {'kind': 'human', 'name': 'Player', 'gender': 'male', 'avatar': 'man-dark-hair-beard', 'presence': 'here', 'you': True},
+        {'kind': 'open'},
+        {'kind': 'open'},
+        {'kind': 'computer', 'level': 'low-risk', 'name': 'Cristina', 'gender': 'female', 'avatar': 'woman-long-red-hair'},
+    ]
+    settings_seats = [
+        {'kind': 'human', 'name': 'Player', 'gender': 'male', 'avatar': 'man-dark-hair-beard'},
+        {'kind': 'open'},
+        {'kind': 'open'},
+        {'kind': 'computer', 'level': 'low-risk', 'name': 'Cristina', 'gender': 'female', 'avatar': 'woman-long-red-hair'},
+    ]
+    table = {
+        'code': 'K7QM4P', 'host': 0, 'mode': 'online', 'paused': False, 'state': 'lobby', 'seats': seats,
+        'settings': {
+            'seats': settings_seats, 'structure': '1-8-1', 'foreheadAndHidden': True,
+            'allOneCardForehead': False, 'botSpeed': 2, 'waitAfterRound': True, 'replacement': 'reckoner-beta',
+            'turnTimer': 60000,
+        },
+    }
+    return {'table': table, 'game': None, 'snapshot': None, 'history': [], 'lastTrick': None, 'prompt': None,
+            'held': None}
+
+
 def snapshot():
     """fullTable(): round 10 of 32, trick 3 of 8, every bid 1, five spades on the felt, Ana's King
     taking it, and a hand of eight in the order the desktop's tool lays it out."""
@@ -189,6 +216,10 @@ def main():
     write('sheet-settings', fixture('sheet-settings.png', state(), sheet='settings'))
     write('sheet-history', fixture('sheet-history.png', state(history=history()), sheet='history'))
     write('sheet-last-trick', fixture('sheet-last-trick.png', state(lastTrick=last_trick()), sheet='last-trick'))
+    write('sheet-new-game', fixture('sheet-new-game.png', state(), sheet='new-game'))
+    write('sheet-online', fixture('sheet-online.png', state(), sheet='online'))
+    write('sheet-create-table', fixture('sheet-create-table.png', state(), sheet='create-table'))
+    write('sheet-lobby', {'shot': dict(SHOT, file='sheet-lobby.png'), 'state': lobby_state()})
     # The main menu is the window at no table: the whole 1920 x 1080 picture, menu bar and all.
     write('menu', {'shot': {'file': 'menu.png', 'width': 1920, 'height': 1080, 'view': 'window'},
                    'state': None, 'page': 'menu'})

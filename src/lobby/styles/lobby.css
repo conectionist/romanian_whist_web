@@ -632,13 +632,21 @@ select.field option {
   color: var(--gold-bright);
 }
 
+/* The row wraps where its words are long, as the Romanian's are, and Start stays at the right. */
 .lobby-actions {
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  row-gap: 12px;
+}
+
+.lobby-actions .sheet-btn.primary {
+  margin-left: auto;
 }
 
 .lobby-fill {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-left: auto;

@@ -546,3 +546,48 @@ test.describe("the other players' panels under a mouse", () => {
     });
   }
 });
+
+// The words of the Romanian are longer, so no button of a sheet's actions may be cut off by the sheet's edge,
+// nor the sheet made wider than itself, at any window the page works in.
+const ACTION_SHEETS = [
+  "sheet-round",
+  "sheet-history",
+  "sheet-last-trick",
+  "sheet-game-over",
+  "sheet-rules",
+  "sheet-settings",
+  "sheet-pause",
+  "sheet-new-game",
+  "sheet-online",
+  "sheet-create-table",
+  "sheet-lobby",
+];
+
+for (const [width, height, touch] of [
+  [1280, 760, false],
+  [844, 390, true],
+  [740, 360, true],
+] as const) {
+  test.describe(`in Romanian, in a window of ${width} by ${height}`, () => {
+    test.use({ viewport: { width, height }, hasTouch: touch, isMobile: touch });
+
+    for (const name of ACTION_SHEETS) {
+      test(`${name} has every button of its actions inside it`, async ({ page }) => {
+        await page.goto(`/look.html?shot=${name}&lang=ro`);
+        await page.waitForSelector("body[data-ready]");
+        const sheet = page.locator(".sheet:not([hidden])");
+        const box = (await sheet.boundingBox())!;
+        expect(await sheet.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+        const buttons = await sheet.locator(".sheet-actions button, .sheet-actions select, .sheet-actions input").all();
+        expect(buttons.length).toBeGreaterThan(0);
+        for (const button of buttons) {
+          await button.scrollIntoViewIfNeeded();
+          const at = (await button.boundingBox())!;
+          const label = (await button.textContent()) ?? "";
+          expect(at.x, `${label} left`).toBeGreaterThanOrEqual(box.x);
+          expect(at.x + at.width, `${label} right`).toBeLessThanOrEqual(box.x + box.width);
+        }
+      });
+    }
+  });
+}

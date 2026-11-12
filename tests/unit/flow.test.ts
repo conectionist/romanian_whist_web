@@ -4,7 +4,7 @@ import { seededRandom } from "../../src/lobby/catalogue";
 import { defaults, type Setup } from "../../src/lobby/setup";
 import { Flow, type Memory } from "../../src/play/flow";
 import type { Pace } from "../../src/play/motion";
-import { serverFixture, message, sender, storeFor, syncOf } from "./support/sheetState";
+import { lookFixture, serverFixture, message, sender, storeFor, syncOf } from "./support/sheetState";
 
 // What the page keeps, held in memory.
 export function fakeMemory(): Memory {
@@ -386,6 +386,30 @@ describe("New Game", () => {
     expect(flow.shown()).toBe("new-game");
   });
 
+  it("stops waiting when the connection comes back at no table, the answer lost with it", () => {
+    const { flow, receive } = setup("sheet-pause", (sync) => {
+      sync.table = null;
+      sync.snapshot = null;
+    });
+    flow.openMenu("new-game");
+    flow.deal(defaults(seededRandom(1)));
+    expect(flow.asking()).toBe(true);
+    receive(syncOf({ ...serverFixture("sync"), table: null, snapshot: null, history: [], lastTrick: null, prompt: null, held: null }));
+    expect(flow.asking()).toBe(false);
+    expect(flow.shown()).toBe("new-game");
+  });
+
+  it("stops waiting when the leaving that goes first is refused, and shows the table again", () => {
+    const { flow, receive } = setup("sheet-game-over");
+    flow.openMenu("new-game");
+    flow.deal(defaults(seededRandom(1)));
+    receive(message({ type: "error", code: "rateLimited" }, 3));
+    expect(flow.asking()).toBe(false);
+    expect(flow.lostTable()).toBe(false);
+    flow.closeMenu();
+    expect(flow.shown()).toBe("game-over");
+  });
+
   it("asks before leaving an online table for a new game, and Stay goes back to the sheet", () => {
     const online = (sync: any) => {
       sync.table.mode = "online";
@@ -523,6 +547,20 @@ describe("Play online", () => {
 });
 
 describe("an online table between games", () => {
+  it("forgets Back to the table and a closed round sheet when a sync finds the next game on", () => {
+    const { flow, receive } = setup("sheet-game-over", online("finished"));
+    flow.playAgain();
+    expect(flow.ui.backAtTable).toBe(true);
+    const next = structuredClone(lookFixture("sheet-pause").state);
+    next.table.mode = "online";
+    next.table.state = "playing";
+    next.table.host = 0;
+    next.table.code = "JFXB3J";
+    receive(syncOf(next));
+    expect(flow.ui.backAtTable).toBe(false);
+    expect(flow.ui.dismissedRound).toBeNull();
+  });
+
   it("shows the lobby, not another game's results, to someone who sat down after it", () => {
     // A sync of a finished table to a newcomer holds no game.
     const { flow } = setup("sheet-pause", online("finished", (sync) => {

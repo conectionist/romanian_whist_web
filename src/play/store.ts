@@ -175,6 +175,11 @@ export function applyTableState(state: StoreState, table: TableState, receivedAt
   if (table.state === "closed") {
     return { ...emptyStore(), lastError: state.lastError };
   }
+  // The next game at the table has started: the server says so before the game's first message, and
+  // the last game's ending is not this one's.
+  if (table.state === "playing" && state.table?.state === "finished") {
+    return { ...state, table, tableAt: receivedAt, result: null, stopped: false, scored: null };
+  }
   return { ...state, table, tableAt: receivedAt };
 }
 

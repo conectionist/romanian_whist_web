@@ -57,8 +57,10 @@ export function gameFinished(state: Pick<StoreState, "table" | "snapshot" | "res
   if (state.result !== null || state.stopped || state.table?.state === "finished") {
     return true;
   }
+  // The server calls a table finished as soon as its game is, so a finished snapshot at a table that is
+  // playing is the last game's, until the next one's first message.
   const status = state.snapshot?.status;
-  return status === "finished" || status === "stopped";
+  return status === "stopped" || (status === "finished" && state.table?.state !== "playing");
 }
 
 // Whether a game is being played: the pause has something to hold and something to raise over.

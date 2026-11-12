@@ -180,9 +180,11 @@ describe("which sheet is up, as messages arrive in turn", () => {
     expect(sheetFor(store.state, NOTHING_ASKED)).toBeNull();
     store.apply(message(gameOver, 3), 3);
     expect(sheetFor(store.state, NOTHING_ASKED)).toBe("game-over");
-    // A sync forgets the standings the event gave, but the snapshot still says the game is over.
+    // A sync forgets the standings the event gave, but the table and its snapshot still say the game
+    // is over.
     const ended = structuredClone(sync);
     ended.snapshot = gameOver.snapshot;
+    ended.table.state = "finished";
     store.apply(syncOf(ended), 4);
     expect(sheetFor(store.state, NOTHING_ASKED)).toBe("game-over");
   });
@@ -256,6 +258,19 @@ describe("the online table's sheets", () => {
     expect(sheetFor(none, { ...NOTHING_ASKED, joinCode: "JFXB3J" })).toBe("online");
     expect(sheetFor(none, { ...NOTHING_ASKED, menu: "rules", joinCode: "JFXB3J" })).toBe("rules");
     expect(sheetFor(online("lobby"), { ...NOTHING_ASKED, joinCode: "JFXB3J" })).toBe("lobby");
+  });
+
+  it("goes from the lobby to the table when the next game starts, and not by the last results", () => {
+    const store = storeFor("sheet-game-over", (sync) => {
+      sync.table.mode = "online";
+      sync.table.state = "finished";
+      sync.table.host = 0;
+    });
+    const ui = asked({ backAtTable: true });
+    expect(sheetFor(store.state, ui)).toBe("lobby");
+    // The server's word that the game is on comes before the game's first message.
+    store.apply(message({ ...serverFixture("tableState"), mode: "online", state: "playing", host: 0 }, 9), 0);
+    expect(sheetFor(store.state, ui)).toBeNull();
   });
 
   it("is the end of the game for a finished online table", () => {

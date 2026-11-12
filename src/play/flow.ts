@@ -90,6 +90,16 @@ export class Flow {
       case "sync": {
         this.leaving = false;
         this.continued = null;
+        // An answer lost with the connection never comes: at no table, nothing is waited for.
+        if (!atTable(this.state)) {
+          this.asked = false;
+          this.leftForIt = false;
+        }
+        // What was asked between games or of a round is for the game it was asked in, whose start a
+        // sync may have taken the place of.
+        if (gameOn(this.state)) {
+          this.ui = { ...this.ui, backAtTable: false, dismissedRound: null };
+        }
         // The server is the one that knows whether the game is held: a table paused before a reload
         // or a lost connection is held still, and the pause sheet is the way to let it go.
         this.paused = this.state.table?.paused === true;
@@ -110,10 +120,14 @@ export class Flow {
         if (!this.asked) {
           // A refusal may be of the way out itself, and then the table is still there to show.
           this.leaving = false;
-        } else if (!atTable(this.state)) {
-          // The table asked for was refused: the sheet stays, for another try.
+        } else {
+          // The table asked for was refused, or the leaving that went before it: either way the
+          // sheet stays, for another try.
           this.asked = false;
           this.leaving = false;
+          if (atTable(this.state)) {
+            this.leftForIt = false;
+          }
         }
         break;
       case "game":

@@ -1,32 +1,11 @@
-import type { Card, Suit } from "../net/protocol";
-import { rankName } from "../sheets/rulesSheet";
+import type { Card } from "../net/protocol";
 import { t } from "../i18n/t";
 import type { SeatView } from "../play/model";
-import { rankOf, suitOf } from "./cards";
 import { presenceText } from "../lobby/lobby";
+import { cardNameFor } from "./cardNames";
 
 // What a screen reader is told of the table: a card, and a name panel, in words. A card is a picture
 // of ink, and a name panel a row of small parts, neither of which reads as a sentence.
-
-const RANKS = "23456789TJQKA";
-
-export function suitName(suit: Suit): string {
-  switch (suit) {
-    case "S":
-      return t("cardname", "spades");
-    case "H":
-      return t("cardname", "hearts");
-    case "D":
-      return t("cardname", "diamonds");
-    case "C":
-      return t("cardname", "clubs");
-  }
-}
-
-// "Queen of spades", "10 of hearts".
-export function cardNameFor(card: Card): string {
-  return t("cardname", "%1 of %2", [rankName(RANKS.indexOf(rankOf(card))), suitName(suitOf(card))]);
-}
 
 // A card of the hand: its name, and on your turn whether it can be played, so the one to play is
 // not found by trying each. A card face down has no name to give.
@@ -38,7 +17,7 @@ export function handLabelFor(card: Card | null, yourTurn: boolean, playable: boo
   if (!yourTurn) {
     return name;
   }
-  return playable ? t("cardname", "%1, can be played", [name]) : t("cardname", "%1, cannot be played", [name]);
+  return playable ? t("cardname", "%1, playable", [name]) : t("cardname", "%1, not playable", [name]);
 }
 
 // A name panel: who it is, what they have bid and taken (the pill's words), whether they are away, and

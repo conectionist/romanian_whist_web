@@ -365,7 +365,7 @@ const queue = new PlaybackQueue(
       const answers = flow.asking();
       controller.onApply(message, change);
       flow.onApply(message);
-      const said = announcementFor(message);
+      const said = announcementFor(message, modelOf(store.state));
       if (said !== null) {
         announcer.say(said);
       }

@@ -1,8 +1,8 @@
 import { el } from "../dom/el";
 
 // How many of the last things said are kept in the region: a screen reader reads what is added, and
-// what has been read need not stay.
-const KEPT = 8;
+// what has been read need not stay, though a person who goes back over it finds the last round.
+const KEPT = 40;
 
 // A live region a screen reader reads out politely, one sentence for each thing added, and which
 // nothing on the screen shows.

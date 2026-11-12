@@ -518,7 +518,7 @@
     {
       "context": "cardname",
       "source": "hearts",
-      "translation": "inimă"
+      "translation": "inimă roșie"
     },
     {
       "context": "cardname",
@@ -539,16 +539,6 @@
       "context": "cardname",
       "source": "Your card, face down",
       "translation": "Cartea ta, cu fața în jos"
-    },
-    {
-      "context": "cardname",
-      "source": "%1, can be played",
-      "translation": "%1, se poate juca"
-    },
-    {
-      "context": "cardname",
-      "source": "%1, cannot be played",
-      "translation": "%1, nu se poate juca"
     },
     {
       "context": "seat",
@@ -589,6 +579,86 @@
       "context": "hint",
       "source": "Turn your phone sideways: the table needs the room.",
       "translation": "Ține telefonul pe orizontală: masa are nevoie de loc."
+    },
+    {
+      "context": "cardname",
+      "source": "%1, playable",
+      "translation": "%1, jucabilă"
+    },
+    {
+      "context": "cardname",
+      "source": "%1, not playable",
+      "translation": "%1, nejucabilă"
+    },
+    {
+      "context": "cardname",
+      "source": "the 2",
+      "translation": "doiul"
+    },
+    {
+      "context": "cardname",
+      "source": "the 3",
+      "translation": "treiul"
+    },
+    {
+      "context": "cardname",
+      "source": "the 4",
+      "translation": "patrul"
+    },
+    {
+      "context": "cardname",
+      "source": "the 5",
+      "translation": "cincul"
+    },
+    {
+      "context": "cardname",
+      "source": "the 6",
+      "translation": "șasele"
+    },
+    {
+      "context": "cardname",
+      "source": "the 7",
+      "translation": "șaptele"
+    },
+    {
+      "context": "cardname",
+      "source": "the 8",
+      "translation": "optul"
+    },
+    {
+      "context": "cardname",
+      "source": "the 9",
+      "translation": "nouarul"
+    },
+    {
+      "context": "cardname",
+      "source": "the 10",
+      "translation": "decarul"
+    },
+    {
+      "context": "cardname",
+      "source": "the jack",
+      "translation": "valetul"
+    },
+    {
+      "context": "cardname",
+      "source": "the queen",
+      "translation": "dama"
+    },
+    {
+      "context": "cardname",
+      "source": "the king",
+      "translation": "popa"
+    },
+    {
+      "context": "cardname",
+      "source": "the ace",
+      "translation": "asul"
+    },
+    {
+      "context": "announce",
+      "source": "Trump: %1",
+      "translation": "Atu: %1"
     }
   ]
 }

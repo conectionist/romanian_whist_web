@@ -12,6 +12,7 @@ import {
   railScale,
   scaledSource,
 } from "./geometry/rack";
+import { cardNameFor } from "./cardNames";
 import { rackOrigin } from "./geometry/seats";
 
 // How many times larger than the flat card each card's element is made: its picture is sampled at
@@ -92,6 +93,8 @@ export class RackView {
       }
       const face = shown.faces[index];
       setSrc(card.picture, face === undefined ? cardBackUrl : cardUrl(face));
+      // A card seen in a Forehead round is named; a back has nothing to say.
+      card.picture.alt = face === undefined ? "" : cardNameFor(face);
       card.element.classList.toggle("face", face !== undefined);
       const matrix = cssMatrix3d(scaledSource(cardTransform(shown.count, index), SOURCE_SCALE));
       card.element.style.transform = matrix;

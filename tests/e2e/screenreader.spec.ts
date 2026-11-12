@@ -37,14 +37,18 @@ test("a screen reader is told the table: its cards and name panels have names, a
   await expect(page.locator(".hand .hcard.playable").first()).toBeVisible();
   const names = await page.locator(".hand .hcard:not([hidden])").evaluateAll((cards) => cards.map((card) => card.getAttribute("aria-label")));
   expect(names).toHaveLength(1);
-  expect(names[0]).toMatch(/^(\d+|Jack|Queen|King|Ace) of (spades|hearts|diamonds|clubs), can be played$/);
+  expect(names[0]).toMatch(/^(\d+|Jack|Queen|King|Ace) of (spades|hearts|diamonds|clubs), playable$/);
   await decide(page);
   await expect(page.locator('.sheet[data-sheet="round"]:not([hidden])')).toBeVisible();
 
   const lines = await said(page);
-  // Each bid, each card, who took the trick and the round's scores, in the order they happened; no deal.
+  // The round's start with its trump, and the question put to you, come before the bids; a deal says nothing.
+  expect(lines[0]).toMatch(/^Round 1 of 23\. 1 card\. Trump: the (\d+|jack|queen|king|ace) of (spades|hearts|diamonds|clubs)\.$/);
+  expect(lines.filter((line) => line === "Your bid. How many tricks?")).toHaveLength(1);
+  expect(lines.filter((line) => /^Your turn/.test(line))).toHaveLength(1);
+  // Each bid, each card, who took the trick and the round's scores, in the order they happened.
   expect(lines.filter((line) => /^(You bid \d|\w+ bids \d)$/.test(line))).toHaveLength(3);
-  expect(lines.filter((line) => /^(You play|\w+ plays) /.test(line))).toHaveLength(3);
+  expect(lines.filter((line) => /^(You play|\w+ plays) the /.test(line))).toHaveLength(3);
   expect(lines.filter((line) => /(wins|win) the trick\.$/.test(line))).toHaveLength(1);
   const scored = lines.filter((line) => line.startsWith("Round 1 is scored."));
   expect(scored).toHaveLength(1);
@@ -60,9 +64,41 @@ test("it is told in Romanian in a Romanian page, to the desktop's words", async 
   await playFirstRound(page);
   const lines = await said(page);
   expect(lines.filter((line) => /^(Ai licitat \d|\w+ licitează \d)$/.test(line))).toHaveLength(3);
-  expect(lines.filter((line) => /^(Joci|\w+ joacă) /.test(line))).toHaveLength(3);
+  expect(lines.filter((line) => /^(Joci|\w+ joacă) (dama|popa|valetul|asul|\w+ul|șasele|șaptele) de /.test(line))).toHaveLength(3);
+  expect(lines[0]).toMatch(/^Runda 1 din 23\. 1 carte\. Atu: .+\.$/);
+  expect(lines.filter((line) => line === "Licitația ta. Câte faci?")).toHaveLength(1);
   expect(lines.filter((line) => /mâna\.$/.test(line))).toHaveLength(1);
   expect(lines.some((line) => line.startsWith("Punctajele rundei 1 sunt gata."))).toBe(true);
+});
+
+test("every picture of a card is named: the felt, the trump, a rack in a Forehead round and the last trick", async ({ page }) => {
+  await page.goto("/?solo=3&seed=7&speed=4&forehead=all&wait=1");
+  await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+  await waitForTurn(page);
+  const named = /^(\d+|Jack|Queen|King|Ace) of (spades|hearts|diamonds|clubs)$/;
+  // A Forehead round shows the other players' cards, each named, and the trump is named beside its label.
+  const faces = await page.locator(".rack-card.face img").evaluateAll((pictures) => pictures.map((picture) => picture.getAttribute("alt")));
+  expect(faces).toHaveLength(2);
+  for (const alt of faces) {
+    expect(alt).toMatch(named);
+  }
+  expect(await page.locator(".score-trump-card").getAttribute("alt")).toMatch(named);
+
+  // The round played to its held sheet, where the felt still shows the trick.
+  await playFirstRound(page);
+  // The cards on the felt are named, and so are those of the last trick.
+  const felt = await page.locator(".trick .card:not([hidden]) img").evaluateAll((pictures) => pictures.map((picture) => picture.getAttribute("alt")));
+  expect(felt.length).toBeGreaterThan(0);
+  for (const alt of felt) {
+    expect(alt).toMatch(named);
+  }
+  await page.locator('.sheet[data-sheet="round"] [data-action="continue"]').click();
+  await page.locator('[data-button="last-trick"]').click();
+  const last = await page.locator('.sheet[data-sheet="last-trick"]:not([hidden]) .mini img').evaluateAll((pictures) => pictures.map((picture) => picture.getAttribute("alt")));
+  expect(last).toHaveLength(3);
+  for (const alt of last) {
+    expect(alt).toMatch(named);
+  }
 });
 
 test("the game's end is said with who won", async ({ page }) => {

@@ -60,7 +60,7 @@ test.describe("the table's keys", () => {
     // The picked card is raised and named, and nothing is played until Enter.
     await page.keyboard.press("ArrowRight");
     await expect(card).toHaveClass(/selected/);
-    await expect(card).toHaveAccessibleName(/, can be played$/);
+    await expect(card).toHaveAccessibleName(/, playable$/);
     expect(await card.locator(".face").evaluate((face) => getComputedStyle(face).transform)).toBe("matrix(1, 0, 0, 1, 0, -30)");
     await expect(page.locator(".trick .card:not([hidden])")).toHaveCount(0);
     await page.keyboard.press("Enter");

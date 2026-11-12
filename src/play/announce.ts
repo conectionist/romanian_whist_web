@@ -1,6 +1,9 @@
 import { winnerAnnouncement } from "../sheets/gameOverSheet";
 import { sheetNumber } from "../sheets/parts";
-import { cardNameFor } from "../table/names";
+import { cardInSentence } from "../table/cardNames";
+import { cardsText, roundText, roundTypeText } from "../table/roundText";
+import { yourTurn } from "../table/trickPanel";
+import type { TableModel } from "./model";
 import { t } from "../i18n/t";
 import type { RoundResult, ServerMessage, Snapshot } from "../net/protocol";
 
@@ -22,8 +25,33 @@ export function roundAnnouncement(result: RoundResult, snapshot: Snapshot): stri
   return [t("announce", "Round %1 is scored.", [result.index + 1]), ...scores].join(" ");
 }
 
-// The words for a message, or null when it is not worth saying.
-export function announcementFor(message: ServerMessage): string | null {
+// A round begun: which it is, how many cards, what kind if not a plain one, and what is trump.
+export function roundStartAnnouncement(snapshot: Snapshot): string {
+  const { round } = snapshot;
+  const parts = [roundText(round.index + 1, round.count), cardsText(round.tricks)];
+  if (round.type !== "normal") {
+    parts.push(roundTypeText(round.type));
+  }
+  parts.push(round.trump === null ? t("roundsheet", "No trump") : t("announce", "Trump: %1", [cardInSentence(round.trump)]));
+  return parts.map((part) => `${part}.`).join(" ");
+}
+
+// What you are asked, in the trick panel's own sentence: said when the question comes, which the screen
+// shows by a strip and a panel and says nowhere.
+export function promptAnnouncement(model: TableModel | null): string | null {
+  const prompt = model?.prompt ?? null;
+  if (model === null || prompt === null) {
+    return null;
+  }
+  return prompt.kind === "bet" ? t("trickpanel", "Your bid. How many tricks?") : yourTurn(prompt.blind, model.hand.entries, model.leadSuit);
+}
+
+// The words for a message, or null when it is not worth saying. `model` is the table once the message is
+// applied, which a question is read from.
+export function announcementFor(message: ServerMessage, model: TableModel | null = null): string | null {
+  if (message.type === "prompt") {
+    return promptAnnouncement(model);
+  }
   if (message.type !== "game" || message.snapshot === null) {
     return null;
   }
@@ -31,10 +59,12 @@ export function announcementFor(message: ServerMessage): string | null {
   switch (event.kind) {
     case "betPlaced":
       return event.seat === snapshot.you ? t("BidBubbleItem", "You bid %1", [event.bet]) : t("announce", "%1 bids %2", [nameOf(snapshot, event.seat), event.bet]);
+    case "roundStarted":
+      return roundStartAnnouncement(snapshot);
     case "cardPlayed":
       return event.seat === snapshot.you
-        ? t("announce", "You play %1", [cardNameFor(event.card)])
-        : t("announce", "%1 plays %2", [nameOf(snapshot, event.seat), cardNameFor(event.card)]);
+        ? t("announce", "You play %1", [cardInSentence(event.card)])
+        : t("announce", "%1 plays %2", [nameOf(snapshot, event.seat), cardInSentence(event.card)]);
     case "trickWon":
       return event.seat === snapshot.you ? t("trickpanel", "You win the trick.") : t("trickpanel", "%1 wins the trick.", [nameOf(snapshot, event.seat)]);
     case "roundScored":

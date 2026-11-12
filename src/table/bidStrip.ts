@@ -61,7 +61,7 @@ export function fieldsFor(model: TableModel): Fields | null {
 
 // Whether the strip offers this bid. A forbidden bid of zero is still forbidden, which is why this
 // tests that there is one and not its value: zero is a legal bid.
-export function offers(fields: Fields, bet: number): boolean {
+export function offers(fields: Pick<Fields, "highest" | "forbidden">, bet: number): boolean {
   return bet >= 0 && bet <= fields.highest && !(fields.forbidden !== null && fields.forbidden === bet);
 }
 
@@ -72,7 +72,10 @@ export class BidStrip {
   private readonly note = el("div", { class: "bid-note" });
   private readonly buttons: HTMLButtonElement[] = [];
   private onBid: (bet: number) => void = () => undefined;
+  private onFocus: (bet: number) => void = () => undefined;
   private fields: Fields | null = null;
+  // The bid picked with the keys, which is lit as the one under the cursor is.
+  private selected: number | null = null;
 
   constructor() {
     this.element = el("div", { class: "panel bidstrip" }, this.question, this.row, this.note);
@@ -85,6 +88,24 @@ export class BidStrip {
     this.onBid = onBid;
   }
 
+  // Told which bid took the keyboard, if it is offered, so that Tab picks as an arrow does.
+  setFocusHandler(onFocus: (bet: number) => void): void {
+    this.onFocus = onFocus;
+  }
+
+  // Lights the picked bid, and puts the keyboard on it when asked.
+  select(bet: number | null, focus = false): void {
+    this.selected = bet;
+    this.paintSelection();
+    if (focus && bet !== null) {
+      this.buttons[bet]?.focus({ preventScroll: true });
+    }
+  }
+
+  private paintSelection(): void {
+    this.buttons.forEach((button, bet) => button.classList.toggle("selected", bet === this.selected && !button.disabled && !button.hidden));
+  }
+
   private button(bet: number): HTMLButtonElement {
     while (this.buttons.length <= bet) {
       const number = this.buttons.length;
@@ -92,6 +113,11 @@ export class BidStrip {
       button.addEventListener("click", () => {
         if (this.fields !== null && offers(this.fields, number)) {
           this.onBid(number);
+        }
+      });
+      button.addEventListener("focus", () => {
+        if (this.fields !== null && offers(this.fields, number)) {
+          this.onFocus(number);
         }
       });
       this.buttons.push(button);
@@ -117,5 +143,6 @@ export class BidStrip {
     for (let bet = fields.highest + 1; bet < this.buttons.length; bet++) {
       this.buttons[bet].hidden = true;
     }
+    this.paintSelection();
   }
 }

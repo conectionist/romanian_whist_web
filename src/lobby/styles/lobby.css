@@ -395,9 +395,15 @@ select.field option {
   cursor: pointer;
 }
 
-.notice-btn:hover {
+.notice-btn:hover,
+.notice-btn:focus-visible {
   border-color: var(--gold-bright);
   color: var(--gold-bright);
+}
+
+.notice-btn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
 }
 
 /* Who is here, on a name panel: a chip over its top edge. */

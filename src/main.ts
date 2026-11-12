@@ -7,7 +7,8 @@ import { Controller } from "./play/controller";
 import { modelOf } from "./play/model";
 import { currentPace, storePace, storedPace } from "./play/motion";
 import { Flow, type Memory } from "./play/flow";
-import { atTable } from "./play/sheets";
+import { Keyboard } from "./play/keyboard";
+import { atTable, type SheetName } from "./play/sheets";
 import { PlaybackQueue } from "./play/queue";
 import { NO_CHANGE, Store } from "./play/store";
 import { el } from "./dom/el";
@@ -90,7 +91,6 @@ const controller: Controller = new Controller({
   redraw: () => void redraw(),
 });
 
-scene.hand.setHandler((slot) => controller.onPlay(slot));
 scene.bidStrip.setHandler((bet) => controller.onBid(bet));
 
 // What the page keeps in the browser between visits: the last New Game and who you are online.
@@ -189,6 +189,30 @@ function changeLanguage(): void {
   dialog.focus();
 }
 
+// The sheet that is up, which the keyboard reads. The table takes the keys unless a sheet holds it or
+// the language dialog is over the page.
+let shownSheet: SheetName | null = null;
+const appElement = document.getElementById("app") as HTMLElement;
+
+const keyboard = new Keyboard({
+  model: () => controller.adjust(modelOf(store.state)),
+  live: () => !view.root.inert && !appElement.inert,
+  menuLive: () => !appElement.inert,
+  sheet: () => shownSheet,
+  play: (slot) => controller.onPlay(slot),
+  bid: (bet) => controller.onBid(bet),
+  continueRound: () => flow.continueRound(),
+  shortcut: (which) => menuBar.press(which),
+  draw: (selected, focus) => {
+    scene.hand.select(selected?.kind === "card" ? selected.value : null, focus && selected?.kind === "card");
+    scene.bidStrip.select(selected?.kind === "bid" ? selected.value : null, focus && selected?.kind === "bid");
+  },
+});
+scene.hand.setHandler((slot, pointer) => keyboard.press(slot, pointer));
+scene.hand.setFocusHandler((slot) => keyboard.focused("card", slot));
+scene.bidStrip.setFocusHandler((bet) => keyboard.focused("bid", bet));
+keyboard.install();
+
 const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage });
 frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element);
 
@@ -269,6 +293,8 @@ function render(): void {
   // sheet the game only rests on.
   const resting = shown === "round" && state.held === null;
   view.root.inert = (shown !== null && !resting) || noTable;
+  shownSheet = shown;
+  keyboard.refresh();
   followAddress();
   notices.set("waiting", waitingText(state.table, state.tableAt, performance.now()), { kind: "wait" });
   notices.set("connection", connectionText(lastStatus, wasConnected), {

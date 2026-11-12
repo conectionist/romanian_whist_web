@@ -44,7 +44,8 @@
 }
 
 .card.raised .face,
-.hcard.playable:hover .face {
+.hcard.playable:hover .face,
+.hcard.selected .face {
   border-radius: 8px;
   transform: translateY(-30px);
   background: var(--gold-bright);
@@ -74,6 +75,12 @@
 
 .hcard.playable {
   cursor: pointer;
+}
+
+/* The picked card is raised as the one under the cursor is, which is the cue for the keyboard's focus
+   too: a card takes focus only by being picked. */
+.hcard:focus {
+  outline: none;
 }
 
 .hcard.illegal {

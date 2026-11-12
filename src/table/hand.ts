@@ -44,23 +44,64 @@ interface Slot {
   playable: boolean;
 }
 
+// How a card was pressed: by the pointer that pressed it, or "keyboard" for Enter and Space.
+export type Pointer = "mouse" | "pen" | "touch" | "keyboard";
+
 // Your hand: a fan of cards at the bottom of the table, each a button resting in place. The card
-// under the cursor rises when it can be played, and a card that cannot is darkened and dulled and
-// still shown.
+// under the cursor rises when it can be played, and so does the one picked with the keys or a finger;
+// a card that cannot be played is darkened and dulled and still shown.
 export class HandView {
   readonly element: HTMLElement;
   private readonly slots = new Map<string, Slot>();
-  private onPlay: (slot: number) => void = () => undefined;
+  private onPress: (slot: number, pointer: Pointer) => void = () => undefined;
+  private onFocus: (slot: number) => void = () => undefined;
   private count = 0;
+  // The slot picked, which rises as the one under the cursor does.
+  private selected: number | null = null;
   private shown: HandModel = { entries: [], backs: 0, positions: [], playable: false };
 
   constructor() {
     this.element = el("div", { class: "hand" });
   }
 
-  // Told which slot was clicked, if it can be played.
-  setHandler(onPlay: (slot: number) => void): void {
-    this.onPlay = onPlay;
+  // Told which slot was pressed, and how, if it can be played.
+  setHandler(onPress: (slot: number, pointer: Pointer) => void): void {
+    this.onPress = onPress;
+  }
+
+  // Told which slot took the keyboard, if it can be played, so that Tab picks as an arrow does.
+  setFocusHandler(onFocus: (slot: number) => void): void {
+    this.onFocus = onFocus;
+  }
+
+  // Raises the picked slot, and puts the keyboard on it when asked, so a screen reader reads it.
+  select(slot: number | null, focus = false): void {
+    this.selected = slot;
+    for (const entry of this.slots.values()) {
+      this.paintSelection(entry);
+    }
+    if (focus && slot !== null) {
+      const picked = Array.from(this.slots.values()).find((entry) => entry.slot === slot && entry.playable);
+      picked?.view.element.focus({ preventScroll: true });
+    }
+  }
+
+  // Only a card of the hand that can be played is picked; and one card is where Tab stops, the picked one
+  // or else the first that can be played, so the fan is a single stop and not eight.
+  private paintSelection(entry: Slot): void {
+    const element = entry.view.element;
+    element.classList.toggle("selected", entry.playable && entry.slot === this.selected);
+    element.tabIndex = entry.playable && entry.slot === (this.selected ?? this.firstPlayable()) ? 0 : -1;
+  }
+
+  private firstPlayable(): number | null {
+    let first: number | null = null;
+    for (const entry of this.slots.values()) {
+      if (entry.playable && !entry.view.element.hidden && (first === null || entry.slot < first)) {
+        first = entry.slot;
+      }
+    }
+    return first;
   }
 
   private slotFor(key: string): Slot {
@@ -69,9 +110,32 @@ export class HandView {
       const view = new CardView("held", "button");
       view.element.classList.add("hcard");
       const made: Slot = { view, slot: 0, playable: false };
+      // The pointer that pressed it, which the click that follows does not say in every browser.
+      let pointer: Pointer = "keyboard";
+      // A press takes the focus before its click, which must not make the card the pick: on a touch
+      // screen the first tap picks it, and a pick already made would play it.
+      let pressing = false;
+      view.element.addEventListener("pointerdown", (event) => {
+        pressing = true;
+        pointer = event.pointerType === "touch" || event.pointerType === "pen" ? event.pointerType : "mouse";
+      });
       view.element.addEventListener("click", () => {
+        const how = pointer;
+        pointer = "keyboard";
+        pressing = false;
         if (made.playable) {
-          this.onPlay(made.slot);
+          this.onPress(made.slot, how);
+        }
+      });
+      view.element.addEventListener("pointercancel", () => {
+        pressing = false;
+      });
+      view.element.addEventListener("blur", () => {
+        pressing = false;
+      });
+      view.element.addEventListener("focus", () => {
+        if (made.playable && !pressing) {
+          this.onFocus(made.slot);
         }
       });
       this.slots.set(key, made);
@@ -115,14 +179,18 @@ export class HandView {
         this.retire(entry);
       }
     }
+    for (const entry of this.slots.values()) {
+      this.paintSelection(entry);
+    }
   }
 
   // A slot that leaves the fan is hidden, and no longer a card that can be played.
   private retire(entry: Slot): void {
     entry.playable = false;
     entry.view.hide();
-    entry.view.element.classList.remove("playable", "illegal");
+    entry.view.element.classList.remove("playable", "illegal", "selected");
     entry.view.element.setAttribute("aria-disabled", "true");
+    entry.view.element.tabIndex = -1;
   }
 
   // Takes a card out of the fan the moment it is played, before the server has said so. The next

@@ -7,7 +7,7 @@ import { defaultProfile } from "../lobby/profile";
 import { rulesOf, type Setup } from "../lobby/setup";
 import type { Profile } from "../net/protocol";
 import type { MenuSheet, SheetName } from "../play/sheets";
-import { holdAwaitsYou, isOnline, inLobby } from "../play/sheets";
+import { holdAwaitsYou, isOnline, inLobby, scoredRound } from "../play/sheets";
 import type { StoreState } from "../play/store";
 import { SettingsSheet, type SettingsValues } from "./settingsSheet";
 import { GameOverSheet, failureFields, fieldsFor as gameOverFields, resultFor } from "./gameOverSheet";
@@ -152,14 +152,13 @@ export class Sheets {
     const currentRound = state.snapshot === null ? 0 : state.snapshot.round.index + 1;
     switch (name) {
       case "round": {
-        const held = state.held;
-        const result = held === null ? undefined : state.history.find((round) => round.index === held.round);
-        // A hold whose round the history does not hold has nothing to show.
-        if (result === undefined) {
+        const result = scoredRound(state);
+        if (result === null) {
           this.layer.show(null);
           return;
         }
-        this.round.update(roundFields(result, seating), { continueDisabled: context.continued || !holdAwaitsYou(state), waiting: context.waiting });
+        const waitedOut = state.held !== null && (context.continued || !holdAwaitsYou(state));
+        this.round.update(roundFields(result, seating), { continueDisabled: waitedOut, waiting: context.waiting });
         break;
       }
       case "history":

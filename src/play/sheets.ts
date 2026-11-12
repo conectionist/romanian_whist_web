@@ -1,3 +1,4 @@
+import type { RoundResult } from "../net/protocol";
 import type { StoreState } from "./store";
 
 // Which sheet is up, as MainWindow arranges them: the pause menu, the round sheet that waits for you
@@ -20,9 +21,11 @@ export interface UiState {
   joinCode: string | null;
   // Whether the person has gone back to an online table from its game's results.
   backAtTable: boolean;
+  // A round sheet the person closed while the game rested on it, with nothing to wait for.
+  dismissedRound: number | null;
 }
 
-export const NOTHING_ASKED: UiState = { menu: null, pauseMenu: false, joinCode: null, backAtTable: false };
+export const NOTHING_ASKED: UiState = { menu: null, pauseMenu: false, joinCode: null, backAtTable: false, dismissedRound: null };
 
 export function atTable(state: Pick<StoreState, "table">): boolean {
   return state.table !== null;
@@ -111,7 +114,24 @@ export function sheetFor(state: StoreState, ui: UiState): SheetName | null {
   if (gameFinished(state)) {
     return "game-over";
   }
-  return state.held !== null && gameOn(state) ? "round" : null;
+  const round = scoredRound(state);
+  const closed = state.held === null && round !== null && ui.dismissedRound === round.index;
+  return round !== null && gameOn(state) && !closed ? "round" : null;
+}
+
+// The round the round sheet shows: the one the game waits on, or the one it rests on after it was
+// scored. The last round of a game that does not wait has none: the final results follow at once.
+export function scoredRound(state: Pick<StoreState, "held" | "scored" | "history">): RoundResult | null {
+  if (state.held !== null) {
+    const held = state.held.round;
+    return state.history.find((round) => round.index === held) ?? null;
+  }
+  if (state.scored === null) {
+    return null;
+  }
+  const scored = state.scored;
+  const round = state.history.find((each) => each.index === scored) ?? null;
+  return round === null || round.index + 1 >= round.count ? null : round;
 }
 
 // Whether the game should be held by the server for the sheet that is up: only a solo game can be

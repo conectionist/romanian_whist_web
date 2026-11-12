@@ -48,6 +48,8 @@ export interface StoreState {
   result: Result | null;
   // Whether this game ended with gameStopped: the server could not go on with it.
   stopped: boolean;
+  // The round just scored, while the game rests on it: the next game message moves on from it.
+  scored: number | null;
 }
 
 // What a message changed, for the table to animate: the event of a game message, and whether the
@@ -74,6 +76,7 @@ export function emptyStore(): StoreState {
     lastError: null,
     result: null,
     stopped: false,
+    scored: null,
   };
 }
 
@@ -100,6 +103,7 @@ export function applySync(message: Extract<ServerMessage, { type: "sync" }>, rec
     lastError: null,
     result: null,
     stopped: false,
+    scored: null,
   };
 }
 
@@ -108,7 +112,7 @@ export function applySync(message: Extract<ServerMessage, { type: "sync" }>, rec
 export function applyGame(state: StoreState, message: Extract<ServerMessage, { type: "game" }>): StoreState {
   const { event } = message;
   const snapshot = message.snapshot ?? state.snapshot;
-  const next: StoreState = { ...state, game: message.game, snapshot };
+  const next: StoreState = { ...state, game: message.game, snapshot, scored: event.kind === "roundScored" ? event.result.index : null };
 
   switch (event.kind) {
     case "gameStarted":

@@ -175,6 +175,15 @@ describe("Continue", () => {
     expect(done.sent.messages).toEqual([]);
   });
 
+  it("closes a round sheet the game only rests on, and sends nothing for it", () => {
+    const { flow, sent, receive } = setup("sheet-pause");
+    receive(message(serverFixture("game.roundScored"), 3));
+    expect(flow.shown()).toBe("round");
+    flow.continueRound();
+    expect(flow.shown()).toBeNull();
+    expect(sent.messages).toEqual([]);
+  });
+
   it("does nothing when the round is not held, or the message was not sent", () => {
     const none = setup("sheet-pause");
     none.flow.continueRound();
@@ -278,7 +287,9 @@ describe("a sync", () => {
   it("drops a pause menu the game no longer allows", () => {
     const { flow, receive } = setup("sheet-pause");
     flow.escape();
-    receive(message(serverFixture("held"), 3));
+    receive(message(serverFixture("game.roundScored"), 3));
+    expect(flow.shown()).toBe("pause");
+    receive(message(serverFixture("held"), 4));
     expect(flow.shown()).toBe("round");
   });
 });

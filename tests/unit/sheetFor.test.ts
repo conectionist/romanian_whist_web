@@ -36,8 +36,8 @@ describe("which sheet is up", () => {
 
   it("puts the pause menu under a sheet from the menu bar", () => {
     const { state } = storeFor("sheet-pause");
-    expect(sheetFor(state, { menu: "rules", pauseMenu: true, joinCode: null, backAtTable: false })).toBe("rules");
-    expect(sheetFor(state, { menu: null, pauseMenu: true, joinCode: null, backAtTable: false })).toBe("pause");
+    expect(sheetFor(state, { menu: "rules", pauseMenu: true, joinCode: null, backAtTable: false, dismissedRound: null })).toBe("rules");
+    expect(sheetFor(state, { menu: null, pauseMenu: true, joinCode: null, backAtTable: false, dismissedRound: null })).toBe("pause");
   });
 
   it("is never the pause menu over a round sheet that holds the game: that sheet has its own way on", () => {
@@ -118,7 +118,40 @@ describe("which sheet is up, as messages arrive in turn", () => {
     take(roundScored);
     take(held);
     take(roundComplete);
-    expect(seen).toEqual([null, "round", null]);
+    expect(seen).toEqual(["round", "round", null]);
+  });
+
+  it("shows a round the game rests on without a hold, until the next game message", () => {
+    const store = storeFor("sheet-pause");
+    store.apply(message(roundScored, 1), 0);
+    expect(store.state.held).toBeNull();
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBe("round");
+    // A sheet that holds nothing does not keep the pause menu away.
+    expect(canPause(store.state)).toBe(true);
+    expect(sheetFor(store.state, asked({ pauseMenu: true }))).toBe("pause");
+    // Closed by the person, it stays closed for that round.
+    expect(sheetFor(store.state, asked({ dismissedRound: 0 }))).toBeNull();
+    store.apply(message(roundComplete, 2), 0);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBeNull();
+  });
+
+  it("shows no sheet for the last round of a game that does not wait: the results follow", () => {
+    const store = storeFor("sheet-pause");
+    const last = structuredClone(roundScored);
+    last.event.result.index = last.event.result.count - 1;
+    store.apply(message(last, 1), 0);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBeNull();
+    store.apply(message({ ...held, round: last.event.result.index }, 2), 0);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBe("round");
+  });
+
+  it("shows nothing for a hold whose round is not in the history, and keeps a sync from bringing back a rest", () => {
+    const store = storeFor("sheet-pause");
+    store.apply(message(held, 1), 0);
+    expect(sheetFor(store.state, NOTHING_ASKED)).toBeNull();
+    store.apply(message(roundScored, 2), 0);
+    store.apply(syncOf({ ...sync, held: null }), 0);
+    expect(store.state.scored).toBeNull();
   });
 
   it("follows a game from its last round to its end, and on to the next game", () => {
@@ -128,6 +161,7 @@ describe("which sheet is up, as messages arrive in turn", () => {
       store.apply(message(body, 1), 0);
       seen.push(sheetFor(store.state, NOTHING_ASKED));
     };
+    store.apply(message(roundScored, 1), 0);
     take(held);
     take(gameOver);
     take(gameStarted);

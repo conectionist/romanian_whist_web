@@ -110,7 +110,7 @@ async function main(): Promise<void> {
         await draw(store.apply(decode(JSON.stringify({ seq: index + 1, ...(text as object) })), 0));
       }
       const asked = fixture.sheet;
-      ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null, backAtTable: false };
+      ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null, backAtTable: false, dismissedRound: null };
       sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", asking: false });
     }
     menuPage.show(fixture.page === "menu");

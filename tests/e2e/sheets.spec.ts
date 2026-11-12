@@ -85,11 +85,22 @@ test.describe("the round sheet", () => {
     await expect(page.locator(".score-round")).toHaveText("Round 2 of 23");
   });
 
-  test("is not shown when the game does not wait for you", async ({ page }) => {
-    await start(page, "solo=3&seed=7&speed=4");
+  test("comes up after every round when the game does not wait, and goes by itself when the next round starts", async ({ page }) => {
+    // The slow speed, so the rest on the scored round is long enough to see.
+    await start(page, "solo=3&seed=7&speed=1");
     await playFirstRound(page);
+    const round = sheet(page, "round");
+    await expect(round).toBeVisible();
+    await expect(round.getByRole("button", { name: "Continue" })).toBeEnabled();
+    await expect(round).toHaveCount(0);
     await expect(page.locator(".score-round")).toHaveText("Round 2 of 23");
-    await expect(anySheet(page)).toHaveCount(0);
+
+    // Its Continue only closes it: there is nothing to let go.
+    await playFirstRound(page);
+    await expect(round).toBeVisible();
+    await round.getByRole("button", { name: "Continue" }).click();
+    await expect(round).toHaveCount(0);
+    await expect(page.locator(".score-round")).toHaveText("Round 3 of 23");
   });
 
   test("takes Esc without opening the pause menu over itself, since it holds the game already", async ({ page }) => {

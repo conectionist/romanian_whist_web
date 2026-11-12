@@ -6,7 +6,7 @@ import { settingsFor, type Setup } from "../lobby/setup";
 import type { ClientMessage, Level, Profile, ServerMessage } from "../net/protocol";
 import { continueRound, createTable, joinTable, takeSeat, updateSettings } from "../net/send";
 import type { Pace } from "./motion";
-import { NOTHING_ASKED, atTable, canExit, canLeave, canPause, gameOn, holdAwaitsYou, isOnline, isSolo, sheetFor, wantsPause, type MenuSheet, type SheetName, type UiState } from "./sheets";
+import { NOTHING_ASKED, atTable, canExit, canLeave, canPause, gameOn, holdAwaitsYou, isOnline, scoredRound, isSolo, sheetFor, wantsPause, type MenuSheet, type SheetName, type UiState } from "./sheets";
 import type { Store } from "./store";
 
 // What the page remembers between visits: the last New Game and who you are online.
@@ -121,7 +121,7 @@ export class Flow {
       case "game":
         if (message.event.kind === "gameStarted") {
           this.continued = null;
-          this.ui = { ...this.ui, backAtTable: false };
+          this.ui = { ...this.ui, backAtTable: false, dismissedRound: null };
         }
         break;
       default:
@@ -210,9 +210,18 @@ export class Flow {
     this.ask({ ...this.ui, pauseMenu: false, menu: back ?? this.ui.menu });
   }
 
+  // Continue lets a held round go. A round the game only rests on has nothing to let go, and its
+  // sheet is closed until the game moves on, which would close it anyway.
   continueRound(): void {
     const held = this.state.held;
-    if (held === null || this.continuedHold() || !holdAwaitsYou(this.state)) {
+    if (held === null) {
+      const round = scoredRound(this.state);
+      if (round !== null) {
+        this.ask({ ...this.ui, dismissedRound: round.index });
+      }
+      return;
+    }
+    if (this.continuedHold() || !holdAwaitsYou(this.state)) {
       return;
     }
     if (this.deps.send(continueRound(held.round))) {

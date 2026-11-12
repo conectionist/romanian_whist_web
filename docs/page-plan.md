@@ -1,8 +1,9 @@
 # Romanian Whist in the browser: the page's implementation plan
 
 > **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
-> draws the table and plays a solo game against the server (PR #3). The rest of the page, phases 7
-> and 8, is not built. Outside the phases, the page's Docker image is built, has had two reviews,
+> draws the table and plays a solo game against the server (PR #3). Phase 7, the sheets, the menus
+> and online tables, is built and reviewed twice, and waits for the owner's approval (PR #7).
+> Phase 8 is not built. Outside the phases, the page's Docker image is built, has had two reviews,
 > and waits for the owner's approval (PR #5, [§14](#the-docker-image-outcome)).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
@@ -882,6 +883,180 @@ of code `e2eef2e`):
     played, tried against a real online table. Phase 6 could only unit-test it;
   - the desktop's throwaway branch `ccr-209c0806-o444sp` is deleted, once its pictures are no longer
     needed.
+
+**Outcome** (branch `web/phase-7-sheets-and-menus`, PR #7, parent `ccr-209c0806-o444sp`, the last
+commit of code `2e100c4`). It waits for the owner's approval.
+
+- **The branch.**
+  - **The commits,** in the plan's order:
+    - the submodule `5d843be`, to `df37bd8`; the client messages and the store `b7bac64`; the twos
+      `9be9562`;
+    - the sheet layer and the seven sheets `d3ec05e`, their flow `fded66e`, the menu bar `98defce`,
+      the solo game wired to them `9cf567b`, and the trick panel's empty prompt `30549fd`;
+    - the main menu, New Game and online `ad60a0a`; their tests `40abd80`, `05969a6`, `ed3cf78`,
+      `83887aa`, `05e18cd`, `06f52a7`; the menu's look fixture `362cda6`; the README `99da9a2`; and
+      `6b8136f`, below;
+    - the first review's fixes: `3ec53ef`, `d0e3d82`, `eb0823e`, `85c9539`, `f406adf`, `4eec5c5`;
+    - the second review's fixes: `cd62e93`, `c27c545`, `2e100c4`.
+  - **The PR** is against the parent, never `master`. The server stays on its own parent branch.
+  - **Who built it:** a Sonnet agent at extra-high effort built the phase, in two stretches with a
+    check between them; the review's fixes were made in this session.
+- **The owner's choices.** The plan's fifteen questions at their defaults, but for Q13: the cold
+  reviews ran on Fable 5.2 at medium effort, where §13 says extra-high. After the first review: fix
+  all but 15, and give the fixes for 1, 2 and 4 a second review. After the second: fix all ten, and
+  no third review.
+- **Built.**
+  - **The sheet layer:** a dim and a 720-pixel panel in screen pixels, not table units, as the
+    desktop's `Overlay` is; one sheet at a time, centred on whole pixels, narrowing and scrolling in
+    a small window. `SheetButton` and `SheetTable` are the desktop's.
+  - **The seven sheets:** the round sheet, with the streak warning; the history; the last trick; the
+    final results, with the tie sentence, the stars and the failure face; the rules, written from
+    the table's settings; the settings, with the two sliders and the wait drawn by hand; pause.
+  - **The menu bar:** 46 pixels, New Game, Settings and Rules, and Exit at the right, with the
+    desktop's icons as SVG and its greyed states.
+  - **A solo game:** the corner buttons open the history and the last trick. The round sheet comes
+    up after every round, as the desktop's: held, its Continue sends `continue`; resting, it goes
+    when the game moves on. Play again opens New Game on the setup just played. Rules, Settings, the
+    history and the last trick hold a solo game while they are up, and Esc and Exit raise pause. A
+    sync brings back the sheet that was up.
+  - **The main menu and New Game:** the plaque and two buttons; New Game as a sheet, with the
+    desktop dialog's fields, order, wording, bounds, defaults, name and face drawing and validation.
+    It also refuses what the server refuses in a name and the page can know.
+  - **Online:** a profile; creating a table; joining by its code or its link, `/t/<code>`; the lobby,
+    with the host's controls and "Fill open seats"; presence on the name panels; the ring for a
+    prompt's last 15 seconds; notices for a seat waited for, replaced, back or left; the round hold
+    with who is awaited; errors as sentences; and the connection's state. Exit at an online table
+    asks "Leave the table?". A finished table is a lobby again, after its results. Back from a table
+    asks before leaving it. The trick panel says "Computer playing for Ana".
+  - **What the page keeps:** the animation speed, the last New Game and the online profile, in the
+    browser's storage.
+  - **The twos,** in `public/cards/`, for the hand under the desktop's sheet pictures.
+  - **The look tool:** eight new captures, from fixtures in `tests/look/fixtures/` that
+    `tools/sheet_fixtures.py` writes from the numbers of the desktop's `tests/ScreenshotTool.cpp`.
+    `tools/measure_shots.py` measures where each element lands against the desktop's pictures.
+- **The comparisons.** Mean absolute difference of each capture from the desktop's picture, 0 to
+  255. They are the same at `06f52a7` and at `2e100c4`. The pairs are `compare-<name>.png` in the
+  git-ignored `build/shots/compare/`.
+
+  | Shot | Difference |
+  |---|---|
+  | `menu` | 0.50 |
+  | `sheet-pause` | 1.13 |
+  | `sheet-game-over` | 1.18 |
+  | `sheet-history` | 1.19 |
+  | `sheet-last-trick` | 1.24 |
+  | `sheet-settings` | 1.25 |
+  | `sheet-round` | 1.27 |
+  | `sheet-rules` | 1.54 |
+
+  Every sheet's panel is the desktop's size to the pixel, and its text, rules, rows and buttons land
+  within a pixel. The five window shots of phase 6 moved 0.03 to 0.06 closer, since the bar has its
+  items. What remains:
+
+  | Difference | Cause |
+  |---|---|
+  | Text edges: Qt draws subpixel text, Chromium grey | **Browser-forced** |
+  | Glyph widths: the ♥ and some button labels are a pixel or two wider or narrower, and text after them drifts by that much | **Browser-forced** |
+  | The red pips of the cards under the sheets | **Accepted** in phase 6 (Q8) |
+  | The sliders' handles and the check mark, within a pixel of Qt Fusion's | Drawn by hand; to be **accepted** |
+  | `menu`: Play online where the desktop has Quit, and no View menu | **Accepted** (Q3, Q4) |
+
+- **Where the build departs from the plan, or found what it did not say:**
+  - **The lobby is a sheet with a list of seats,** not seats drawn round the table. The host's game
+    settings fold away under it, so the seats and Start stay in view.
+  - **New Game, Play online, Create a table and the lobby have no picture to compare with.** The
+    desktop has none of them; New Game's fields and bounds are checked by an end-to-end test.
+  - **Some of the sheets' row heights are measured, not derived:** Qt's label heights differ from
+    sheet to sheet in ways its source does not say. They are numbers in `sheet.css`, which
+    `tools/measure_shots.py` can take again.
+  - **The standings of a game reloaded after its end are ranked by the page,** by the server's rule,
+    since a sync does not carry them. Without it a reloaded finished game would show no results.
+  - **The failure face's sentence is the page's own,** "The server could not go on with this game.":
+    the server sends no words with `gameStopped`.
+  - **A refused new game can still cost the old one.** The protocol makes a table only for someone at
+    none, so the page leaves the old table before it asks. New Game refuses what it can foresee, and
+    the sheet stays up with what was typed and says a solo table left for it is gone. A name that
+    only the server's comparison catches, such as a full-width "Ａna" beside "Ana", is the case
+    left.
+  - **At the Instant speed the round sheet flashes,** as the desktop's does: the server's rest on a
+    scored round is zero there.
+  - **Hooks the plan did not name:** `?solo=N&wait=1`, and the look page's `?shot=sheet-<name>`.
+  - **Found by the look tool:** the trick panel's empty prompt was 7 units short (`30549fd`), and the
+    lobby's portrait buttons were named `.face`, which every card's face also is, so every card would
+    have taken their border (`6b8136f`, with a look test that fails when the name comes back).
+- **Left out:**
+  - **The language dialog** (`language.png`) and Romanian, which are phase 8.
+  - **Changing your profile at a table:** the protocol has `updateProfile`; the page offers no way to
+    use it.
+  - **Not tried in a browser:** joining a table whose game has started, a second tab taking over, a
+    host who goes away handing the table over, and changing seats or settings after guests have
+    joined. These have unit tests.
+  - **The desktop's throwaway branch** is not deleted yet: that is the owner's word, after approval.
+- **Tests:** 591 unit tests in 40 files (318 at the start of the phase), 25 look tests and 31
+  end-to-end tests.
+  - **End to end,** against `whist_server`:
+    - solo: the round sheet held, after a reload, and resting; the history, last trick, rules,
+      settings and pause; a game to its results, Play again and Main menu; New Game from the main
+      menu, a watched game, New Game over a running game, and a game the server refuses;
+    - online: three browsers making, joining by link and by code, filling and playing a table; a
+      table that does not exist; Back and Exit at a table; a second game after a player left; a
+      player who drops, is replaced and comes back; and a blind card whose prompt the turn timer
+      closes keeping its back until the computer player has played it, at a table with a 10-second
+      timer and every one-card round Forehead.
+  - **Mutation checks,** each made and reverted, among them:
+    - Continue sending the wrong round fails a unit and an end-to-end test; a sync forgetting the
+      hold fails four unit tests and the reload test; Resume sending `pause` fails four;
+    - a tie joined with commas, stars by place, a round arrow showing the total twice, a streak warning
+      at five, history totals leaving the last round out, and a rules deck a rank off each fail their
+      sheet's tests;
+    - the host's controls shown to a guest fail the three-browser test, and `canStart` without the
+      host fails a unit test;
+    - an address read as no table's fails two unit tests and the join by link;
+    - a blind back dropped when the timer closes the prompt fails the blind-card test;
+    - a portrait button named `.face` fails the look test that holds a card's border at 0;
+    - the unit tests the reviews' fixes added were seen failing without their fix, but for the
+      address's; the end-to-end tests those fixes added were not mutated.
+- **Reviews.**
+  - **The first cold review,** of the whole branch at `06f52a7`, found 15 problems, none above
+    severity 3, and no crash, hang or leaked card. It found sound: the store, pause and hold,
+    leaving, the sync order, security, the lobby's model and the blind-card test.
+    1. Severity 3: a finished online table had no lobby, so a game with a leaver could not be
+       played again.
+    2. Severity 3: the round sheet showed only when the game was held; the desktop's shows after
+       every round.
+    3. Severity 2: Play again started the same game; the desktop's reopens New Game.
+    4. Severity 2–3: Deal over a running game left it before the server took the new one.
+    5. Severity 2: Back could not leave an online table.
+    6. Severity 2: the join sheet's error line was rewritten on every render, and a refusal was said
+       twice.
+    7. Severity 2: an emptied seat count asked for two seats.
+    8. to 14. Severity 1: Esc and the join sheet; "Take this seat" hidden; Continue after a reload;
+       a refused leave; "Computer playing for"; small slips; long comments and unused code.
+    15. Severity 1: the desktop's branch and the outcome. Skipped, as the outcome and the owner's
+        word handle them.
+
+    2 and 3 came from this plan's own wording, which the review showed the desktop does not follow.
+    The fixes are `3ec53ef` (7–11), `d0e3d82` (5, 6), `eb0823e` (4), `85c9539` (3, 1), `f406adf` (2)
+    and `4eec5c5` (12–14). 4 is fixed only in part, as above.
+  - **The second cold review,** of `06f52a7..4eec5c5`, found 10 problems in those fixes, none above
+    severity 3.
+    1. Severity 3: an answer lost with the connection left Deal, Create and Join disabled.
+    2. Severity 3: Back to the table and a closed round sheet carried into the next game past a sync.
+    3. Severity 2: the last results flashed when the next online game started.
+    4. Severity 2: the page refused names the server takes, such as "Low Risk Larry".
+    5. Severity 2: a lost table was announced for an online table, which goes on.
+    6. Severity 2: any error was shown in an open New Game or Play online.
+    7. Severity 1: Esc on Deal's leave question dropped New Game.
+    8. Severity 2: the resting round sheet took the keyboard.
+    9. Severity 1: Continue before the hold only closed the sheet.
+    10. Severity 1: three comments the fixes made wrong.
+
+    All ten are fixed: `cd62e93` (1–3), `c27c545` (4–6) and `2e100c4` (7–10). By the owner's choice
+    there is no third review.
+- **Builds and CI.**
+  - **`npm run build` and `npm run build:look`** pass at `2e100c4`, and the unit, look and end-to-end
+    tests pass: 591, 25 and 31.
+  - **CI** (Build (Linux) and the Docker image) is green at `4eec5c5`.
 
 ### Phase 8: Romanian, keyboard, touch — M
 

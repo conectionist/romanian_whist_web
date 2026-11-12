@@ -19,6 +19,8 @@ import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lo
 import { Notices, connectionText, errorText, presenceNews, waitingText } from "./lobby/notices";
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
 import { loadProfile, saveProfile } from "./lobby/profile";
+import { startIn } from "./i18n/document";
+import { currentLanguage, languageFromSearch, storedLanguage } from "./i18n/language";
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
@@ -39,6 +41,10 @@ import "./lobby/styles/lobby.css";
 // through the controller. A page is told what the connection is doing, and whether it is at a table,
 // in the body's data-status, which the browser tests read.
 const body = document.body;
+
+// The language is fixed before anything below makes a string: what the address asks for, else what
+// the browser kept from the last visit, else English.
+startIn(languageFromSearch(window.location.search) ?? storedLanguage() ?? "en", document);
 
 function status(value: string): void {
   body.dataset.status = value;
@@ -62,6 +68,7 @@ const redraw = (): Promise<void> => scene.relayout(controller.adjust(modelOf(sto
 
 const connection: Connection = new Connection({
   url: socketUrl(window.location),
+  language: currentLanguage(),
   onStatus: (value: Status) => {
     status(value === "open" ? "connected" : value);
     lastStatus = value;

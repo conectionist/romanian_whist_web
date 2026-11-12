@@ -1,13 +1,12 @@
 import avatarList from "../../public/avatars.json";
 import nameList from "../../public/player_names.json";
+import type { Language } from "../i18n/language";
 import { t } from "../i18n/t";
 import type { Gender } from "../net/protocol";
 
 // The names and the faces New Game gives the computer players, src/ui/PlayerNames.cpp and
 // src/paint/Avatars.cpp: drawn at random by the owner's rules, in the dialog, where they can still be
 // changed. The catalogues are the server's, copied to public/.
-
-export type Language = "en" | "ro";
 
 export interface Avatar {
   id: string;

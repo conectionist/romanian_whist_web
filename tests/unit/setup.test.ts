@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { seededRandom } from "../../src/lobby/catalogue";
+import { afterEach, describe, expect, it } from "vitest";
+import { setLanguage } from "../../src/i18n/language";
+import { nameCatalogue, seededRandom, suits } from "../../src/lobby/catalogue";
 import {
   MAX_NAME_LENGTH,
   defaults,
@@ -61,10 +62,34 @@ describe("the defaults", () => {
   });
 });
 
+describe("the defaults in Romanian", () => {
+  afterEach(() => setLanguage("en"));
+
+  it("name you Jucător, and draw the opponents' names from the Romanian ones", () => {
+    setLanguage("ro");
+    const romanian = defaults(seededRandom(11));
+    expect(romanian.human.name).toBe("Jucător");
+    for (const bot of romanian.bots) {
+      const entry = nameCatalogue().find((each) => each.name === bot.name && suits(each, bot.gender, "ro"));
+      expect(entry, bot.name).toBeDefined();
+    }
+  });
+});
+
 describe("the levels", () => {
   it("are named as the desktop names them", () => {
     expect(levelName("reckoner-alpha")).toBe("Reckoner (Alpha)");
     expect(levelName("first-card")).toBe("First card");
+  });
+
+  it("are named as the desktop names them in Romanian", () => {
+    setLanguage("ro");
+    try {
+      expect(levelName("reckoner-alpha")).toBe("Socotitor (Alfa)");
+      expect(levelName("first-card")).toBe("Prima carte");
+    } finally {
+      setLanguage("en");
+    }
   });
 });
 

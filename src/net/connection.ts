@@ -1,3 +1,4 @@
+import type { Language } from "../i18n/language";
 import { DecodeError, decode } from "./decode";
 import { PROTOCOL_VERSION, type ClientMessage, type ServerMessage } from "./protocol";
 
@@ -18,6 +19,8 @@ type Memory = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export interface ConnectionOptions {
   url: string;
+  // The language the page runs in: the server draws a computer player's name in it.
+  language: Language;
   onMessage(message: ServerMessage): void;
   onStatus(status: Status): void;
   // A message the page cannot read: reported, and the connection goes on.
@@ -102,7 +105,7 @@ export class Connection {
       const hello: ClientMessage = {
         type: "hello",
         protocol: PROTOCOL_VERSION,
-        lang: "en",
+        lang: this.options.language,
         ...(token === null || token === "" ? {} : { token }),
       };
       socket.send(JSON.stringify(hello));

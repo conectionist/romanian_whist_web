@@ -1,9 +1,10 @@
+import { currentLanguage, type Language } from "../i18n/language";
 import { t } from "../i18n/t";
 import type { Gender, Level, Settings, SettingsSeat, Structure } from "../net/protocol";
 import { LEVELS } from "../net/protocol";
 import { roundCount as roundsFor } from "../sheets/rulesSheet";
 import { DEFAULT_BOT_SPEED, FASTEST_SPEED } from "../sheets/settingsSheet";
-import { assignFaces, avatarCatalogue, drawName, nameCatalogue, seededRandom, type Language, type Random } from "./catalogue";
+import { assignFaces, avatarCatalogue, drawName, nameCatalogue, seededRandom, type Random } from "./catalogue";
 
 // New Game's settings, src/ui/NewGameDialog.cpp: what a game is dealt from, and the rules about it.
 // The functions here work without a DOM, as the dialog's do without a window.
@@ -36,9 +37,6 @@ export interface Setup {
   // A fixed deal's seed, or none.
   seed: number | null;
 }
-
-// The language the names are drawn in: the page's, which is English until it has Romanian.
-export const LANGUAGE: Language = "en";
 
 // The order of the combo, which is the protocol's.
 export const LEVEL_ORDER: readonly Level[] = LEVELS;
@@ -130,7 +128,7 @@ function randomGender(random: Random): Gender {
 
 // A new setup: you, "Player", a man, three opponents each a man or a woman at random and named to
 // match, on 1-8-1 with the two last rounds.
-export function defaults(random: Random, speaks: Language = LANGUAGE): Setup {
+export function defaults(random: Random, speaks: Language = currentLanguage()): Setup {
   const human = { name: t("newgame", "Player"), gender: "male" as Gender };
   const taken = [human.name];
   const bots: Opponent[] = [];

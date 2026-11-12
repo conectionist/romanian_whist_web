@@ -1,11 +1,14 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_SPEED, createSolo, soloRequestFrom, soloSettings } from "../../src/dev/solo";
+import { setLanguage } from "../../src/i18n/language";
 import { decodeSyncBody } from "../../src/net/decode";
 
 const LOOK = join(dirname(fileURLToPath(import.meta.url)), "../../libs/romanian_whist_server/protocol/look");
+
+afterEach(() => setLanguage("en"));
 
 describe("a solo game from the address", () => {
   it("asks for none without ?solo", () => {
@@ -18,6 +21,12 @@ describe("a solo game from the address", () => {
     expect(soloRequestFrom("?solo=4&seed=42")).toEqual({ players: 4, seed: 42 });
     expect(soloRequestFrom("?solo=3&speed=4")).toEqual({ players: 3, speed: 4 });
     expect(soloRequestFrom("?solo=3&seed=7&speed=0")).toEqual({ players: 3, seed: 7, speed: 0 });
+  });
+
+  it("names the person Player, or Jucător in a Romanian page, and the computer players the same", () => {
+    expect(soloSettings({ players: 3 }).seats.map((seat) => (seat.kind === "open" ? "" : seat.name))).toEqual(["Player", "Ana", "Bogdan"]);
+    setLanguage("ro");
+    expect(soloSettings({ players: 3 }).seats.map((seat) => (seat.kind === "open" ? "" : seat.name))).toEqual(["Jucător", "Ana", "Bogdan"]);
   });
 
   it("reads &forehead=all, and nothing else for it", () => {

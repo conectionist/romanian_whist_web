@@ -1,4 +1,5 @@
 import { el, setText } from "../dom/el";
+import { currentLanguage } from "../i18n/language";
 import { t } from "../i18n/t";
 import type { Gender, Level, Profile } from "../net/protocol";
 import type { Sheet } from "../sheets/layer";
@@ -8,7 +9,7 @@ import { Choose, Refusal, formRow, hint, numberField, textField, type Choice } f
 import { genderChoices, levelChoices } from "./newGameSheet";
 import { OptionsBlock } from "./options";
 import { DEFAULT_TURN_TIMER, TURN_TIMERS, defaultTable, tableError, tableSettingsFor, timerLabel, withSeats, type OtherSeat, type TableSetup } from "./online";
-import { LANGUAGE, LEVEL_ORDER, MAX_NAME_LENGTH, MAX_SEATS, MIN_SEATS, defaultLevel, levelName } from "./setup";
+import { LEVEL_ORDER, MAX_NAME_LENGTH, MAX_SEATS, MIN_SEATS, defaultLevel, levelName } from "./setup";
 import { summaryOf } from "./lobby";
 
 // Create a table, the online counterpart of New Game: how many seats, which are computer players, the
@@ -185,7 +186,7 @@ export class CreateTableSheet implements Sheet {
   private draw(row: Row, seat: number): string {
     const taken = [this.host.name, ...this.rows.filter((other) => other !== row).map((other) => other.name.value)];
     const level = row.kind.value === "open" ? defaultLevel(seat) : row.kind.value;
-    return drawName({ gender: row.gender.value, strategy: level }, LANGUAGE, nameCatalogue(), taken, seat + 2, this.random);
+    return drawName({ gender: row.gender.value, strategy: level }, currentLanguage(), nameCatalogue(), taken, seat + 2, this.random);
   }
 
   private refresh(): void {

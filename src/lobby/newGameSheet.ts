@@ -1,4 +1,5 @@
 import { el, setText } from "../dom/el";
+import { currentLanguage } from "../i18n/language";
 import { t } from "../i18n/t";
 import type { Gender } from "../net/protocol";
 import type { Sheet } from "../sheets/layer";
@@ -7,7 +8,6 @@ import { drawName, nameCatalogue, type Random } from "./catalogue";
 import { Box, Choose, Refusal, formRow, hint, numberField, textField, type Choice } from "./controls";
 import { OptionsBlock } from "./options";
 import {
-  LANGUAGE,
   LEVEL_ORDER,
   MAX_NAME_LENGTH,
   MAX_SEATS,
@@ -266,7 +266,7 @@ export class NewGameSheet implements Sheet {
         taken.push(other.name.value);
       }
     });
-    return drawName({ gender: row.gender.value, strategy: row.level.value }, LANGUAGE, nameCatalogue(), taken, seat + 1, this.random);
+    return drawName({ gender: row.gender.value, strategy: row.level.value }, currentLanguage(), nameCatalogue(), taken, seat + 1, this.random);
   }
 
   // A new gender or level draws a new name to match, unless the row's name is no longer the one drawn

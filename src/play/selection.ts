@@ -2,10 +2,9 @@ import { isPlayable } from "../table/hand";
 import { offers } from "../table/bidStrip";
 import type { TableModel } from "./model";
 
-// What the player has picked out but not yet answered with: a card of the hand or a bid, for the
-// prompt that was open when it was picked. Left and Right move it, Enter answers with it, and a first
-// tap on a touch screen makes it. A new prompt has none: an answer is irrevocable, and a card picked
-// for the last trick must not be the one a key plays in the next.
+// What the player has picked but not yet answered with, a card of the hand or a bid: Left and Right
+// move it, Enter answers with it, and a first tap makes it. It belongs to the prompt it was made for,
+// since an answer is irrevocable and a card picked for one trick must not be played in the next.
 export interface Selected {
   prompt: number;
   kind: "card" | "bid";

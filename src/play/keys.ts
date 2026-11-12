@@ -31,10 +31,9 @@ export type KeyAnswer = { kind: "bid"; bet: number } | { kind: "play"; slot: num
 
 const PASS: KeyAnswer = { kind: "pass" };
 
-// Only unmodified digits: a bid and a played card are irrevocable, and Ctrl+1 belongs to the browser.
-// The keypad's digits are the same keys to the person pressing them. The bid strip's are zero-based,
-// since a bid of zero is a real bid; the hand's are one-based, the leftmost card being 1. A digit the
-// strip does not offer is passed on, and a card only plays if a click on it would.
+// Only bare digits, the keypad's too: a bid and a card are irrevocable, and Ctrl+1 is the browser's.
+// The strip's are zero-based, since a bid of zero is real; the hand's are one-based, the leftmost
+// card being 1. A digit the strip does not offer is passed on, and a card plays only if a click would.
 export function keyAnswer(key: string, modifiers: Modifiers, state: KeyState): KeyAnswer {
   if (!isPlain(modifiers) || !/^[0-9]$/.test(key)) {
     return PASS;

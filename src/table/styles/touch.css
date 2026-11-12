@@ -11,10 +11,9 @@ body,
 }
 
 @media (pointer: coarse) {
-  /* The table is drawn at the window's scale, which on a phone makes a bid 15 pixels wide and a card of
-     the hand a slice 20 wide. The strip and the fan are drawn larger there, as large as it takes for a
-     bid to be 44 pixels from the next and a card 32: the strip about its middle and the fan about the
-     foot of the table, where they already are. They are never drawn smaller than the table's. */
+  /* On a phone the table's scale makes a bid 15 pixels wide and a card of the fan a slice 20 wide. The
+     strip is drawn larger until a bid is 44 from the next, about its middle, and the fan until a card
+     is 32, about the foot of the table; never smaller than the table's. */
   .bidstrip {
     scale: max(1, calc(44 / (68 * var(--s))));
     transform-origin: 50% 50%;
@@ -43,9 +42,8 @@ body,
     inset: min(0px, calc(76px - 44px / var(--corner))) min(0px, calc((190px - 44px / var(--corner)) / 2)) 0;
   }
 
-  /* The corner panels are drawn at a tenth of their size on a phone, and are read at that: not
-     smaller than half, which is what a line of their text needs to be read, and a button's text is
-     as large. */
+  /* The corner panels at the table's scale have text five pixels high on a phone: they are drawn no
+     smaller than half, which a line of their text needs to be read. */
   .trickpanel,
   .score {
     transform: scale(max(calc(var(--hud-scale) * var(--s)), 0.55));

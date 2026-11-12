@@ -1,0 +1,1104 @@
+{
+  "desktopCommit": "5757811869ce54931b2c64fb2731550620c09146",
+  "language": "ro",
+  "entries": [
+    {
+      "context": "BidBubbleItem",
+      "source": "You bid %1",
+      "translation": "Ai licitat %1"
+    },
+    {
+      "context": "BidBubbleItem",
+      "source": "Bids %1",
+      "translation": "Licitează %1"
+    },
+    {
+      "context": "CardArtCanvas",
+      "source": "Back",
+      "translation": "Spate"
+    },
+    {
+      "context": "CardArtCanvas",
+      "source": "Dimmed",
+      "translation": "Estompată"
+    },
+    {
+      "context": "CardArtCanvas",
+      "source": "Avatar",
+      "translation": "Avatar"
+    },
+    {
+      "context": "CardArtWindow",
+      "source": "Card art",
+      "translation": "Grafica cărților"
+    },
+    {
+      "context": "CardArtWindow",
+      "source": "Light",
+      "translation": "Luminos"
+    },
+    {
+      "context": "CardArtWindow",
+      "source": "Dark",
+      "translation": "Întunecat"
+    },
+    {
+      "context": "CardArtWindow",
+      "source": "Device pixel ratio: %1",
+      "translation": "Raportul pixelilor: %1"
+    },
+    {
+      "context": "CardArtWindow",
+      "source": "Palette:",
+      "translation": "Paletă:"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "Place",
+      "translation": "Loc"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "Player",
+      "translation": "Jucător"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "Total",
+      "translation": "Total"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "Main menu",
+      "translation": "Meniu principal"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "Round history",
+      "translation": "Istoricul rundelor"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "Play again",
+      "translation": "Joacă din nou"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "Final results",
+      "translation": "Rezultate finale"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "The game ended in an error",
+      "translation": "Jocul s-a încheiat cu o eroare"
+    },
+    {
+      "context": "GameOverPanel",
+      "source": "%1.",
+      "translation": "%1."
+    },
+    {
+      "context": "MainMenuPage",
+      "source": "New Game",
+      "translation": "Joc nou"
+    },
+    {
+      "context": "MainMenuPage",
+      "source": "Quit",
+      "translation": "Ieșire"
+    },
+    {
+      "context": "MainWindow",
+      "source": "Romanian Whist",
+      "translation": "Whist"
+    },
+    {
+      "context": "MainWindow",
+      "source": "Log",
+      "translation": "Jurnal"
+    },
+    {
+      "context": "MainWindow",
+      "source": "New Game",
+      "translation": "Joc nou"
+    },
+    {
+      "context": "MainWindow",
+      "source": "Settings",
+      "translation": "Setări"
+    },
+    {
+      "context": "MainWindow",
+      "source": "Rules",
+      "translation": "Regulament"
+    },
+    {
+      "context": "MainWindow",
+      "source": "Exit",
+      "translation": "Ieșire"
+    },
+    {
+      "context": "MainWindow",
+      "source": "&View",
+      "translation": "&Vizualizare"
+    },
+    {
+      "context": "MainWindow",
+      "source": "&Log",
+      "translation": "&Jurnal"
+    },
+    {
+      "context": "MainWindow",
+      "source": "&Card art...",
+      "translation": "Grafica &cărților..."
+    },
+    {
+      "context": "MainWindow",
+      "source": "-- stopped --",
+      "translation": "-- oprit --"
+    },
+    {
+      "context": "MainWindow",
+      "source": "-- game over --",
+      "translation": "-- joc încheiat --"
+    },
+    {
+      "context": "MainWindow",
+      "source": "   %1. %2  %3",
+      "translation": "   %1. %2  %3"
+    },
+    {
+      "context": "MainWindow",
+      "source": "-- the game thread failed: %1 --",
+      "translation": "-- firul jocului a eșuat: %1 --"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Male",
+      "translation": "Bărbat"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Female",
+      "translation": "Femeie"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "New Game",
+      "translation": "Joc nou"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "I'm watching",
+      "translation": "Doar privesc"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "I'm playing",
+      "translation": "Joc și eu"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Your name",
+      "translation": "Numele tău"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Opponents",
+      "translation": "Adversari"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Shape of the game",
+      "translation": "Forma jocului"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "1-8-1 - counts up from one card and back down",
+      "translation": "1-8-1 - urcă de la o carte și coboară înapoi"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "8-1-8 - the other way round",
+      "translation": "8-1-8 - invers"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "End with a forehead round and a hidden round",
+      "translation": "Fruntea și Neveul la urmă"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Play every one-card round forehead",
+      "translation": "Fiecare rundă de o carte se joacă ca Fruntea"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Pace",
+      "translation": "Ritm"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Fixed deal, seed",
+      "translation": "Împărțire fixă, sămânța"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Deal",
+      "translation": "Împarte"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "%1.",
+      "translation": "%1."
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Bot %1",
+      "translation": "Bot %1"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "plays",
+      "translation": "joacă"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "(%1-%2 at the table)",
+      "translation": "(%1-%2 la masă)"
+    },
+    {
+      "context": "PauseOverlay",
+      "source": "Paused",
+      "translation": "Pauză"
+    },
+    {
+      "context": "PauseOverlay",
+      "source": "Main menu",
+      "translation": "Meniu principal"
+    },
+    {
+      "context": "PauseOverlay",
+      "source": "Resume",
+      "translation": "Continuă"
+    },
+    {
+      "context": "SeatItem",
+      "source": "Bidding…",
+      "translation": "Licitează…"
+    },
+    {
+      "context": "SeatItem",
+      "source": "No bid yet",
+      "translation": "Fără licitație"
+    },
+    {
+      "context": "SeatItem",
+      "source": "Taken/Bid: %1/%2",
+      "translation": "Făcut/Lic.: %1/%2"
+    },
+    {
+      "context": "SettingsSheet",
+      "source": "Card animations",
+      "translation": "Animații"
+    },
+    {
+      "context": "SettingsSheet",
+      "source": "Off",
+      "translation": "Oprite"
+    },
+    {
+      "context": "SettingsSheet",
+      "source": "Slow",
+      "translation": "Lente"
+    },
+    {
+      "context": "SettingsSheet",
+      "source": "Settings",
+      "translation": "Setări"
+    },
+    {
+      "context": "SettingsSheet",
+      "source": "These apply now, and to your next game.",
+      "translation": "Se aplică acum și la jocul următor."
+    },
+    {
+      "context": "SettingsSheet",
+      "source": "Done",
+      "translation": "Gata"
+    },
+    {
+      "context": "TableScene",
+      "source": "Round history",
+      "translation": "Istoricul rundelor"
+    },
+    {
+      "context": "TableScene",
+      "source": "Last trick",
+      "translation": "Ultima mână"
+    },
+    {
+      "context": "TableTopItem",
+      "source": "Romanian\nWhist",
+      "comment": "The logo on the table: its lines, split by line breaks. One line or two.",
+      "translation": "Whist"
+    },
+    {
+      "context": "bidstrip",
+      "source": "How many tricks will you take?",
+      "translation": "Câte mâini faci?"
+    },
+    {
+      "context": "bidstrip",
+      "source": "You bid last. %1 would make the bids add up to %2, and somebody has to be wrong.",
+      "comment": "about you, a man",
+      "translation": "Licitezi ultimul. Cu %1, licitațiile ar face %2 și cineva trebuie să se pârlească."
+    },
+    {
+      "context": "bidstrip",
+      "source": "You bid last. %1 would make the bids add up to %2, and somebody has to be wrong.",
+      "comment": "about you, a woman",
+      "translation": "Licitezi ultima. Cu %1, licitațiile ar face %2 și cineva trebuie să se pârlească."
+    },
+    {
+      "context": "bidstrip",
+      "source": "%1 bid so far, totalling %2 of %3 trick.",
+      "translation": "Licitații până acum: %1, în total %2 din %3 mână."
+    },
+    {
+      "context": "bidstrip",
+      "source": "%1 bid so far, totalling %2 of %3 tricks.",
+      "translation": "Licitații până acum: %1, în total %2 din %3 mâini."
+    },
+    {
+      "context": "cardtext",
+      "source": "J",
+      "translation": "J"
+    },
+    {
+      "context": "cardtext",
+      "source": "Q",
+      "translation": "Q"
+    },
+    {
+      "context": "cardtext",
+      "source": "K",
+      "translation": "K"
+    },
+    {
+      "context": "cardtext",
+      "source": "A",
+      "translation": "A"
+    },
+    {
+      "context": "gameover",
+      "source": "%1 wins with a score of %2.",
+      "translation": "%1 câștigă cu scorul %2."
+    },
+    {
+      "context": "gameover",
+      "source": "%1 wins with %n points.",
+      "forms": [
+        "%1 câștigă cu %n punct.",
+        "%1 câștigă cu %n puncte.",
+        "%1 câștigă cu %n de puncte."
+      ]
+    },
+    {
+      "context": "gameover",
+      "source": " and ",
+      "translation": " și "
+    },
+    {
+      "context": "gameover",
+      "source": ", ",
+      "translation": ", "
+    },
+    {
+      "context": "gameover",
+      "source": "%1 tie for first with a score of %2.",
+      "translation": "%1 sunt la egalitate pe primul loc, cu scorul %2."
+    },
+    {
+      "context": "gameover",
+      "source": "%1 tie for first with %n points.",
+      "forms": [
+        "%1 sunt la egalitate pe primul loc, cu %n punct.",
+        "%1 sunt la egalitate pe primul loc, cu %n puncte.",
+        "%1 sunt la egalitate pe primul loc, cu %n de puncte."
+      ]
+    },
+    {
+      "context": "historysheet",
+      "source": "Round history",
+      "translation": "Istoricul rundelor"
+    },
+    {
+      "context": "historysheet",
+      "source": "Score per round, then taken/bid",
+      "translation": "Punctajul pe rundă, apoi făcute/licitate"
+    },
+    {
+      "context": "historysheet",
+      "source": "Close",
+      "translation": "Închide"
+    },
+    {
+      "context": "historysheet",
+      "source": "Round",
+      "translation": "Runda"
+    },
+    {
+      "context": "historysheet",
+      "source": "Cards",
+      "translation": "Cărți"
+    },
+    {
+      "context": "historysheet",
+      "source": "No rounds finished yet.",
+      "translation": "Nicio rundă încheiată încă."
+    },
+    {
+      "context": "historysheet",
+      "source": "Total",
+      "translation": "Total"
+    },
+    {
+      "context": "infostrip",
+      "source": "1 card",
+      "translation": "1 carte"
+    },
+    {
+      "context": "infostrip",
+      "source": "%1 cards",
+      "translation": "%1 cărți"
+    },
+    {
+      "context": "infostrip",
+      "source": "Normal",
+      "translation": "Normală"
+    },
+    {
+      "context": "infostrip",
+      "source": "Forehead",
+      "translation": "Fruntea"
+    },
+    {
+      "context": "infostrip",
+      "source": "Hidden",
+      "translation": "Neveul"
+    },
+    {
+      "context": "infostrip",
+      "source": "Unknown",
+      "translation": "Necunoscută"
+    },
+    {
+      "context": "infostrip",
+      "source": "Round %1 of %2",
+      "translation": "Runda %1 din %2"
+    },
+    {
+      "context": "lasttrick",
+      "source": "No trick has finished yet.",
+      "translation": "Nicio mână încheiată încă."
+    },
+    {
+      "context": "lasttrick",
+      "source": "You won it · round %1",
+      "translation": "Tu ai câștigat-o · runda %1"
+    },
+    {
+      "context": "lasttrick",
+      "source": "%1 won it · round %2",
+      "translation": "%1 a câștigat-o · runda %2"
+    },
+    {
+      "context": "lasttrick",
+      "source": "You won it",
+      "translation": "Tu ai câștigat-o"
+    },
+    {
+      "context": "lasttrick",
+      "source": "%1 won it",
+      "translation": "%1 a câștigat-o"
+    },
+    {
+      "context": "lasttrick",
+      "source": "Last trick",
+      "translation": "Ultima mână"
+    },
+    {
+      "context": "lasttrick",
+      "source": "Close",
+      "translation": "Închide"
+    },
+    {
+      "context": "newgame",
+      "source": "Weighs %1 imagined deals before each card, never plays at random, and counts %2% of every point an opponent scores against its own, %3% of the leader's.",
+      "translation": "Cântărește %1 de împărțiri imaginate înaintea fiecărei cărți, nu joacă niciodată la întâmplare și socotește %2% din fiecare punct al unui adversar împotriva propriului scor, %3% din ale liderului."
+    },
+    {
+      "context": "newgame",
+      "source": "Player",
+      "translation": "Jucător"
+    },
+    {
+      "context": "newgame",
+      "source": "%n rounds",
+      "forms": [
+        "%n rundă",
+        "%n runde",
+        "%n de runde"
+      ]
+    },
+    {
+      "context": "newgame",
+      "source": "%1 - about a minute",
+      "translation": "%1 - cam un minut"
+    },
+    {
+      "context": "newgame",
+      "source": "%1 - about %n minutes",
+      "forms": [
+        "%1 - cam %n minut",
+        "%1 - cam %n minute",
+        "%1 - cam %n de minute"
+      ]
+    },
+    {
+      "context": "newgame",
+      "source": "A game needs between %1 and %2 players.",
+      "translation": "Un joc are nevoie de %1 până la %2 jucători."
+    },
+    {
+      "context": "newgame",
+      "source": "Every player needs a name.",
+      "translation": "Fiecare jucător are nevoie de un nume."
+    },
+    {
+      "context": "newgame",
+      "source": "Names are at most %1 characters.",
+      "translation": "Un nume are cel mult %1 de caractere."
+    },
+    {
+      "context": "newgame",
+      "source": "Two players cannot both be called %1.",
+      "translation": "Doi jucători nu se pot numi amândoi %1."
+    },
+    {
+      "context": "newgame",
+      "source": "Random",
+      "translation": "Aleatoriu"
+    },
+    {
+      "context": "newgame",
+      "source": "First card",
+      "translation": "Prima carte"
+    },
+    {
+      "context": "newgame",
+      "source": "Low risk",
+      "translation": "Risc mic"
+    },
+    {
+      "context": "newgame",
+      "source": "Ducking",
+      "translation": "Eschivă"
+    },
+    {
+      "context": "newgame",
+      "source": "Cyborg",
+      "translation": "Cyborg"
+    },
+    {
+      "context": "newgame",
+      "source": "Reckoner (Alpha)",
+      "translation": "Socotitor (Alfa)"
+    },
+    {
+      "context": "newgame",
+      "source": "Reckoner (Beta)",
+      "translation": "Socotitor (Beta)"
+    },
+    {
+      "context": "newgame",
+      "source": "Reckoner (Gamma)",
+      "translation": "Socotitor (Gama)"
+    },
+    {
+      "context": "newgame",
+      "source": "Reckoner (Delta)",
+      "translation": "Socotitor (Delta)"
+    },
+    {
+      "context": "newgame",
+      "source": "Bids a random legal number and plays a random legal card.",
+      "translation": "Licitează la întâmplare un număr permis și joacă la întâmplare o carte permisă."
+    },
+    {
+      "context": "newgame",
+      "source": "Bids 0, or 1 when 0 is barred, and plays the first legal card in its hand.",
+      "translation": "Licitează 0, sau 1 când 0 e interzis, și joacă prima carte permisă pe care o are."
+    },
+    {
+      "context": "newgame",
+      "source": "Bids the tricks its hand will take anyway, then wins cheaply while it owes them.",
+      "translation": "Licitează mâinile pe care cărțile lui le fac oricum, apoi câștigă ieftin cât timp le mai datorează."
+    },
+    {
+      "context": "newgame",
+      "source": "Bids 0 come what may, and sheds its highest cards whenever they cannot win.",
+      "translation": "Licitează 0 orice ar fi și scapă de cărțile mari ori de câte ori nu pot câștiga."
+    },
+    {
+      "context": "newgame",
+      "source": "Bids the count with the best expected score, from exact odds on every card, and re-plans every trick which cards win and which go.",
+      "translation": "Licitează numărul cu cel mai bun scor așteptat, din șansele exacte ale fiecărei cărți, și replanifică la fiecare mână ce cărți câștigă și ce cărți pleacă."
+    },
+    {
+      "context": "newgame",
+      "source": "Imagines no deals and plays by rule, but plays a random legal card %1% of the time.",
+      "translation": "Nu imaginează împărțiri și joacă după reguli, dar joacă o carte permisă la întâmplare în %1% din cazuri."
+    },
+    {
+      "context": "newgame",
+      "source": "Weighs %1 imagined deals before each card and counts %2% of every point an opponent scores against its own, but plays a random legal card %3% of the time and nudges its bid by up to one %4% of the time.",
+      "translation": "Cântărește %1 de împărțiri imaginate înaintea fiecărei cărți și socotește %2% din fiecare punct al unui adversar împotriva propriului scor, dar joacă o carte permisă la întâmplare în %3% din cazuri și își mută licitația cu cel mult unu în %4% din cazuri."
+    },
+    {
+      "context": "newgame",
+      "source": "Bot speed",
+      "translation": "Viteza boților"
+    },
+    {
+      "context": "newgame",
+      "source": "Slow",
+      "translation": "Lent"
+    },
+    {
+      "context": "newgame",
+      "source": "Instant",
+      "translation": "Instant"
+    },
+    {
+      "context": "newgame",
+      "source": "Wait for me after each round",
+      "translation": "Așteaptă-mă după fiecare rundă"
+    },
+    {
+      "context": "roundsheet",
+      "source": "Round %1 · %2 · %3",
+      "translation": "Runda %1 · %2 · %3"
+    },
+    {
+      "context": "roundsheet",
+      "source": "Trump %1",
+      "translation": "Atu %1"
+    },
+    {
+      "context": "roundsheet",
+      "source": "No trump",
+      "translation": "Fără atu"
+    },
+    {
+      "context": "roundsheet",
+      "source": "%1 · exact bid scores 5 + bid, a miss loses the difference",
+      "translation": "%1 · licitația exactă aduce 5 + licitația, greșeala pierde diferența"
+    },
+    {
+      "context": "roundsheet",
+      "source": "%1 → %2",
+      "translation": "%1 → %2"
+    },
+    {
+      "context": "roundsheet",
+      "source": "%1 has missed four in a row - a fifth costs %2.",
+      "translation": "%1 a greșit de patru ori la rând - a cincea oară costă %2."
+    },
+    {
+      "context": "roundsheet",
+      "source": "%1 has hit four in a row - a fifth is worth %2.",
+      "translation": "%1 a nimerit de patru ori la rând - a cincea oară aduce %2."
+    },
+    {
+      "context": "roundsheet",
+      "source": "Player",
+      "translation": "Jucător"
+    },
+    {
+      "context": "roundsheet",
+      "source": "Bid",
+      "translation": "Licitat"
+    },
+    {
+      "context": "roundsheet",
+      "source": "Taken",
+      "translation": "Făcute"
+    },
+    {
+      "context": "roundsheet",
+      "source": "Round",
+      "translation": "Runda"
+    },
+    {
+      "context": "roundsheet",
+      "source": "Total",
+      "translation": "Total"
+    },
+    {
+      "context": "roundsheet",
+      "source": "Round history",
+      "translation": "Istoricul rundelor"
+    },
+    {
+      "context": "roundsheet",
+      "source": "Continue",
+      "translation": "Continuă"
+    },
+    {
+      "context": "rulessheet",
+      "source": "Jack",
+      "translation": "Valet"
+    },
+    {
+      "context": "rulessheet",
+      "source": "Queen",
+      "translation": "Damă"
+    },
+    {
+      "context": "rulessheet",
+      "source": "King",
+      "translation": "Popă"
+    },
+    {
+      "context": "rulessheet",
+      "source": "Ace",
+      "translation": "As"
+    },
+    {
+      "context": "rulessheet",
+      "source": "%1 players use Ace down to %2: eight cards each, %3 in all.",
+      "translation": "%1 jucători folosesc cărțile de la As până la %2: câte opt fiecare, %3 în total."
+    },
+    {
+      "context": "rulessheet",
+      "source": "Rounds go 8 (×%1), 7 … 3, 2, 1 (×%1), 2, 3 … 7, 8 (×%1), then a Forehead and a Hidden round: %n rounds.",
+      "forms": [
+        "Rundele merg 8 (×%1), 7 … 3, 2, 1 (×%1), 2, 3 … 7, 8 (×%1), apoi Fruntea și Neveul: %n rundă.",
+        "Rundele merg 8 (×%1), 7 … 3, 2, 1 (×%1), 2, 3 … 7, 8 (×%1), apoi Fruntea și Neveul: %n runde.",
+        "Rundele merg 8 (×%1), 7 … 3, 2, 1 (×%1), 2, 3 … 7, 8 (×%1), apoi Fruntea și Neveul: %n de runde."
+      ]
+    },
+    {
+      "context": "rulessheet",
+      "source": "Rounds go 8 (×%1), 7 … 3, 2, 1 (×%1), 2, 3 … 7, 8 (×%1): %n rounds.",
+      "forms": [
+        "Rundele merg 8 (×%1), 7 … 3, 2, 1 (×%1), 2, 3 … 7, 8 (×%1): %n rundă.",
+        "Rundele merg 8 (×%1), 7 … 3, 2, 1 (×%1), 2, 3 … 7, 8 (×%1): %n runde.",
+        "Rundele merg 8 (×%1), 7 … 3, 2, 1 (×%1), 2, 3 … 7, 8 (×%1): %n de runde."
+      ]
+    },
+    {
+      "context": "rulessheet",
+      "source": "Rounds go 1 (×%1), 2, 3 … 7, 8 (×%1), 7 … 3, 2, 1 (×%1), then a Forehead and a Hidden round: %n rounds.",
+      "forms": [
+        "Rundele merg 1 (×%1), 2, 3 … 7, 8 (×%1), 7 … 3, 2, 1 (×%1), apoi Fruntea și Neveul: %n rundă.",
+        "Rundele merg 1 (×%1), 2, 3 … 7, 8 (×%1), 7 … 3, 2, 1 (×%1), apoi Fruntea și Neveul: %n runde.",
+        "Rundele merg 1 (×%1), 2, 3 … 7, 8 (×%1), 7 … 3, 2, 1 (×%1), apoi Fruntea și Neveul: %n de runde."
+      ]
+    },
+    {
+      "context": "rulessheet",
+      "source": "Rounds go 1 (×%1), 2, 3 … 7, 8 (×%1), 7 … 3, 2, 1 (×%1): %n rounds.",
+      "forms": [
+        "Rundele merg 1 (×%1), 2, 3 … 7, 8 (×%1), 7 … 3, 2, 1 (×%1): %n rundă.",
+        "Rundele merg 1 (×%1), 2, 3 … 7, 8 (×%1), 7 … 3, 2, 1 (×%1): %n runde.",
+        "Rundele merg 1 (×%1), 2, 3 … 7, 8 (×%1), 7 … 3, 2, 1 (×%1): %n de runde."
+      ]
+    },
+    {
+      "context": "rulessheet",
+      "source": "Every 1-card round is a Forehead round, except the Hidden round at the end.",
+      "translation": "Fiecare rundă de o carte se joacă ca Fruntea, în afară de Neveul de la sfârșit."
+    },
+    {
+      "context": "rulessheet",
+      "source": "Every 1-card round is a Forehead round.",
+      "translation": "Fiecare rundă de o carte se joacă ca Fruntea."
+    },
+    {
+      "context": "rulessheet",
+      "source": "In a Forehead round you see everyone's card but your own while you bid.",
+      "translation": "Când se joacă Fruntea, vezi cartea fiecăruia, în afară de a ta, cât timp licitezi."
+    },
+    {
+      "context": "rulessheet",
+      "source": "In a Hidden round nobody sees their card until the bidding is done.",
+      "translation": "Când se joacă Neveul, nimeni nu își vede cartea până la sfârșitul licitației."
+    },
+    {
+      "context": "rulessheet",
+      "source": "Below 8 cards, the next card is turned as trump. The 8-card rounds have no trump.",
+      "translation": "Sub 8 cărți, următoarea carte se întoarce ca atu. Rundele de 8 cărți nu au atu."
+    },
+    {
+      "context": "rulessheet",
+      "source": "Everyone bids how many tricks they will take. The last bidder may not make the bids add up to the number of tricks.",
+      "translation": "Fiecare licitează câte mâini va face. Ultimul nu poate licita astfel încât totalul să fie egal cu numărul de mâini."
+    },
+    {
+      "context": "rulessheet",
+      "source": "Follow suit if you can, otherwise trump if you can. You never have to overtrump.",
+      "translation": "Pui din culoarea de jos dacă poți, altfel pui atu dacă poți. Nu ești obligat să pui un atu mai mare."
+    },
+    {
+      "context": "rulessheet",
+      "source": "An exact bid scores 5 + bid. A miss loses the difference. Five exact bids in a row earn +10, five misses cost 10; 1-card rounds neither add to a run nor break one.",
+      "translation": "O licitație exactă aduce 5 + licitația. O greșeală pierde diferența. Cinci licitații exacte la rând aduc +10, cinci greșeli costă 10; rundele de o carte nici nu se adaugă la o serie, nici nu o întrerup."
+    },
+    {
+      "context": "rulessheet",
+      "source": "Rules at a glance",
+      "translation": "Regulile pe scurt"
+    },
+    {
+      "context": "rulessheet",
+      "source": "Close",
+      "translation": "Închide"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Trump",
+      "translation": "Atu"
+    },
+    {
+      "context": "scoreboard",
+      "source": "1 card dealt",
+      "translation": "1 carte împărțită"
+    },
+    {
+      "context": "scoreboard",
+      "source": "%1 cards dealt",
+      "translation": "%1 cărți împărțite"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Bids so far: %1 of %2 trick",
+      "translation": "Licitate până acum: %1 din %2 mână"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Bids so far: %1 of %2 tricks",
+      "translation": "Licitate până acum: %1 din %2 mâini"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Bids total %1 for %2 trick: over by %3",
+      "translation": "S-a licitat %1 (cu %3 peste)"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Bids total %1 for %2 tricks: over by %3",
+      "translation": "S-a licitat %1 (cu %3 peste)"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Bids total %1 for %2 trick: under by %3",
+      "translation": "S-a licitat %1 (cu %3 sub)"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Bids total %1 for %2 tricks: under by %3",
+      "translation": "S-a licitat %1 (cu %3 sub)"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Bids total %1 for %2 trick",
+      "translation": "S-a licitat %1"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Bids total %1 for %2 tricks",
+      "translation": "S-a licitat %1"
+    },
+    {
+      "context": "scoreboard",
+      "source": "W%1",
+      "translation": "C%1"
+    },
+    {
+      "context": "scoreboard",
+      "source": "L%1",
+      "translation": "P%1"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Player",
+      "translation": "Jucător"
+    },
+    {
+      "context": "scoreboard",
+      "source": "B",
+      "translation": "L"
+    },
+    {
+      "context": "scoreboard",
+      "source": "T",
+      "translation": "F"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Pts",
+      "translation": "Pct"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Run",
+      "translation": "Serie"
+    },
+    {
+      "context": "scoreboard",
+      "source": "None this round",
+      "translation": "Niciunul în această rundă"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Leader: %1",
+      "comment": "about a man",
+      "translation": "%1 e primul"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Leader: %1",
+      "comment": "about a woman",
+      "translation": "%1 e prima"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Leader: %1",
+      "comment": "about you, a man",
+      "translation": "%1 ești primul"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Leader: %1",
+      "comment": "about you, a woman",
+      "translation": "%1 ești prima"
+    },
+    {
+      "context": "trickpanel",
+      "source": "First to bid: %1",
+      "comment": "about a man",
+      "translation": "Licitează primul: %1"
+    },
+    {
+      "context": "trickpanel",
+      "source": "First to bid: %1",
+      "comment": "about a woman",
+      "translation": "Licitează prima: %1"
+    },
+    {
+      "context": "trickpanel",
+      "source": "First to bid: %1",
+      "comment": "about you, a man",
+      "translation": "%1 licitezi primul"
+    },
+    {
+      "context": "trickpanel",
+      "source": "First to bid: %1",
+      "comment": "about you, a woman",
+      "translation": "%1 licitezi prima"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Your turn.",
+      "translation": "E rândul tău."
+    },
+    {
+      "context": "trickpanel",
+      "source": "Your turn. You lead.",
+      "translation": "E rândul tău. Deschizi."
+    },
+    {
+      "context": "trickpanel",
+      "source": "Your turn. Any card.",
+      "translation": "E rândul tău. Orice carte."
+    },
+    {
+      "context": "trickpanel",
+      "source": "Your turn. You must follow %1.",
+      "translation": "E rândul tău. Trebuie să pui %1."
+    },
+    {
+      "context": "trickpanel",
+      "source": "Your turn. No %1, you must trump.",
+      "translation": "E rândul tău. Nu ai %1! Pune atu."
+    },
+    {
+      "context": "trickpanel",
+      "source": "You",
+      "translation": "Tu"
+    },
+    {
+      "context": "trickpanel",
+      "source": "%1 is thinking…",
+      "translation": "%1 se gândește…"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Round over",
+      "translation": "Rundă încheiată"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Scores are in.",
+      "translation": "Punctajele sunt gata."
+    },
+    {
+      "context": "trickpanel",
+      "source": "Game over",
+      "translation": "Joc încheiat"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Final scores are in.",
+      "translation": "Punctajele finale sunt gata."
+    },
+    {
+      "context": "trickpanel",
+      "source": "Bidding",
+      "translation": "Licitație"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Your bid. How many tricks?",
+      "translation": "Licitația ta. Câte faci?"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Trick %1 of %2",
+      "translation": "Mâna %1 din %2"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Led %1",
+      "translation": "Jos e %1"
+    },
+    {
+      "context": "trickpanel",
+      "source": "Winning: %1",
+      "translation": "Câștigă: %1"
+    },
+    {
+      "context": "trickpanel",
+      "source": "You win the trick.",
+      "translation": "Câștigi mâna."
+    },
+    {
+      "context": "trickpanel",
+      "source": "%1 wins the trick.",
+      "translation": "%1 câștigă mâna."
+    }
+  ]
+}

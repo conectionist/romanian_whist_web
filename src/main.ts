@@ -18,6 +18,7 @@ import { MenuPage } from "./lobby/menuPage";
 import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
 import { Notices, connectionText, errorText, presenceNews, waitingText } from "./lobby/notices";
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
+import { askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
 import { startIn } from "./i18n/document";
 import { currentLanguage, languageFromSearch, storedLanguage } from "./i18n/language";
@@ -43,8 +44,8 @@ import "./lobby/styles/lobby.css";
 const body = document.body;
 
 // The language is fixed before anything below makes a string: what the address asks for, else what
-// the browser kept from the last visit, else English.
-startIn(languageFromSearch(window.location.search) ?? storedLanguage() ?? "en", document);
+// the browser kept from the last visit, else what the person says, the first time.
+startIn(languageFromSearch(window.location.search) ?? storedLanguage() ?? (await askLanguage()), document);
 
 function status(value: string): void {
   body.dataset.status = value;

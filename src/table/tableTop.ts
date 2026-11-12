@@ -60,6 +60,20 @@ export function ornament(wavy: boolean): SVGSVGElement {
   return svg("svg", { attrs: { viewBox: `0 0 ${ORNAMENT_WIDTH} ${ORNAMENT_HEIGHT}`, "aria-hidden": "true" } }, ...parts);
 }
 
+// The rectangular plaque the main menu page and the language dialog show: the lettering between its
+// two ornaments, and a club at each end. It is the table's logo as a panel, at the size its page sets.
+export function plaqueFor(lines: readonly string[]): HTMLElement {
+  const letters = el("div", { class: "medal-letters" }, ...lines.map((line) => el("div", { text: line })));
+  const stack = el("div", { class: "medal-stack" }, ornament(false), letters, ornament(true));
+  return el(
+    "div",
+    { class: "medal plaque" },
+    stack,
+    el("span", { class: "club left", attrs: { "aria-hidden": "true" }, text: "♣" }),
+    el("span", { class: "club right", attrs: { "aria-hidden": "true" }, text: "♣" }),
+  );
+}
+
 // The wooden rim, the bead, the felt and the round logo, which are one picture on the table.
 export class TableTop {
   readonly element: HTMLElement;

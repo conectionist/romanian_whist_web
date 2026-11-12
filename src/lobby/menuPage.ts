@@ -1,7 +1,7 @@
 import { el } from "../dom/el";
 import { icon, type IconName } from "../dom/icons";
 import { t } from "../i18n/t";
-import { logoLines, ornament } from "../table/tableTop";
+import { logoLines, plaqueFor } from "../table/tableTop";
 
 // The page the client opens on, src/ui/MainMenuPage.cpp. Its second button is Play online where the
 // desktop's is Quit, which a page cannot do.
@@ -27,15 +27,7 @@ export class MenuPage {
 
   constructor(actions: MenuPageActions) {
     const lines = logoLines();
-    const letters = el("div", { class: "medal-letters" }, ...lines.map((line) => el("div", { text: line })));
-    const stack = el("div", { class: "medal-stack" }, ornament(false), letters, ornament(true));
-    const plaque = el(
-      "div",
-      { class: "medal plaque" },
-      stack,
-      el("span", { class: "club left", attrs: { "aria-hidden": "true" }, text: "♣" }),
-      el("span", { class: "club right", attrs: { "aria-hidden": "true" }, text: "♣" }),
-    );
+    const plaque = plaqueFor(lines);
     this.element = el(
       "div",
       { class: "menu-page" },

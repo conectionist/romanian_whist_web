@@ -178,7 +178,7 @@ select.field option {
   width: 270px;
   height: 142px;
   border-radius: 14px;
-  transform: translate(-50%, -50%) scale(1.8);
+  transform: translate(-50%, -50%) scale(var(--plaque-scale, 1.8));
 }
 
 .medal.plaque::before {
@@ -188,7 +188,7 @@ select.field option {
 /* At twice the size the desktop's lettering sits a pixel lower against its ornaments, which half a
    pixel of the unscaled plaque is. */
 .medal.plaque .medal-letters {
-  transform: translateY(0.55px);
+  transform: translateY(var(--letters-drop, 0.55px));
 }
 
 .medal.plaque .club {
@@ -219,6 +219,110 @@ select.field option {
 /* Both as wide as the wider, and not stretched to the window. */
 .menu-btn {
   justify-content: center;
+}
+
+/* A flag lit as the desktop's buttons are: under the mouse, held down, or holding the keyboard. */
+.lang-choice:hover .flag-box,
+.lang-choice:active .flag-box,
+.lang-choice:focus .flag-box {
+  box-shadow:
+    inset 0 0 0 3px var(--panel-inner-shadow),
+    inset 0 0 0 4px var(--panel-inner-line-hover),
+    0 0 18px var(--button-glow),
+    0 12px 26px var(--panel-shadow);
+}
+
+/* The language dialog, src/ui/LanguageDialog.cpp: the room over the whole page, and in it a box of the
+   desktop dialog's 560 by 420, shown smaller where the window is. The plaque is at 1.4 of the table's
+   logo, its top 32 down; the buttons are 160 by 112, 248 down and 32 apart, each with its name 12
+   under it. */
+.lang-page {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 42%, var(--room-centre) 0%, var(--room-middle) 58%, var(--room-edge) 100%);
+}
+
+.lang-dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 560px;
+  height: 420px;
+  transform: translate(-50%, -50%) scale(var(--lang-fit, 1));
+}
+
+/* The desktop lays its picture of the plaque on whole pixels, which puts the plaque a fraction of a
+   pixel right and down of where the arithmetic says. A translation moves it by less than a pixel,
+   where a position would be rounded to one; the lettering and ornaments settle by their own fraction. */
+.lang-logo {
+  --plaque-scale: 1.26;
+  --letters-drop: 0.8px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 560px;
+  height: 242.92px;
+  translate: 0.25px 0.6px;
+}
+
+.lang-logo .medal-stack {
+  translate: 0 -0.5px;
+}
+
+.lang-choice {
+  position: absolute;
+  top: 248px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 160px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.lang-choice[data-language="ro"] {
+  left: 104px;
+}
+
+.lang-choice[data-language="en"] {
+  left: 296px;
+}
+
+.lang-choice:focus {
+  outline: none;
+}
+
+.flag-box.panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 160px;
+  height: 112px;
+}
+
+.flag-box svg {
+  display: block;
+  width: 120px;
+  height: 80px;
+}
+
+.lang-name {
+  font-family: var(--f-head);
+  font-size: 21px;
+  line-height: calc(21px * var(--lh-head));
+}
+
+.lang-choice:hover .lang-name,
+.lang-choice:active .lang-name,
+.lang-choice:focus .lang-name {
+  color: var(--gold-bright);
 }
 
 /* Notices: panels in a strip under the menu bar, over the sheets, new to the page. */

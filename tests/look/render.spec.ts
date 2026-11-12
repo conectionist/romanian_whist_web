@@ -195,3 +195,75 @@ test("the sheets take no focus ring for the button the page put the keyboard on,
   await page.keyboard.press("Tab");
   expect(await page.evaluate(() => document.activeElement?.getAttribute("data-action"))).toBe("continue");
 });
+
+test("the language dialog is the desktop's 560 by 420: the plaque, two flags 160 by 112 at 248 and 32 apart, and their names", async ({ page }) => {
+  const problems: string[] = [];
+  page.on("pageerror", (error) => problems.push(error.message));
+  await page.setViewportSize({ width: 560, height: 420 });
+  await page.goto("/look.html?shot=language");
+  await page.waitForSelector("body[data-ready]");
+
+  const dialog = (await page.locator(".lang-dialog").boundingBox())!;
+  expect(dialog).toMatchObject({ x: 0, y: 0, width: 560, height: 420 });
+
+  // Romanian on the left, with the keyboard, lit as a panel is under the mouse; English beside it.
+  const buttons = page.locator(".lang-choice");
+  await expect(buttons.locator(".lang-name")).toHaveText(["Română", "English"]);
+  const boxes = await buttons.locator(".flag-box").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const { x, y, width, height } = node.getBoundingClientRect();
+      return { x, y, width, height };
+    }),
+  );
+  expect(boxes).toEqual([
+    { x: 104, y: 248, width: 160, height: 112 },
+    { x: 296, y: 248, width: 160, height: 112 },
+  ]);
+  // The flag is 120 by 80 in the middle of its panel, and the name 12 under it.
+  const flag = (await buttons.nth(0).locator("svg").boundingBox())!;
+  expect(flag).toMatchObject({ x: 124, y: 264, width: 120, height: 80 });
+  const name = (await buttons.nth(0).locator(".lang-name").boundingBox())!;
+  expect(name.y).toBe(372);
+
+  await expect(buttons.nth(0)).toBeFocused();
+  const glow = (node: Element) => getComputedStyle(node).boxShadow;
+  const lit = await buttons.nth(0).locator(".flag-box").evaluate(glow);
+  const plain = await buttons.nth(1).locator(".flag-box").evaluate(glow);
+  expect(lit).not.toBe(plain);
+  expect(await buttons.nth(0).locator(".lang-name").evaluate((node) => getComputedStyle(node).color)).toBe("rgb(242, 211, 140)");
+  expect(await buttons.nth(1).locator(".lang-name").evaluate((node) => getComputedStyle(node).color)).toBe("rgb(241, 230, 204)");
+
+  // The mouse lights English too, as it does a button of the desktop's, with Romanian still lit.
+  await buttons.nth(1).hover();
+  expect(await buttons.nth(1).locator(".flag-box").evaluate(glow)).toBe(lit);
+  expect(problems).toEqual([]);
+});
+
+test("the language dialog is shown smaller in a window that cannot hold it, and nothing scrolls", async ({ page }) => {
+  await page.setViewportSize({ width: 280, height: 210 });
+  await page.goto("/look.html?shot=language");
+  await page.waitForSelector("body[data-ready]");
+  const dialog = (await page.locator(".lang-dialog").boundingBox())!;
+  expect(dialog).toMatchObject({ x: 0, y: 0, width: 280, height: 210 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth && document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
+
+  // A tall narrow one, like a phone held upright, shrinks it by its width and centres it.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const tall = (await page.locator(".lang-dialog").boundingBox())!;
+  expect(tall.width).toBeCloseTo(390, 0);
+  expect(tall.x).toBeCloseTo(0, 0);
+  expect(tall.y + tall.height / 2).toBeCloseTo(422, 0);
+});
+
+test("a single word of lettering keeps the swash of its W, which a box the height of the line would cut off", async ({ page }) => {
+  await page.setViewportSize({ width: 560, height: 420 });
+  await page.goto("/look.html?shot=language");
+  await page.waitForSelector("body[data-ready]");
+  const letters = page.locator(".lang-logo .medal-letters");
+  // The box reaches up by --lift where the gradient is its top colour, and the text keeps its place.
+  const text = (await letters.locator("div").boundingBox())!;
+  const box = (await letters.boundingBox())!;
+  expect(await letters.evaluate((node) => getComputedStyle(node).paddingTop)).toBe("14px");
+  // Measured on the page, where the plaque is drawn at 1.26 of its size.
+  expect(text.y - box.y).toBeCloseTo(14 * 1.26, 1);
+});

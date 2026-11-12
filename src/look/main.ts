@@ -7,6 +7,7 @@ import { NOTHING_ASKED, sheetFor, type MenuSheet, type UiState } from "../play/s
 import { Store } from "../play/store";
 import { MenuBar, menuStateFor } from "../menu/menuBar";
 import { NO_ACTIONS, Sheets } from "../sheets/host";
+import { LanguageDialog } from "../lobby/languageDialog";
 import { MenuPage } from "../lobby/menuPage";
 import { defaults } from "../lobby/setup";
 import { seededRandom } from "../lobby/catalogue";
@@ -32,8 +33,9 @@ interface Fixture {
   shot: { file: string; width: number; height: number; view: "window" | "table"; raised?: string; handOrder?: string[] };
   state: Record<string, unknown> | null;
   sheet?: "pause" | MenuSheet;
-  // The page that is shown when there is no table: the main menu.
-  page?: "menu";
+  // The page that is shown when there is no table: the main menu, or the language dialog, which has
+  // nothing under it.
+  page?: "menu" | "language";
   messages?: unknown[];
 }
 
@@ -72,6 +74,15 @@ async function main(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   const first = fixtureNamed(params.get("shot") ?? "table-empty");
   const then = params.get("then");
+
+  if (first.page === "language") {
+    const dialog = new LanguageDialog({ choose: () => undefined });
+    document.body.append(dialog.element);
+    dialog.focus();
+    await loadFonts();
+    document.body.dataset.ready = "1";
+    return;
+  }
 
   const frame = el("div", { class: "window" });
   document.getElementById("app")?.append(frame);

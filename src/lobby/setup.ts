@@ -334,13 +334,42 @@ function isSetup(value: unknown): value is Setup {
   );
 }
 
-// The last New Game, which the next one opens on, if it was made in the language the page speaks: its
-// names were drawn, or are the defaults, in that language. Wrapped: storage can be refused or come back empty.
-export function loadSetup(storage: Pick<Storage, "getItem"> | null = safe(), speaks: Language = currentLanguage()): Setup | null {
+// Where the last New Game is kept for a language: its names were drawn, or are the defaults, in that
+// language, so each language has a setup of its own and one does not overwrite the other's.
+function keyFor(language: Language): string {
+  return `${STORAGE_KEY}.${language}`;
+}
+
+// What was kept in one slot for every language, with the language beside it, is moved to its language's
+// slot, unless that has one already. Anything else in the old slot, which names no language, is dropped.
+function migrate(storage: Pick<Storage, "getItem" | "setItem" | "removeItem">): void {
+  const text = storage.getItem(STORAGE_KEY);
+  if (text === null) {
+    return;
+  }
   try {
-    const text = storage?.getItem(STORAGE_KEY);
-    const parsed = (text === null || text === undefined ? null : JSON.parse(text)) as { language?: unknown; setup?: unknown } | null;
-    return parsed?.language === speaks && isSetup(parsed.setup) ? parsed.setup : null;
+    const old = JSON.parse(text) as { language?: unknown; setup?: unknown } | null;
+    const language = old?.language;
+    if ((language === "en" || language === "ro") && isSetup(old?.setup) && storage.getItem(keyFor(language)) === null) {
+      storage.setItem(keyFor(language), JSON.stringify(old?.setup));
+    }
+  } catch {
+    // What cannot be read is not kept.
+  }
+  storage.removeItem(STORAGE_KEY);
+}
+
+// The last New Game in the language the page speaks, which the next one opens on. Wrapped: storage can be
+// refused or come back empty.
+export function loadSetup(storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | null = safe(), speaks: Language = currentLanguage()): Setup | null {
+  try {
+    if (storage === null) {
+      return null;
+    }
+    migrate(storage);
+    const text = storage.getItem(keyFor(speaks));
+    const parsed: unknown = text === null ? null : JSON.parse(text);
+    return isSetup(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -348,18 +377,9 @@ export function loadSetup(storage: Pick<Storage, "getItem"> | null = safe(), spe
 
 export function saveSetup(setup: Setup, storage: Pick<Storage, "setItem"> | null = safe(), speaks: Language = currentLanguage()): void {
   try {
-    storage?.setItem(STORAGE_KEY, JSON.stringify({ language: speaks, setup }));
+    storage?.setItem(keyFor(speaks), JSON.stringify(setup));
   } catch {
     // The setup lasts until the page is closed.
-  }
-}
-
-// The last New Game, forgotten: its names were drawn, or typed, in the language the page has left.
-export function forgetSetup(storage: Pick<Storage, "removeItem"> | null = safe()): void {
-  try {
-    storage?.removeItem(STORAGE_KEY);
-  } catch {
-    // What is left is only an old setup.
   }
 }
 

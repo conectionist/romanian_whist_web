@@ -130,8 +130,8 @@ export class HandView {
       view.element.addEventListener("pointerdown", (event) => {
         pressing = true;
         pointer = event.pointerType === "touch" || event.pointerType === "pen" ? event.pointerType : "mouse";
-        // A press let go somewhere else has no click on the card, and must not make a later bare
-        // activation a mouse's. A press let go on it has its click within a moment, which is not waited past.
+        // A press let go somewhere else has no click on the card, and must not make a later bare activation a
+        // mouse's. One let go on it has its click within a moment, so the pointer is forgotten after that.
         document.addEventListener(
           "pointerup",
           () =>

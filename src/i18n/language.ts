@@ -59,6 +59,13 @@ export function setLanguage(language: Language): void {
   running = language;
 }
 
+// What of a query follows the page to a table's address: the language it was asked to run in, and nothing
+// else, so that a link made there asks for no game and no seed.
+export function keepLanguage(search: string): string {
+  const language = languageFromSearch(search);
+  return language === null ? "" : `?lang=${language}`;
+}
+
 // The address a page is loaded anew at, in a language it was just given. When the browser kept the
 // choice, ?lang= goes, so the choice is the one read and not the old ask. When it did not, ?lang= is the
 // choice, so the page does not ask the first-visit question again.

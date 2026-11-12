@@ -5,6 +5,7 @@ import {
   NATIVE_NAMES,
   addressForLanguage,
   currentLanguage,
+  keepLanguage,
   languageFromCode,
   languageFromSearch,
   setLanguage,
@@ -60,6 +61,20 @@ describe("the language the page runs in", () => {
   it("is the choice in the address the page reloads at when the browser did not keep it, and the rest of it stays", () => {
     expect(addressForLanguage("https://example.org/", "en", false)).toBe("https://example.org/?lang=en");
     expect(addressForLanguage("https://example.org/t/K7QM4P?lang=ro&x=1", "en", false)).toBe("https://example.org/t/K7QM4P?lang=en&x=1");
+  });
+});
+
+describe("what of a query follows the page to a table's address", () => {
+  it("is the language and nothing else", () => {
+    expect(keepLanguage("?lang=ro&solo=4&seed=7&speed=4")).toBe("?lang=ro");
+    expect(keepLanguage("?solo=4&lang=EN")).toBe("?lang=en");
+    expect(keepLanguage("?lang=ro_RO")).toBe("?lang=ro");
+  });
+
+  it("is nothing when there is no language to ask for, or it is not one the page has", () => {
+    expect(keepLanguage("")).toBe("");
+    expect(keepLanguage("?solo=4&seed=7")).toBe("");
+    expect(keepLanguage("?lang=fr")).toBe("");
   });
 });
 

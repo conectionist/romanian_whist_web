@@ -7,7 +7,6 @@ import {
   defaultLevel,
   estimatedMinutes,
   firstError,
-  forgetSetup,
   isReservedName,
   nameError,
   levelName,
@@ -231,20 +230,43 @@ describe("what is remembered between games", () => {
   it("is nothing when nothing was kept, or what was kept cannot be read", () => {
     expect(loadSetup(memory())).toBeNull();
     const storage = memory();
-    storage.setItem("whist.setup", "{not json");
+    storage.setItem("whist.setup.en", "{not json");
     expect(loadSetup(storage)).toBeNull();
-    storage.setItem("whist.setup", JSON.stringify({ language: "en", setup: { ...setup(), bots: [{ name: "x", gender: "male", level: "nobody" }] } }));
-    expect(loadSetup(storage)).toBeNull();
-    storage.setItem("whist.setup", JSON.stringify(setup()));
+    storage.setItem("whist.setup.en", JSON.stringify({ ...setup(), bots: [{ name: "x", gender: "male", level: "nobody" }] }));
     expect(loadSetup(storage)).toBeNull();
     expect(loadSetup(null)).toBeNull();
   });
 
-  it("is read back only in the language it was made in, and kept for it", () => {
+  it("is kept for each language, and read back only in its own, which the other's does not overwrite", () => {
     const storage = memory();
     saveSetup(setup({ seed: 12 }), storage, "en");
     expect(loadSetup(storage, "ro")).toBeNull();
+    saveSetup(setup({ seed: 34 }), storage, "ro");
     expect(loadSetup(storage, "en")).toEqual(setup({ seed: 12 }));
+    expect(loadSetup(storage, "ro")).toEqual(setup({ seed: 34 }));
+  });
+
+  it("is moved from the one slot every language used to share into the slot of the language it names", () => {
+    const storage = memory();
+    storage.setItem("whist.setup", JSON.stringify({ language: "en", setup: setup({ seed: 12 }) }));
+    expect(loadSetup(storage, "ro")).toBeNull();
+    expect(loadSetup(storage, "en")).toEqual(setup({ seed: 12 }));
+    expect(storage.getItem("whist.setup")).toBeNull();
+    expect(storage.getItem("whist.setup.en")).not.toBeNull();
+    // A setup the new slot already has is not replaced by the old one.
+    storage.setItem("whist.setup", JSON.stringify({ language: "en", setup: setup({ seed: 99 }) }));
+    expect(loadSetup(storage, "en")).toEqual(setup({ seed: 12 }));
+    expect(storage.getItem("whist.setup")).toBeNull();
+  });
+
+  it("drops what the old slot kept without saying a language, or cannot be read", () => {
+    const storage = memory();
+    storage.setItem("whist.setup", JSON.stringify(setup()));
+    expect(loadSetup(storage, "en")).toBeNull();
+    expect(storage.getItem("whist.setup")).toBeNull();
+    storage.setItem("whist.setup", "{not json");
+    expect(loadSetup(storage, "en")).toBeNull();
+    expect(storage.getItem("whist.setup")).toBeNull();
   });
 
   it("is lost quietly when storage refuses", () => {
@@ -260,17 +282,7 @@ describe("what is remembered between games", () => {
       },
     };
     expect(() => saveSetup(setup(), refusing)).not.toThrow();
-    expect(() => forgetSetup(refusing)).not.toThrow();
     expect(loadSetup(refusing)).toBeNull();
-  });
-
-  it("is forgotten when the page changes language, since its names were drawn in the old one", () => {
-    const storage = memory();
-    saveSetup(setup(), storage);
-    expect(loadSetup(storage)).not.toBeNull();
-    forgetSetup(storage);
-    expect(loadSetup(storage)).toBeNull();
-    expect(() => forgetSetup(null)).not.toThrow();
   });
 });
 

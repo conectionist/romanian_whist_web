@@ -124,9 +124,9 @@ test.describe("a browser that has chosen", () => {
     const hellos = helloLanguages(page);
     await page.goto("/");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
-    // What the last game's setup held was drawn in the language that is being left.
+    // What the last game's setup held is kept for the language it was made in.
     await page.evaluate(() => {
-      window.localStorage.setItem("whist.setup", "{}");
+      window.localStorage.setItem("whist.setup.ro", "{}");
       (window as unknown as { marker: number }).marker = 1;
     });
     const flag = page.locator(".menu-lang");
@@ -146,9 +146,9 @@ test.describe("a browser that has chosen", () => {
     await choice(page, "ro").click();
     await expect(dialog(page)).toHaveCount(0);
     expect(await page.evaluate(() => (window as unknown as { marker?: number }).marker)).toBe(1);
-    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup"))).toBe("{}");
+    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup.ro"))).toBe("{}");
 
-    // Another one is kept, the last game's setup forgotten, and the page loads again in it.
+    // Another one is kept, the last game's setup is left for its language, and the page loads again in it.
     await flag.click();
     await expect(dialog(page)).toBeVisible();
     await page.keyboard.press("ArrowRight");
@@ -159,7 +159,7 @@ test.describe("a browser that has chosen", () => {
     await expect(flag).toHaveAccessibleName("Limba / Language: English");
     expect(await page.evaluate(() => (window as unknown as { marker?: number }).marker)).toBeUndefined();
     expect(await stored(page)).toBe("en");
-    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup"))).toBeNull();
+    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup.ro"))).toBe("{}");
     expect(hellos).toEqual(["ro", "en"]);
     expect(problems).toEqual([]);
   });
@@ -178,25 +178,28 @@ test.describe("a browser that has chosen", () => {
 const sheet = (page: Page, name: string) => page.locator(`.sheet[data-sheet="${name}"]:not([hidden])`);
 
 test.describe("a browser that has English", () => {
-  test("?lang=ro opens New Game on a setup of its own though one was saved in English, and leaves what was saved", async ({ page }) => {
-    const saved = JSON.stringify({
-      language: "en",
-      setup: {
-        spectator: false,
-        human: { name: "Ana", gender: "female" },
-        bots: [
-          { name: "Bot One", gender: "male", level: "cyborg" },
-          { name: "Bot Two", gender: "female", level: "low-risk" },
-        ],
-        structure: "1-8-1",
-        foreheadAndHidden: true,
-        allOneCardForehead: false,
-        botSpeed: 2,
-        waitAfterRound: false,
-        seed: null,
-      },
-    });
-    await page.addInitScript((value) => window.localStorage.setItem("whist.setup", value), saved);
+  const english = {
+    spectator: false,
+    human: { name: "Ana", gender: "female" },
+    bots: [
+      { name: "Bot One", gender: "male", level: "cyborg" },
+      { name: "Bot Two", gender: "female", level: "low-risk" },
+    ],
+    structure: "1-8-1",
+    foreheadAndHidden: true,
+    allOneCardForehead: false,
+    botSpeed: 4,
+    waitAfterRound: false,
+    seed: null,
+  };
+  const saved = JSON.stringify(english);
+
+  test("?lang=ro opens New Game on a setup of its own though one was saved in English, and a game dealt there leaves the English one", async ({ page }) => {
+    await page.addInitScript((value) => {
+      if (window.localStorage.getItem("whist.setup.en") === null) {
+        window.localStorage.setItem("whist.setup.en", value);
+      }
+    }, saved);
     const opened = async () => {
       await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
       await page.locator('[data-menu-page="new-game"]').click();
@@ -206,19 +209,43 @@ test.describe("a browser that has English", () => {
         opponents: await sheet(page, "new-game").locator('input[name="opponents"]').inputValue(),
       };
     };
+    const slot = (language: string) => page.evaluate((key) => window.localStorage.getItem(key), `whist.setup.${language}`);
 
     // Names drawn, or typed, in English are not carried into a page that speaks Romanian.
     await page.goto("/?lang=ro");
     expect(await opened()).toEqual({ name: "Jucător", opponents: "3" });
-    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup"))).toBe(saved);
+    expect(await slot("en")).toBe(saved);
 
     // The visit without it finds the English setup as it was left.
     await page.goto("/");
     expect(await opened()).toEqual({ name: "Ana", opponents: "2" });
+
+    // A game dealt in Romanian is kept for Romanian, and the English setup is as it was.
+    await page.goto("/?lang=ro");
+    await opened();
+    await sheet(page, "new-game").locator('[data-action="deal"]').click();
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+    expect(JSON.parse((await slot("ro")) as string).human.name).toBe("Jucător");
+    expect(await slot("en")).toBe(saved);
   });
 
-  test("?lang= stays in the address when it moves to the table's, so a reload there is in the same language", async ({ page }) => {
-    await page.goto("/?lang=ro");
+  test("a setup kept in the one slot every language shared moves to the slot of its own", async ({ page }) => {
+    await page.addInitScript((value) => {
+      if (window.localStorage.getItem("whist.migrated") === null) {
+        window.localStorage.setItem("whist.setup", value);
+        window.localStorage.setItem("whist.migrated", "1");
+      }
+    }, JSON.stringify({ language: "en", setup: english }));
+    await page.goto("/");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await page.locator('[data-menu-page="new-game"]').click();
+    expect(await sheet(page, "new-game").locator('input[name="humanName"]').inputValue()).toBe("Ana");
+    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup"))).toBeNull();
+    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup.en"))).toBe(saved);
+  });
+
+  test("?lang= and nothing else stays in the address when it moves to the table's, so a reload there is in the same language", async ({ page }) => {
+    await page.goto("/?lang=ro&seed=5&foo=1");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
     await page.locator('[data-menu-page="online"]').click();
     await sheet(page, "online").locator('input[name="profileName"]').fill("Maria");

@@ -173,7 +173,7 @@ test("Enter plays only what is picked: a card that kept the keyboard from a pick
 });
 
 // The slowest computer players rest 2.4 seconds on a round, so a sheet that is gone within one second
-// was closed by the key. A held round's Space is on its Continue, which the whole game above presses.
+// was closed by the key.
 test("Space closes the round sheet the game only rests on, with the keyboard on nothing as the last answer left it, and the digits do not act in a text field", async ({
   page,
 }) => {

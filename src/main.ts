@@ -21,11 +21,11 @@ import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
 import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
 import { Notices, connectionText, errorText, presenceNews, waitingText } from "./lobby/notices";
-import { defaults, forgetSetup, loadSetup, saveSetup, type Setup } from "./lobby/setup";
+import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
 import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
 import { startIn } from "./i18n/document";
-import { addressForLanguage, currentLanguage, languageFromSearch, storeLanguage, storedLanguage } from "./i18n/language";
+import { addressForLanguage, currentLanguage, keepLanguage, languageFromSearch, storeLanguage, storedLanguage } from "./i18n/language";
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
@@ -181,7 +181,6 @@ function changeLanguage(): void {
           leave();
           return;
         }
-        forgetSetup();
         window.location.replace(addressForLanguage(window.location.href, chosen, storedLanguage() === chosen));
       },
       cancel: leave,
@@ -256,7 +255,7 @@ function followAddress(): void {
   const move = addressMove(window.location.pathname, code, entered, flow.ui.joinCode !== null);
   switch (move.kind) {
     case "push":
-      window.history.pushState(null, "", move.path + window.location.search);
+      window.history.pushState(null, "", move.path + keepLanguage(window.location.search));
       entered = move.entered;
       break;
     case "mark":
@@ -283,7 +282,7 @@ window.addEventListener("popstate", () => {
   const table = store.state.table;
   if (table !== null && table.mode === "online") {
     if (window.location.pathname !== pathFor(table.code)) {
-      window.history.pushState(null, "", pathFor(table.code) + window.location.search);
+      window.history.pushState(null, "", pathFor(table.code) + keepLanguage(window.location.search));
       entered = { code: table.code, pushed: true };
       flow.exit();
     }

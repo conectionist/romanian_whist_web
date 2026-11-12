@@ -468,10 +468,9 @@ for (const [width, height] of [
   });
 }
 
-// The other players' name panels on a phone held sideways: drawn as large as the room round the table
-// allows up to 0.55 of their size, which a name needs to be read, and on nothing. Each table size has
-// the smallest it reaches in each window, in the pixels of the name's text height; the table's own size
-// drew it 7.1 and 6.5 high.
+// On a phone held sideways the other players' panels are drawn as large as the room allows, up to the 0.55
+// a name needs to be read at, and on nothing. `smallest` is the least name height, in pixels, that each
+// table reaches in the window.
 const PHONES: { width: number; height: number; smallest: Record<string, number> }[] = [
   { width: 844, height: 390, smallest: { "table-2-players": 15.5, "table-3-players": 15.5, "table-4-players": 15.5, "table-5-players": 13.5, "table-6-players": 13.5, bidding: 13.5, "table-6-players-full-hand": 13.5 } },
   { width: 740, height: 360, smallest: { "table-2-players": 15.5, "table-3-players": 15.5, "table-4-players": 14.5, "table-5-players": 11.5, "table-6-players": 11.5, bidding: 11.5, "table-6-players-full-hand": 11.5 } },

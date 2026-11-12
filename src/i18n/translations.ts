@@ -28,8 +28,8 @@ export function catalogueOf(...files: readonly { entries: readonly Entry[] }[]):
   return catalogue;
 }
 
-// Qt's rule for Romanian: the first form for exactly one, the second for none and for a count that
-// ends in 1 to 19, the third otherwise ("20 de puncte"). It is the rule the translation was written against.
+// Qt's rule for Romanian: the first form for exactly one, the second for none and for a count whose last
+// two digits are 1 to 19, the third otherwise ("20 de puncte"). The translation was written against it.
 export function romanianForm(n: number): 0 | 1 | 2 {
   const last = n % 100;
   if (n === 1) {

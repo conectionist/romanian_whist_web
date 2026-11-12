@@ -71,10 +71,9 @@ export class TableScene {
     view.onFit(() => this.fitSeats());
   }
 
-  // Where the seats stand: as the table has them, or, on a touch screen, with the other players' panels
-  // drawn no smaller than the minimum and clear of what is round them. They are worked out once for a
-  // window size, a seat count and where you sit, with the corner panels in their tallest forms and the fan
-  // holding all it can, so that no panel moves in a game.
+  // Where the seats stand: the table's own, or on a touch screen with the other players' panels no smaller
+  // than the minimum and clear of what is round them. That is worked out once for a window, a seat count and
+  // where you sit, against the corner panels at their tallest, so that no panel moves in a game.
   private placesFor(seatCount: number, humanSeat: number): (Place | null)[] {
     const wanted = (this.options.coarse ?? touched)() ? Math.max(1, seatPanelMinimumScale / this.view.scale) : 1;
     if (wanted <= 1) {

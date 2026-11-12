@@ -99,6 +99,8 @@ export class Sheets {
   private readonly createTable: CreateTableSheet;
   private readonly lobby: LobbySheet;
   private readonly byName: Record<SheetName, { element: HTMLElement; focusDefault(): void }>;
+  // Whether the round sheet up holds the game, which is when it has the keyboard.
+  private roundHolding = false;
 
   constructor(
     actions: SheetActions,
@@ -146,6 +148,7 @@ export class Sheets {
   render(name: SheetName | null, state: StoreState, context: RenderContext): void {
     if (name === null) {
       this.layer.show(null);
+      this.roundHolding = false;
       return;
     }
     const seating = seatingOf(state);
@@ -155,6 +158,7 @@ export class Sheets {
         const result = scoredRound(state);
         if (result === null) {
           this.layer.show(null);
+          this.roundHolding = false;
           return;
         }
         const waitedOut = state.held !== null && (context.continued || !holdAwaitsYou(state));
@@ -199,9 +203,18 @@ export class Sheets {
     }
     // A sheet that is just up takes its starting values once: the controls are the player's while it
     // is open, and the table's word on them would take a control out of a hand that is moving it.
-    if (this.layer.show(this.byName[name])) {
+    // A round sheet the game only rests on goes by itself, so it leaves the keyboard where it is; the
+    // hold that often follows it a moment later gives the keyboard to its Continue.
+    const holding = name === "round" && state.held !== null;
+    const shownNow = this.layer.show(this.byName[name], name !== "round" || holding);
+    if (name === "round") {
+      if (holding && !shownNow && !this.roundHolding) {
+        this.round.focusDefault();
+      }
+    } else if (shownNow) {
       this.opened(name, state, context);
     }
+    this.roundHolding = holding;
   }
 
   // The server refused what the sheet that is up asked for. Whether a sheet took the word: one that

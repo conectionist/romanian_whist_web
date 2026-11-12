@@ -146,7 +146,7 @@ export class GameOverSheet implements Sheet {
     if (fields.table !== null) {
       this.table.update(fields.table);
     }
-    // The green one is last, and on the failure face it is Main menu: Round history, then Main menu.
+    // The green one is last. A solo game's failure face has no Play again, so Main menu is the green one.
     const showPlayAgain = !fields.failed || options.online;
     this.playAgain.element.hidden = !showPlayAgain;
     this.mainMenu.setKind(showPlayAgain ? "quiet" : "primary");

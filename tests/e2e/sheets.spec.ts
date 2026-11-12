@@ -44,6 +44,8 @@ test.describe("the round sheet", () => {
 
     const round = sheet(page, "round");
     await expect(round).toBeVisible();
+    // It waits for you, so the keyboard is on its Continue.
+    await expect(round.getByRole("button", { name: "Continue" })).toBeFocused();
     await expect(round.locator(".sheet-title")).toHaveText("Round 1 · 1 card · Normal");
     await expect(round.locator(".th")).toHaveText(["Player", "Bid", "Taken", "Round", "Total"]);
     // A row for each seat, yours first and in bold.
@@ -92,6 +94,9 @@ test.describe("the round sheet", () => {
     const round = sheet(page, "round");
     await expect(round).toBeVisible();
     await expect(round.getByRole("button", { name: "Continue" })).toBeEnabled();
+    // It waits for nothing, so it leaves the keyboard and the table as they were.
+    await expect(round.getByRole("button", { name: "Continue" })).not.toBeFocused();
+    expect(await page.locator(".view").evaluate((node) => (node as HTMLElement).inert)).toBe(false);
     await expect(round).toHaveCount(0);
     await expect(page.locator(".score-round")).toHaveText("Round 2 of 23");
 

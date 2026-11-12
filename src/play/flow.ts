@@ -204,6 +204,8 @@ export class Flow {
       this.closeMenu();
     } else if (this.ui.joinCode !== null && !atTable(this.state)) {
       this.cancelJoin();
+    } else if (this.ui.pauseMenu && this.afterLeave !== null) {
+      this.resume();
     } else if (this.ui.pauseMenu || canExit(this.state)) {
       this.ask({ ...this.ui, pauseMenu: !this.ui.pauseMenu });
     }
@@ -222,13 +224,21 @@ export class Flow {
     this.ask({ ...this.ui, pauseMenu: false, menu: back ?? this.ui.menu });
   }
 
-  // Continue lets a held round go. A round the game only rests on has nothing to let go, and its
-  // sheet is closed until the game moves on, which would close it anyway.
+  // Continue lets a held round go, and may be sent before its hold arrives. A round the game only
+  // rests on has nothing to let go, and its sheet is closed until the game moves on.
   continueRound(): void {
     const held = this.state.held;
     if (held === null) {
       const round = scoredRound(this.state);
-      if (round !== null) {
+      if (round === null) {
+        return;
+      }
+      if (this.state.table?.settings.waitAfterRound === true) {
+        if (this.continued !== round.index && this.deps.send(continueRound(round.index))) {
+          this.continued = round.index;
+          this.deps.changed();
+        }
+      } else {
         this.ask({ ...this.ui, dismissedRound: round.index });
       }
       return;

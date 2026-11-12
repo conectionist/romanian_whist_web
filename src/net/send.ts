@@ -16,7 +16,6 @@ export function joinTable(code: string, profile: Profile): ClientMessage {
   return { type: "joinTable", code, profile: profileOf(profile) };
 }
 
-
 export function takeSeat(seat: number): ClientMessage {
   return { type: "takeSeat", seat };
 }

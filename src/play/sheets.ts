@@ -6,7 +6,7 @@ import type { StoreState } from "./store";
 
 export type MenuSheet = "history" | "last-trick" | "rules" | "settings" | "new-game" | "online" | "create-table";
 // The pause menu is a solo game's; "leave" is its online counterpart, which the game goes on behind;
-// the lobby is an online table before its game starts.
+// the lobby is an online table between games.
 export type SheetName = MenuSheet | "round" | "game-over" | "pause" | "leave" | "lobby";
 
 // What the player has asked for.

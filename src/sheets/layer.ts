@@ -52,8 +52,8 @@ export class SheetLayer {
   }
 
   // Shows this sheet, or none. Says whether another is up now than was: a sheet put up again with new
-  // words keeps the keyboard where it is.
-  show(sheet: Sheet | null): boolean {
+  // words keeps the keyboard where it is, and one that waits for nothing does not take it.
+  show(sheet: Sheet | null, takesKeyboard = true): boolean {
     if (sheet === this.open) {
       return false;
     }
@@ -72,7 +72,7 @@ export class SheetLayer {
     this.place();
     if (sheet === null) {
       this.giveBack();
-    } else {
+    } else if (takesKeyboard) {
       sheet.focusDefault();
     }
     return true;

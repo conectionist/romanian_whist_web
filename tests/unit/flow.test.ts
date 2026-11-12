@@ -175,8 +175,25 @@ describe("Continue", () => {
     expect(done.sent.messages).toEqual([]);
   });
 
+  it("sends continue as soon as the round is scored when the table waits, and once", () => {
+    const { flow, sent, receive } = setup("sheet-pause", (sync) => {
+      sync.table.settings.waitAfterRound = true;
+    });
+    receive(message(serverFixture("game.roundScored"), 3));
+    expect(flow.shown()).toBe("round");
+    flow.continueRound();
+    flow.continueRound();
+    expect(sent.messages).toEqual([{ type: "continue", round: 0 }]);
+    receive(message(serverFixture("held"), 4));
+    expect(flow.continuedHold()).toBe(true);
+    flow.continueRound();
+    expect(sent.messages).toHaveLength(1);
+  });
+
   it("closes a round sheet the game only rests on, and sends nothing for it", () => {
-    const { flow, sent, receive } = setup("sheet-pause");
+    const { flow, sent, receive } = setup("sheet-pause", (sync) => {
+      sync.table.settings.waitAfterRound = false;
+    });
     receive(message(serverFixture("game.roundScored"), 3));
     expect(flow.shown()).toBe("round");
     flow.continueRound();
@@ -443,7 +460,10 @@ describe("New Game", () => {
     const plain = setup("sheet-pause", online);
     plain.flow.openMenu("new-game");
     plain.flow.deal(defaults(seededRandom(1)));
+    // Esc on that question is Stay.
     plain.flow.escape();
+    expect(plain.flow.shown()).toBe("new-game");
+    expect(plain.sent.messages).toEqual([]);
     plain.flow.exit();
     plain.flow.mainMenu();
     expect(types(plain.sent.messages)).toEqual(["leaveTable"]);

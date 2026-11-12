@@ -228,8 +228,10 @@ function render(): void {
   sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking() });
   menuBar.update(menuStateFor(state, true));
   menuPage.show(noTable);
-  // The table under a sheet or the menu page takes neither clicks nor the keyboard.
-  view.root.inert = shown !== null || noTable;
+  // The table under a sheet or the menu page takes neither clicks nor the keyboard, but for a round
+  // sheet the game only rests on.
+  const resting = shown === "round" && state.held === null;
+  view.root.inert = (shown !== null && !resting) || noTable;
   followAddress();
   notices.set("waiting", waitingText(state.table, state.tableAt, performance.now()), { kind: "wait" });
   notices.set("connection", connectionText(lastStatus, wasConnected), {

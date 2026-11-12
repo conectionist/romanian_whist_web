@@ -4,8 +4,8 @@ import { setSeat, updateSettings } from "../net/send";
 import { roundCount } from "../sheets/rulesSheet";
 import { MAX_SEATS, MIN_SEATS } from "./setup";
 
-// An online table's lobby: who sits where, and what its host may change before the game starts. The
-// model is a pure function of the table's state, as the sheets' are of the store.
+// An online table's lobby: who sits where, and what its host may change between games. The model is
+// a pure function of the table's state, as the sheets' are of the store.
 
 export interface LobbySeat {
   index: number;

@@ -1,6 +1,12 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { panelRect } from "../../src/table/geometry/seats";
 import { measure, panelsOn } from "./panels";
+
+interface Spot {
+  x: number;
+  y: number;
+  width: number;
+}
 
 test("a second state keeps the panels and racks and changes what they show", async ({ page }) => {
   const problems: string[] = [];
@@ -270,52 +276,70 @@ test("a single word of lettering keeps the swash of its W, which a box the heigh
   expect(text.y - box.y).toBeCloseTo(14 * 1.26, 1);
 });
 
+// A card of the fan played from the page, and where its flight starts: the middle of the card as it rests,
+// as it is drawn (raised if it was picked) and as the flight's first frame has it.
+async function flightStart(page: Page, picked: boolean): Promise<{ rest: Spot; drawn: Spot; first: Spot }> {
+  await page.goto("/look.html?shot=table-4-players&pace=normal");
+  await page.waitForSelector("body[data-ready]");
+  return page.evaluate((pick) => {
+    const centre = (rect: DOMRect) => ({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width });
+    const card = document.querySelector<HTMLElement>('.hand [data-card="KC"]')!;
+    const rest = centre(card.getBoundingClientRect());
+    if (pick) {
+      card.classList.add("selected");
+    }
+    const drawn = centre(card.querySelector(".face")!.getBoundingClientRect());
+    const look = (window as unknown as { look: { apply(text: string, animate: boolean): Promise<void> } }).look;
+    const message = {
+      type: "game",
+      seq: 1,
+      game: 1,
+      event: { kind: "cardPlayed", seat: 0, card: "KC" },
+      snapshot: {
+        you: 0,
+        status: "inProgress",
+        phase: "playing",
+        round: { index: 7, count: 26, type: "normal", tricks: 5, trick: 2, trump: "9S", leader: 3 },
+        active: null,
+        forbiddenBet: null,
+        bets: { placed: 4, sum: 1 },
+        table: { ledBy: 1, leadSuit: "C", cards: [{ seat: 1, card: "8C", winning: false }, { seat: 2, card: "7S", winning: false }, { seat: 3, card: "QS", winning: true }, { seat: 0, card: "KC", winning: false }] },
+        seats: [
+          { name: "Player", bidOrder: 2, bet: 0, won: 0, cards: 3, roundScore: 0, total: 23, wins: 0, losses: 1, hand: ["QD", "7C", "8H"] },
+          { name: "Ana", bidOrder: 3, bet: 1, won: 1, cards: 3, roundScore: 0, total: 31, wins: 1, losses: 0 },
+          { name: "Bogdan", bidOrder: 4, bet: 0, won: 0, cards: 3, roundScore: 0, total: 16, wins: 0, losses: 2 },
+          { name: "Cristina", bidOrder: 1, bet: 0, won: 0, cards: 3, roundScore: 0, total: 5, wins: 0, losses: 3 },
+        ],
+      },
+    };
+    void look.apply(JSON.stringify(message), true);
+    // The flight is made but not yet run: its first frame is where the card starts.
+    const first = centre(document.querySelector<HTMLElement>('.trick .card[data-card="KC"]')!.getBoundingClientRect());
+    return { rest, drawn, first };
+  }, picked);
+}
+
 test.describe("under a finger", () => {
   test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
 
   test("a card played from the fan starts its flight where it is drawn, and as large", async ({ page }) => {
-    await page.goto("/look.html?shot=table-4-players&pace=normal");
-    await page.waitForSelector("body[data-ready]");
-    expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hand")!).scale)).not.toBe("none");
-    const start = await page.evaluate(() => {
-      const centre = (rect: DOMRect) => ({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width });
-      const drawn = centre(document.querySelector<HTMLElement>('.hand [data-card="KC"]')!.getBoundingClientRect());
-      const look = (window as unknown as { look: { apply(text: string, animate: boolean): Promise<void> } }).look;
-      const message = {
-        type: "game",
-        seq: 1,
-        game: 1,
-        event: { kind: "cardPlayed", seat: 0, card: "KC" },
-        snapshot: {
-          you: 0,
-          status: "inProgress",
-          phase: "playing",
-          round: { index: 7, count: 26, type: "normal", tricks: 5, trick: 2, trump: "9S", leader: 3 },
-          active: null,
-          forbiddenBet: null,
-          bets: { placed: 4, sum: 1 },
-          table: { ledBy: 1, leadSuit: "C", cards: [{ seat: 1, card: "8C", winning: false }, { seat: 2, card: "7S", winning: false }, { seat: 3, card: "QS", winning: true }, { seat: 0, card: "KC", winning: false }] },
-          seats: [
-            { name: "Player", bidOrder: 2, bet: 0, won: 0, cards: 3, roundScore: 0, total: 23, wins: 0, losses: 1, hand: ["QD", "7C", "8H"] },
-            { name: "Ana", bidOrder: 3, bet: 1, won: 1, cards: 3, roundScore: 0, total: 31, wins: 1, losses: 0 },
-            { name: "Bogdan", bidOrder: 4, bet: 0, won: 0, cards: 3, roundScore: 0, total: 16, wins: 0, losses: 2 },
-            { name: "Cristina", bidOrder: 1, bet: 0, won: 0, cards: 3, roundScore: 0, total: 5, wins: 0, losses: 3 },
-          ],
-        },
-      };
-      const started = look.apply(JSON.stringify(message), true);
-      // The flight is made but not yet run: its first frame is where the card starts.
-      const flying = document.querySelector<HTMLElement>('.trick .card[data-card="KC"]')!;
-      const first = centre(flying.getBoundingClientRect());
-      void started;
-      return { drawn, first };
-    });
+    const start = await flightStart(page, false);
     expect(Math.abs(start.first.x - start.drawn.x)).toBeLessThan(2);
     expect(Math.abs(start.first.y - start.drawn.y)).toBeLessThan(2);
     expect(Math.abs(start.first.width - start.drawn.width)).toBeLessThan(3);
   });
 
-  test("the sliders are 44 tall under a finger, about the line they were drawn on", async ({ page }) => {
+  test("a picked card, which is raised, starts its flight where it is drawn raised", async ({ page }) => {
+    const start = await flightStart(page, true);
+    // The raise is 30 table units, drawn at the fan's scale: some 12 pixels here, which a flight from the
+    // rest would jump by.
+    expect(start.rest.y - start.drawn.y).toBeGreaterThan(8);
+    expect(Math.abs(start.first.x - start.drawn.x)).toBeLessThan(2);
+    expect(Math.abs(start.first.y - start.drawn.y)).toBeLessThan(2);
+    expect(Math.abs(start.first.width - start.drawn.width)).toBeLessThan(3);
+  });
+
+  test("the sliders are 44 tall under a finger, about the line a mouse sees them on, and a touch is on its own", async ({ page }) => {
     await page.goto("/look.html?shot=sheet-settings");
     await page.waitForSelector("body[data-ready]");
     const sliders = await page.locator(".sheet:not([hidden]) .slider").evaluateAll((rows) =>
@@ -328,6 +352,19 @@ test.describe("under a finger", () => {
     for (const slider of sliders) {
       expect(slider.height).toBeGreaterThanOrEqual(44);
       expect(slider.middle).toBeCloseTo(11, 1);
+    }
+    // A touch up to 21 pixels above or below a slider's line is on that slider's own input.
+    const inputs = page.locator(".sheet:not([hidden]) .slider input");
+    for (let at = 0; at < sliders.length; at++) {
+      await inputs.nth(at).scrollIntoViewIfNeeded();
+      const line = await inputs.nth(at).evaluate((input) => {
+        const box = input.getBoundingClientRect();
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      });
+      for (const offset of [-21, 0, 21]) {
+        const hit = await inputs.nth(at).evaluate((input, [x, y]) => document.elementFromPoint(x, y) === input, [line.x, line.y + offset]);
+        expect(hit, `slider ${at}, ${offset} from its line`).toBe(true);
+      }
     }
   });
 
@@ -360,6 +397,13 @@ test.describe("under a mouse", () => {
     await page.waitForSelector("body[data-ready]");
     expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hand")!).scale)).toBe("none");
     expect(await page.evaluate(() => getComputedStyle(document.querySelector(".bidstrip")!).scale)).toBe("none");
+  });
+
+  test("a picked card starts its flight from the rest, as the desktop's does", async ({ page }) => {
+    const start = await flightStart(page, true);
+    expect(start.rest.y - start.drawn.y).toBeGreaterThan(5);
+    expect(Math.abs(start.first.x - start.rest.x)).toBeLessThan(2);
+    expect(Math.abs(start.first.y - start.rest.y)).toBeLessThan(2);
   });
 
   test("the sliders are 14 tall, as they were", async ({ page }) => {

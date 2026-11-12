@@ -5,6 +5,7 @@ import { CardView } from "./card";
 import { handLabelFor } from "./names";
 import { sizeForHeight } from "./cards";
 import { cardPlacement, fanBounds as fanBoundsOf, scaledAbout } from "./geometry/hand";
+import { touched } from "./pointer";
 import { handCardHeight, type Placement, type Point, type Rect } from "./space";
 
 // Whether a click on this slot plays its card: the one rule for the mouse and for the keys, which
@@ -231,6 +232,17 @@ export class HandView {
       return null;
     }
     const { scale, origin } = this.drawnScale();
-    return scaledAbout(cardPlacement(this.count, entry.slot, sizeForHeight(handCardHeight)), scale, origin);
+    const rest = scaledAbout(cardPlacement(this.count, entry.slot, sizeForHeight(handCardHeight)), scale, origin);
+    return touched() ? this.raisedBy(entry.view.element, rest, scale) : rest;
+  }
+
+  // Under a finger a card is played from the place it is drawn at, which is raised if it is picked; a
+  // mouse's flight starts at the rest, as the desktop's does. The raise is turned with the card and
+  // scaled with the fan.
+  private raisedBy(card: HTMLElement, rest: Placement, scale: number): Placement {
+    const face = card.querySelector(".face");
+    const lift = face === null ? 0 : new DOMMatrixReadOnly(getComputedStyle(face).transform).f;
+    const turn = (rest.rotation * Math.PI) / 180;
+    return { ...rest, x: rest.x - lift * Math.sin(turn) * scale, y: rest.y + lift * Math.cos(turn) * scale };
   }
 }

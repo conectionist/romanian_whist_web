@@ -54,11 +54,16 @@ body,
     transform: scale(var(--corner));
   }
 
-  /* The sliders are drawn where they were, 14 tall, in an input that is 44 tall about the same line.
-     The sheets' stylesheet comes later, so the selector is one class longer. */
+  /* The sliders look as a mouse sees them, 14 tall, in an input that is 44 tall about the same line, and
+     their rows are 44 apart so that two touch areas do not meet. The sheets' stylesheet comes later, so
+     the selectors are longer. */
   .sliders .slider input {
     top: -11px;
     height: 44px;
+  }
+
+  .sheet .sliders {
+    row-gap: 24px;
   }
 
   /* A button drawn 32 tall takes touches 44 tall. The inset is measured from inside its 1px border. */

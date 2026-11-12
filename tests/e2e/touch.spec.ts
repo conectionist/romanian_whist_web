@@ -133,6 +133,14 @@ for (const [width, height] of [
       await expect(sheet(page, "new-game")).toBeVisible();
       // A sheet taller than the window opens at its top, and its Deal is reached by scrolling to it.
       expect(await sheet(page, "new-game").evaluate((node) => node.scrollTop)).toBe(0);
+      // Closed where it was scrolled to, it opens at its top again.
+      await sheet(page, "new-game").evaluate((node) => (node.scrollTop = node.scrollHeight));
+      expect(await sheet(page, "new-game").evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+      await sheet(page, "new-game").locator('[data-action="cancel"]').tap();
+      await expect(sheet(page, "new-game")).toHaveCount(0);
+      await page.locator('[data-menu-page="new-game"]').tap();
+      await expect(sheet(page, "new-game")).toBeVisible();
+      expect(await sheet(page, "new-game").evaluate((node) => node.scrollTop)).toBe(0);
       await sheet(page, "new-game").locator('[data-action="cancel"]').tap();
       await expect(sheet(page, "new-game")).toHaveCount(0);
 
@@ -171,6 +179,20 @@ test.describe("a small window under a mouse", () => {
     const newGame = sheet(page, "new-game");
     await expect(newGame).toBeVisible();
     await expect(newGame.locator('[data-action="deal"]')).toBeFocused();
+    expect(await newGame.evaluate((node) => node.scrollTop)).toBe(0);
+  });
+
+  test("a sheet scrolled and closed opens at its top again", async ({ page }) => {
+    await page.goto("/");
+    await page.locator('[data-menu-page="new-game"]').click();
+    const newGame = sheet(page, "new-game");
+    await expect(newGame).toBeVisible();
+    await newGame.evaluate((node) => (node.scrollTop = node.scrollHeight));
+    expect(await newGame.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+    await newGame.locator('[data-action="cancel"]').click();
+    await expect(newGame).toHaveCount(0);
+    await page.locator('[data-menu-page="new-game"]').click();
+    await expect(newGame).toBeVisible();
     expect(await newGame.evaluate((node) => node.scrollTop)).toBe(0);
   });
 });

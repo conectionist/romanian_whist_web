@@ -16,6 +16,7 @@ import { SeatPanel, countdownFor } from "./seatPanel";
 import { TableTop } from "./tableTop";
 import { TrickView } from "./trick";
 import { TrickPanel, tallestTrickPanel } from "./trickPanel";
+import { touched } from "./pointer";
 import { seatPanelMinimumScale, type Rect } from "./space";
 import type { TableView } from "./view";
 
@@ -25,8 +26,6 @@ export interface SceneOptions {
   // Whether the table is touched with a finger, which has the other players' panels drawn larger.
   coarse?(): boolean;
 }
-
-const touched = (): boolean => typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches === true;
 
 // Which seats bid in this frame and not the last: the bubbles' business. The last frame must be of
 // the same round, at the same table, to compare with; a new round's first frame has no bids in yet.

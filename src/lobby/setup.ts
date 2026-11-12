@@ -186,10 +186,8 @@ function botWaiting(setup: Setup, pacing: Pacing): number {
   return pacing.beat * beats + pacing.trickDwell * dwells;
 }
 
-// How long a game takes, in whole minutes, as a rule of thumb. With you playing, your own pace is most
-// of it: about 30 minutes for two players and 5 more for each player added, with the bots at the
-// default speed, and another speed adds or takes off what the bots then wait more or less. A watched
-// game goes at the bots' pace, off the slider, and takes nothing at its instant end.
+// A game's length in minutes, as a rule of thumb. Played, your own pace is most of it, about 30 for two
+// and 5 for each player more; a watched game goes at the bots' pace alone.
 export const PLAYING_MINUTES_FOR_TWO = 30;
 export const PLAYING_MINUTES_PER_SEAT = 5;
 
@@ -227,9 +225,6 @@ function length(name: string): number {
   return [...name].length;
 }
 
-// What is wrong with these names, or nothing: each is something, no longer than a panel shows, and no
-// two are alike. Stricter than the engine, which takes two names equal byte for byte: "Ana" and "ana"
-// share nothing there and everything on a scoreboard.
 // Characters that can make one name display as another, which the server refuses in a name.
 const DECEPTIVE = /[\p{Cc}\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
 
@@ -244,6 +239,8 @@ export function reservedError(): string {
   return t("newgame", 'Only a low-risk or a ducking computer player may have "LowRisk" or "Ducking" in its name.');
 }
 
+// What is wrong with these names, or nothing. Two that differ only in case are refused, though the
+// engine takes them: "Ana" and "ana" are one name on a scoreboard.
 export function nameError(names: readonly string[]): string | null {
   for (const name of names) {
     if (DECEPTIVE.test(name)) {

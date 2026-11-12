@@ -15,10 +15,8 @@ export interface MenuState {
   exit: boolean;
 }
 
-// What the bar offers: Exit is greyed wherever the pause menu, or at an online table the offer to
-// leave, would refuse to open: on the main menu, over the end of a game and over a round sheet that
-// holds the game, rather than live and doing nothing. New Game is greyed only where this page cannot
-// start a game.
+// What the bar offers. Exit is greyed where what it raises would refuse to open, rather than live and
+// doing nothing; New Game only where this page cannot start a game.
 export function menuStateFor(state: StoreState, canStart: boolean): MenuState {
   return { newGame: canStart, settings: true, rules: true, exit: canExit(state) };
 }

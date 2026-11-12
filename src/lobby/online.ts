@@ -4,10 +4,8 @@ import { assignFaces, avatarCatalogue, drawName, nameCatalogue, type Random } fr
 import type { Options } from "./options";
 import { LANGUAGE, MAX_SEATS, MIN_SEATS, defaultLevel, nameError, type Opponent } from "./setup";
 
-// Create a table: New Game's settings without watching and without a fixed deal, since a seed is the
-// whole deal and an online table refuses one, and with the replacement player and the turn timer.
-// You are the first seat, and take it when the table is made; every other seat is open or a computer
-// player.
+// Create a table: New Game's settings with the replacement player and the turn timer, and without a
+// fixed deal, since a seed is the whole deal and an online table refuses one.
 
 // How long a person's turn may take: the server's range is 10 to 3600 seconds, or no timer.
 export const TURN_TIMERS: readonly number[] = [0, 10000, 30000, 60000, 120000, 300000];

@@ -3,10 +3,8 @@ import { icon, type IconName } from "../dom/icons";
 import { t } from "../i18n/t";
 import { logoLines, ornament } from "../table/tableTop";
 
-// The page the client opens on, and the one it returns to when a game is left, src/ui/MainMenuPage.cpp:
-// the room the table stands in, the table's own logo as a plaque at twice its size for a title, and
-// two buttons in the corner buttons' panel. The desktop's second button is Quit, which a page cannot
-// do; this one's is Play online.
+// The page the client opens on, src/ui/MainMenuPage.cpp. Its second button is Play online where the
+// desktop's is Quit, which a page cannot do.
 
 export interface MenuPageActions {
   newGame(): void;
@@ -50,9 +48,5 @@ export class MenuPage {
 
   show(shown: boolean): void {
     this.element.hidden = !shown;
-  }
-
-  focusNewGame(): void {
-    this.newGame.focus({ focusVisible: false } as FocusOptions);
   }
 }

@@ -51,9 +51,9 @@ describe("the connection's state", () => {
     expect(connectionText("connecting", true)).toBe("The connection was lost. Trying again…");
   });
 
-  it("says the table is open in another window, whether or not this one was ever open", () => {
-    expect(connectionText("elsewhere", true)).toBe("This table is open in another window.");
-    expect(connectionText("elsewhere", false)).toBe("This table is open in another window.");
+  it("says the game is open in another window, whether or not this one was ever open", () => {
+    expect(connectionText("elsewhere", true)).toBe("This game is open in another window.");
+    expect(connectionText("elsewhere", false)).toBe("This game is open in another window.");
   });
 });
 
@@ -90,6 +90,13 @@ describe("who went away, was replaced or came back", () => {
     expect(presenceNews(away, replaced)).toEqual(["Bogdan was replaced by a computer player."]);
     expect(presenceNews(replaced, here)).toEqual(["Bogdan is back."]);
     expect(presenceNews(away, here)).toEqual(["Bogdan is back."]);
+  });
+
+  it("tells of a person who left the lobby, and not of one who moved to another seat", () => {
+    const open = { ...here, seats: here.seats.map((seat, index) => (index === 1 ? { kind: "open" as const } : seat)) };
+    expect(presenceNews(here, open)).toEqual(["Bogdan left the table."]);
+    const moved = { ...open, seats: [...open.seats, here.seats[1]] };
+    expect(presenceNews(here, moved)).toEqual([]);
   });
 
   it("tells nothing for what has not changed, for your own seat, or for another table", () => {

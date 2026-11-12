@@ -79,6 +79,7 @@ export class SeatPanel {
   private readonly chip: HTMLElement;
   private readonly ring: SVGRectElement;
   private presence: SeatView["presence"] = null;
+  private counting = false;
 
   constructor() {
     this.picture = el("img", { attrs: { alt: "", draggable: "false" } });
@@ -130,6 +131,10 @@ export class SeatPanel {
 
   // Who is here, at an online table: a person who has gone away, or whose seat a computer player holds.
   private paintPresence(): void {
+    // While your turn is counted down the chip holds the seconds, and a new snapshot leaves it so.
+    if (this.counting) {
+      return;
+    }
     const presence = presenceText(this.presence);
     this.chip.hidden = presence === "";
     setText(this.chip, presence);
@@ -140,6 +145,7 @@ export class SeatPanel {
   countdown(count: Countdown | null): void {
     const ring = this.ring.parentElement as unknown as HTMLElement;
     ring.style.display = count === null ? "none" : "block";
+    this.counting = count !== null;
     if (count === null) {
       this.paintPresence();
       return;

@@ -281,7 +281,9 @@ const queue = new PlaybackQueue(
         // bar. A late answer to a prompt is not worth saying.
         const lost = flow.lostTable() ? ` ${t("errors", "The table you left for it is gone.")}` : "";
         const text = errorText(message.code, message.detail) + lost;
-        if (message.code !== "stalePrompt" && message.code !== "notYourTurn" && !sheets.refuse(text)) {
+        // The connection's own notice says when another window took the game over.
+        const quiet = message.code === "stalePrompt" || message.code === "notYourTurn" || message.code === "openElsewhere";
+        if (!quiet && !sheets.refuse(text)) {
           notices.set("error", text, { kind: "error", liveMs: 6000 });
         }
       }

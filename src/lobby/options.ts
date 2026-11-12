@@ -70,9 +70,4 @@ export class OptionsBlock {
     this.speed.onChange(handler);
     this.wait.onChange(handler);
   }
-
-  // The speed is the table's, and a guest at an online table does not set it.
-  showSpeed(shown: boolean): void {
-    this.speedRow.hidden = !shown;
-  }
 }

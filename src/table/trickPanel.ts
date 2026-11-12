@@ -79,8 +79,11 @@ export function fieldsFor(model: TableModel): Fields {
 
   const yoursActive = model.humanSeat >= 0 && model.activeSeat === model.humanSeat;
   const anotherActive = model.activeSeat >= 0 && !yoursActive;
+  // A seat a computer player holds for someone who went away is played by it, not by them.
   const thinking = (): Line =>
-    emphasised(t("trickpanel", "%1 is thinking…"), [{ text: seatName(model.activeSeat), elide: true }], false);
+    model.seats[model.activeSeat]?.presence === "replaced"
+      ? emphasised(t("trickpanel", "Computer playing for %1"), [{ text: seatName(model.activeSeat), elide: true }], false)
+      : emphasised(t("trickpanel", "%1 is thinking…"), [{ text: seatName(model.activeSeat), elide: true }], false);
 
   if (model.phase === "roundScored") {
     return { title: t("trickpanel", "Round over"), rows: [], prompt: [{ text: t("trickpanel", "Scores are in.") }] };

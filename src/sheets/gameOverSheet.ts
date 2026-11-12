@@ -7,11 +7,8 @@ import { SheetButton, SheetTable, actions, joinNames, sheetNumber, type TableFie
 
 // The end of the game, src/ui/GameOverPanel.cpp: the final standings, who won, and the ways on.
 
-// Who won, in a sentence: "Ana wins with 47 points.", or "Ana and Bogdan tie for first with 47
-// points." and "Ana, Bogdan and Dan tie for first with 47 points.", the last name joined with
-// "and" however many there are. It takes the winners and not the standings: the first row of a drawn
-// game names one of them. A score below zero is another sentence, which counts nothing, so it needs
-// no plural form in any language.
+// Who won, in a sentence, from the winners and not the standings: the first row of a drawn game names
+// only one of them. A score below zero has its own sentence, which needs no plural form.
 export function winnerAnnouncement(winners: readonly Standing[]): string {
   if (winners.length === 0) {
     return "";
@@ -30,10 +27,8 @@ export function winnerAnnouncement(winners: readonly Standing[]): string {
     : t("gameover", "%1 tie for first with %n points.", [names], { n: points });
 }
 
-// The standings when the server sent none: a table reloaded after its game was over has a snapshot
-// and no gameOver event. Best score first, seats on the same score sharing a place and the places
-// they use up skipped, so 47, 47, 31 reads 1, 1, 3; ties keep seat order; every seat on the top
-// score won, since there is no tie-breaker.
+// The standings for a table reloaded after its game was over, whose sync has no gameOver. The
+// server's ranking: 47, 47, 31 places 1, 1, 3, ties keep seat order, and every top score wins.
 export function resultFromSnapshot(snapshot: Snapshot): Result {
   const rows = snapshot.seats
     .map((seat, index) => ({ seat: index, name: seat.name, score: seat.total }))

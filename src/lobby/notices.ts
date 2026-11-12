@@ -34,7 +34,7 @@ export function errorText(code: ErrorCode, detail?: string): string {
     case "draining":
       return t("errors", "The server is restarting and takes no new games just now.");
     case "openElsewhere":
-      return t("errors", "This table is open in another window.");
+      return t("errors", "This game is open in another window.");
   }
 }
 
@@ -43,7 +43,7 @@ export function errorText(code: ErrorCode, detail?: string): string {
 // window took over is not, or the two would take it from each other for ever.
 export function connectionText(status: Status, wasConnected: boolean): string | null {
   if (status === "elsewhere") {
-    return t("errors", "This table is open in another window.");
+    return t("errors", "This game is open in another window.");
   }
   if (!wasConnected || status === "open") {
     return null;
@@ -72,6 +72,14 @@ export function presenceNews(before: TableState | null, after: TableState | null
     return [];
   }
   const news: string[] = [];
+  // Between games a person who leaves opens their seat; one who moves to another seat is still here.
+  const named = new Set(after.seats.flatMap((seat) => (seat.kind === "human" ? [seat.name] : [])));
+  before.seats.forEach((was, index) => {
+    const seat = after.seats[index];
+    if (was.kind === "human" && !was.you && seat?.kind === "open" && !named.has(was.name)) {
+      news.push(t("online", "%1 left the table.", [was.name]));
+    }
+  });
   after.seats.forEach((seat, index) => {
     const was = before.seats[index];
     if (seat.kind !== "human" || was === undefined || was.kind !== "human" || was.name !== seat.name || seat.you) {

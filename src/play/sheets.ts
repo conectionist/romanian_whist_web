@@ -1,10 +1,8 @@
 import type { RoundResult } from "../net/protocol";
 import type { StoreState } from "./store";
 
-// Which sheet is up, as MainWindow arranges them: the pause menu, the round sheet that waits for you
-// and the end of the game stand over the table, and the sheets the menu bar and the corner buttons
-// open stand over those. One at a time, and decided here from what the store holds and what the
-// player has asked for, so a sync can be shown the same way as any message.
+// Which sheet is up, one at a time, as MainWindow arranges them. Decided from the store and what the
+// player asked for alone, so a sync is shown the same way as any message.
 
 export type MenuSheet = "history" | "last-trick" | "rules" | "settings" | "new-game" | "online" | "create-table";
 // The pause menu is a solo game's; "leave" is its online counterpart, which the game goes on behind;

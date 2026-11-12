@@ -128,7 +128,6 @@ export class LobbySheet implements Sheet {
   private readonly start = new SheetButton(t("lobby", "Start game"), "primary", "start");
   private readonly fillBox = el("div", { class: "lobby-fill" }, this.fillLevel.element, this.fill.element);
   private view: LobbyView | null = null;
-  private table: TableState | null = null;
 
   constructor(private readonly handlers: LobbyActions) {
     this.link.style.setProperty("flex", "1 1 auto");
@@ -179,7 +178,6 @@ export class LobbySheet implements Sheet {
   // Fills the lobby from the table, in place. A control the person is using is not written over by
   // the table's word on it, which may be a step behind their hand.
   update(table: TableState, address: string): void {
-    this.table = table;
     const view = lobbyFor(table);
     this.view = view;
     setText(this.title, t("lobby", "Table %1", [view.code]));
@@ -221,14 +219,6 @@ export class LobbySheet implements Sheet {
           ? t("lobby", "%1 seats are still open: ask people to join, or fill them with computer players.", [view.open])
           : "",
     );
-  }
-
-  get current(): LobbyView | null {
-    return this.view;
-  }
-
-  get tableState(): TableState | null {
-    return this.table;
   }
 
   focusDefault(): void {

@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ClientMessage, Profile, Settings } from "../../src/net/protocol";
-import { continueRound, createTable, joinTable, setSeat, takeSeat, updateProfile, updateSettings } from "../../src/net/send";
+import { continueRound, createTable, joinTable, setSeat, takeSeat, updateSettings } from "../../src/net/send";
 
 const PROTOCOL = join(dirname(fileURLToPath(import.meta.url)), "../../libs/romanian_whist_server/protocol/PROTOCOL.md");
 
@@ -75,7 +75,6 @@ describe("the client messages", () => {
   const built: [string, ClientMessage][] = [
     ["createTable", createTable(settings, profile)],
     ["joinTable", joinTable("ABC234", profile)],
-    ["updateProfile", updateProfile(profile)],
     ["takeSeat", takeSeat(2)],
     ["setSeat", setSeat(1, "computer", "cyborg")],
     ["updateSettings", updateSettings(settings)],
@@ -108,7 +107,6 @@ describe("the client messages", () => {
 
   it("send the profile's three fields and nothing else", () => {
     const crowded = { ...profile, extra: 1 } as Profile;
-    expect(updateProfile(crowded)).toEqual({ type: "updateProfile", ...profile });
     expect(joinTable("ABC234", crowded)).toEqual({ type: "joinTable", code: "ABC234", profile });
     expect(createTable(settings, crowded)).toEqual({ type: "createTable", settings, profile });
   });

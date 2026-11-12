@@ -29,9 +29,7 @@ export interface FlowDeps {
 }
 
 // What the player's clicks and keys on the sheets do: which sheet is asked for, and what goes to the
-// server for it. Pausing, Continue, Play again, Main menu, New Game, Settings and the lobby's controls
-// are all messages, and the pause is held for as long as a sheet over a solo game asks for it, as the
-// desktop holds its game.
+// server for it. A solo game is held for as long as a sheet over it asks, as the desktop holds its own.
 export class Flow {
   ui: UiState = NOTHING_ASKED;
   // Whether the server has been told to hold the game, or has said it does: asked again only when

@@ -83,10 +83,8 @@ function isTaken(name: string, taken: readonly string[]): boolean {
   return taken.some((other) => other.toLocaleLowerCase() === wanted);
 }
 
-// One name for a computer player, none of `taken` (compared ignoring case):
-// 1. one of the names kept for its level that suit its gender and the language, at random, if any is free;
-// 2. otherwise one of the names kept for no level that suit them;
-// 3. otherwise a placeholder, "Bot 3" from the seat's number up, the first that is free.
+// A free name for a computer player, ignoring case: one kept for its level, else one kept for no
+// level, each suiting its gender and the language, else "Bot 3" from the seat's number up.
 export function drawName(
   bot: Wearer,
   speaks: Language,
@@ -117,11 +115,9 @@ function suitsFace(avatar: Avatar, who: Gender): boolean {
   return avatar.gender === null || avatar.gender === who;
 }
 
-// A face for each wearer, in order. A level's own faces, if it has any of the wearer's gender, else
-// the faces kept for no level; of those, the ones worn least at the table, which are the ones nobody
-// wears while there are any, and when all are worn the pick starts over among them. A count and not a
-// set, so a face of either gender that one gender has run through is not freed for the other. Empty for
-// a wearer no face suits.
+// A face for each wearer: its level's own, else one kept for no level, the least worn at the table.
+// Counted rather than marked, so a face of either gender one gender has used up is not freed for the
+// other. Empty for a wearer no face suits.
 export function assignFaces(wearers: readonly Wearer[], catalogue: readonly Avatar[], random: Random): string[] {
   const worn = new Map<string, number>();
   const count = (id: string) => worn.get(id) ?? 0;

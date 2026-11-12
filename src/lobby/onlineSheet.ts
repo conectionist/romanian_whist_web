@@ -24,7 +24,7 @@ export class OnlineSheet implements Sheet {
   private readonly title = el("h2", { class: "sheet-title", attrs: { id: "sheet-online-title" } });
   private readonly meta = el("div", { class: "sheet-meta" });
   private readonly name = textField({ name: "profileName", max: MAX_NAME_LENGTH, label: t("lobby", "Your name") });
-  private readonly gender = new Choose<Gender>("profileGender", t("lobby", "Your name"), genderChoices(), "male");
+  private readonly gender = new Choose<Gender>("profileGender", t("lobby", "Gender"), genderChoices(), "male");
   private readonly faces = el("div", { class: "portrait-choices", attrs: { role: "radiogroup", "aria-label": t("lobby", "Portrait") } });
   private readonly code = textField({ name: "tableCode", max: 40, label: t("lobby", "Table code"), placeholder: "ABC234" });
   private readonly codeRow: HTMLElement[];

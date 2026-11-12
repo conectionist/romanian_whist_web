@@ -59,7 +59,7 @@ export class NewGameSheet implements Sheet {
   private readonly playing = new Box("radio", t("NewGameDialog", "I'm playing"), "who");
   private readonly watching = new Box("radio", t("NewGameDialog", "I'm watching"), "who");
   private readonly humanName = textField({ name: "humanName", max: MAX_NAME_LENGTH, label: t("NewGameDialog", "Your name") });
-  private readonly humanGender = new Choose<Gender>("humanGender", t("NewGameDialog", "Your name"), genderChoices(), "male");
+  private readonly humanGender = new Choose<Gender>("humanGender", t("NewGameDialog", "Gender"), genderChoices(), "male");
   private readonly humanLabel = el("span", { class: "ng-label", text: t("NewGameDialog", "Your name") });
   private readonly opponents = numberField({ name: "opponents", min: 1, max: 5, label: t("NewGameDialog", "Opponents"), value: 3 });
   private readonly rows: Row[] = [];
@@ -72,7 +72,6 @@ export class NewGameSheet implements Sheet {
   private readonly deal = new SheetButton(t("NewGameDialog", "Deal"), "primary", "deal");
   // What the dialog was opened on, which a row added later takes its opponent from.
   private initial: Setup | null = null;
-  private current: Setup | null = null;
   private readonly refusal: Refusal;
   private waiting = false;
 
@@ -126,7 +125,6 @@ export class NewGameSheet implements Sheet {
   // Opens on a setup: the last game's, so that Play again and New Game find the settings they dealt.
   open(initial: Setup): void {
     this.initial = initial;
-    this.current = initial;
     this.playing.checked = !initial.spectator;
     this.watching.checked = initial.spectator;
     this.humanName.value = initial.human.name;
@@ -284,7 +282,6 @@ export class NewGameSheet implements Sheet {
 
   private refresh(): void {
     const setup = this.read();
-    this.current = setup;
     setText(this.options.summary, summaryText(setup));
     const wrong = firstError(setup);
     setText(this.error, this.refusal.or(wrong ?? ""));
@@ -292,10 +289,6 @@ export class NewGameSheet implements Sheet {
     this.humanName.disabled = setup.spectator;
     this.humanGender.element.disabled = setup.spectator;
     this.humanLabel.classList.toggle("off", setup.spectator);
-  }
-
-  get setup(): Setup | null {
-    return this.current;
   }
 
   focusDefault(): void {

@@ -327,8 +327,10 @@ export class Scoreboard {
   }
 
   update(model: TableModel): void {
-    const shown = shownFor(model);
+    this.show(shownFor(model));
+  }
 
+  show(shown: Shown): void {
     setText(this.round, shown.header.round);
     setText(this.dealt, shown.header.dealt);
     setText(this.type, shown.header.roundType);
@@ -371,4 +373,18 @@ export class Scoreboard {
     }
     setText(this.trumpNone, shown.trump.name);
   }
+}
+
+// The scoreboard in the tallest form it takes with this many seats: a line of tension, a row for each, and
+// the trump card. It is not shown; it is measured, for what is to keep clear of the panel wherever it grows to.
+export function tallestScoreboard(seatCount: number): HTMLElement {
+  const board = new Scoreboard();
+  const row = (): Row => ({ name: "x", bid: "0", taken: "0", points: "0", run: "", streak: "none", turn: false });
+  board.show({
+    header: { round: "x", dealt: "x", roundType: "x", calledOut: false },
+    tension: [{ text: "x" }],
+    rows: Array.from({ length: seatCount }, row),
+    trump: { card: "2C", name: "" },
+  });
+  return board.element;
 }

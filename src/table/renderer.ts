@@ -5,18 +5,18 @@ import { animates, type Pace } from "../play/motion";
 import { BidBubble, textFor } from "./bidBubble";
 import { BidStrip } from "./bidStrip";
 import { CornerButtons } from "./buttons";
-import { grownPlaces } from "./geometry/grown";
+import { grownPlaces, type Room } from "./geometry/grown";
 import { type Place, humanSeated, places as placesOf } from "./geometry/seats";
 import { leadMarkPlacement, leadSeat } from "./geometry/trick";
 import { HandView } from "./hand";
 import { LeadMark } from "./leadMark";
 import { RackView, shownFor } from "./rack";
-import { Scoreboard } from "./scoreboard";
+import { Scoreboard, tallestScoreboard } from "./scoreboard";
 import { SeatPanel, countdownFor } from "./seatPanel";
 import { TableTop } from "./tableTop";
 import { TrickView } from "./trick";
-import { TrickPanel } from "./trickPanel";
-import { seatPanelMinimumScale } from "./space";
+import { TrickPanel, tallestTrickPanel } from "./trickPanel";
+import { seatPanelMinimumScale, type Rect } from "./space";
 import type { TableView } from "./view";
 
 export interface SceneOptions {
@@ -73,21 +73,37 @@ export class TableScene {
   }
 
   // Where the seats stand: as the table has them, or, on a touch screen, with the other players' panels
-  // drawn no smaller than the minimum and clear of what is round them.
+  // drawn no smaller than the minimum and clear of what is round them. They are worked out once for a
+  // window size, a seat count and where you sit, with the corner panels in their tallest forms and the fan
+  // holding all it can, so that no panel moves in a game.
   private placesFor(seatCount: number, humanSeat: number): (Place | null)[] {
     const wanted = (this.options.coarse ?? touched)() ? Math.max(1, seatPanelMinimumScale / this.view.scale) : 1;
-    // The fan takes the room of all the cards it can hold, so the panels stay put as a hand grows.
-    const fan = humanSeated(seatCount, humanSeat) ? [this.hand.fanBounds()] : [];
-    const room = wanted > 1 ? this.view.room(fan) : null;
-    if (room === null) {
+    if (wanted <= 1) {
       return placesOf(seatCount, humanSeat);
     }
-    const rounded = JSON.stringify(room, (_name, value: unknown) => (typeof value === "number" ? Math.round(value) : value));
-    const key = [seatCount, humanSeat, wanted.toFixed(4), rounded].join("|");
+    const { w, h } = this.view.size;
+    const key = [seatCount, humanSeat, wanted.toFixed(4), w, h].join("|");
     if (this.grown?.key !== key) {
-      this.grown = { key, places: grownPlaces(seatCount, humanSeat, wanted, room).places };
+      const room = this.roomFor(seatCount, humanSeat);
+      this.grown = { key, places: room === null ? placesOf(seatCount, humanSeat) : grownPlaces(seatCount, humanSeat, wanted, room).places };
     }
     return this.grown.places;
+  }
+
+  // What the panels keep clear of, measured with the corner panels as they would be at their tallest.
+  private roomFor(seatCount: number, humanSeat: number): Room | null {
+    const trick = tallestTrickPanel();
+    const score = tallestScoreboard(seatCount);
+    for (const probe of [trick, score]) {
+      probe.style.visibility = "hidden";
+      probe.setAttribute("aria-hidden", "true");
+      this.view.hud.append(probe);
+    }
+    const fan = humanSeated(seatCount, humanSeat) ? [this.hand.fanBounds()] : [];
+    const room = this.view.room([trick, score, this.buttons.element], fan);
+    trick.remove();
+    score.remove();
+    return room;
   }
 
   // The table was fitted to a view: the seats are laid out again if they stand differently in it.
@@ -98,7 +114,8 @@ export class TableScene {
     }
     const was = this.where;
     const now = this.placesFor(model.seats.length, model.humanSeat);
-    if (now.some((place, seat) => place?.panel.x !== was[seat]?.panel.x || place?.panel.w !== was[seat]?.panel.w || place?.angle !== was[seat]?.angle)) {
+    const same = (a: Rect | undefined, b: Rect | undefined) => a?.x === b?.x && a?.y === b?.y && a?.w === b?.w && a?.h === b?.h;
+    if (now.some((place, seat) => !same(place?.panel, was[seat]?.panel) || place?.angle !== was[seat]?.angle)) {
       void this.relayout(model, NO_CHANGE, false);
     }
   }
@@ -275,6 +292,8 @@ export class TableScene {
   refit(): void {
     this.top.fit();
     this.scoreboard.measureSizers();
+    // The corner panels were measured before the faces loaded, so what they keep clear of is measured again.
+    this.grown = null;
     this.view.refit();
   }
 }

@@ -77,9 +77,14 @@
   cursor: pointer;
 }
 
-/* The picked card is raised as the one under the cursor is, which is the cue for the keyboard's focus
-   too: a card takes focus only by being picked. */
-.hcard:focus {
+/* The picked card is raised as the one under the cursor is, which is its cue for the keyboard's focus
+   too; a card that has the keyboard and is not the pick shows it by an outline. */
+.hcard:focus-visible:not(.selected) {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.hcard.selected:focus-visible {
   outline: none;
 }
 

@@ -50,7 +50,12 @@
     0 0 16px var(--bid-glow);
 }
 
-.opt:focus {
+.opt:focus-visible:not(.selected) {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
+.opt.selected:focus-visible {
   outline: none;
 }
 

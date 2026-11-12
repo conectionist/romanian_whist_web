@@ -53,8 +53,30 @@ export function moveSelection(options: Options, selected: Selected | null, step:
   return { prompt: options.prompt, kind: options.kind, value: options.values[next] };
 }
 
-// What a press on a card of the hand does: a mouse, a pen and the keyboard play it at once, and a
-// finger picks it first and plays it on the second tap, so a stray touch never plays.
+// What a press on a card of the hand does: a mouse and a pen play it at once, and a finger or the keyboard
+// picks it first and plays it on the second press, so a card nobody picked is never played unseen.
 export function pressOn(pointer: string, alreadySelected: boolean): "play" | "select" {
-  return pointer === "touch" && !alreadySelected ? "select" : "play";
+  return (pointer === "touch" || pointer === "keyboard") && !alreadySelected ? "select" : "play";
+}
+
+// The control of the table that has the keyboard: a card of the hand or a bid.
+export interface Focused {
+  kind: "card" | "bid";
+  value: number;
+}
+
+// What to do with a keyboard that is on a control of the table, so that Enter never answers with
+// something the player cannot see is picked. It is the pick, or it is made the pick if that is on offer
+// and nothing else is picked, or it is let go.
+export function settleFocus(focused: Focused | null, selected: Selected | null, options: Options | null): { pick: Selected | null; blur: boolean } {
+  if (focused === null) {
+    return { pick: selected, blur: false };
+  }
+  if (selected !== null && selected.kind === focused.kind && selected.value === focused.value) {
+    return { pick: selected, blur: false };
+  }
+  if (selected === null && options !== null && options.kind === focused.kind && options.values.includes(focused.value)) {
+    return { pick: { prompt: options.prompt, kind: focused.kind, value: focused.value }, blur: false };
+  }
+  return { pick: selected, blur: true };
 }

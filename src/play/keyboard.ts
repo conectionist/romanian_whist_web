@@ -2,7 +2,7 @@ import type { Pointer } from "../table/hand";
 import type { SheetName } from "./sheets";
 import type { TableModel } from "./model";
 import { isPlain, keyAnswer, keyStateFor, shortcutFor, stepFor, type MenuShortcut, type Modifiers } from "./keys";
-import { moveSelection, optionsFor, pressOn, stillSelected, type Selected } from "./selection";
+import { moveSelection, optionsFor, pressOn, settleFocus, stillSelected, type Focused, type Selected } from "./selection";
 
 // What the keyboard and a finger need of the page.
 export interface KeyboardDeps {
@@ -20,6 +20,10 @@ export interface KeyboardDeps {
   shortcut(which: MenuShortcut): void;
   // Shows what is picked, putting the keyboard on it when asked.
   draw(selected: Selected | null, focus: boolean): void;
+  // The card of the hand or the bid that has the keyboard, if one does.
+  focusedChoice(): Focused | null;
+  // Takes the keyboard off the table's controls.
+  release(): void;
 }
 
 // The parts of an event's target that tell a text field from the rest.
@@ -58,6 +62,7 @@ export class Keyboard {
       (event) => {
         if (event.pointerType === "touch" && !(event.target instanceof Element && event.target.closest(".hcard") !== null)) {
           this.set(null, false);
+          this.deps.release();
         }
       },
       true,
@@ -69,12 +74,30 @@ export class Keyboard {
     this.deps.draw(selected, focus);
   }
 
-  // After every draw: a pick that is no longer on offer is let go.
+  // After every draw: a pick that is no longer on offer is let go, and the keyboard is on the pick or on
+  // nothing.
   refresh(): void {
     const still = stillSelected(this.selected, optionsFor(this.deps.model()));
     if (still !== this.selected) {
       this.set(still, false);
     }
+    this.settle();
+  }
+
+  private settle(): void {
+    const settled = settleFocus(this.deps.focusedChoice(), this.selected, optionsFor(this.deps.model()));
+    if (settled.pick !== this.selected) {
+      this.set(settled.pick, false);
+    }
+    if (settled.blur) {
+      this.deps.release();
+    }
+  }
+
+  // An answer given: nothing is picked, and the keyboard leaves the card or bid it was on.
+  private answered(): void {
+    this.set(null, false);
+    this.settle();
   }
 
   // The keyboard arrived on a card or a bid by Tab: that is the pick.
@@ -93,8 +116,8 @@ export class Keyboard {
     }
     const picked = this.selected?.kind === "card" && this.selected.value === slot;
     if (pressOn(pointer, picked) === "play") {
-      this.set(null, false);
       this.deps.play(slot);
+      this.answered();
     } else {
       this.set({ prompt: options.prompt, kind: "card", value: slot }, false);
     }
@@ -106,12 +129,12 @@ export class Keyboard {
     if (picked === null) {
       return false;
     }
-    this.set(null, false);
     if (picked.kind === "bid") {
       this.deps.bid(picked.value);
     } else {
       this.deps.play(picked.value);
     }
+    this.answered();
     return true;
   }
 
@@ -171,11 +194,11 @@ export class Keyboard {
     }
     event.preventDefault();
     if (answer.kind === "bid") {
-      this.set(null, false);
       this.deps.bid(answer.bet);
+      this.answered();
     } else if (answer.kind === "play") {
-      this.set(null, false);
       this.deps.play(answer.slot);
+      this.answered();
     }
   }
 }

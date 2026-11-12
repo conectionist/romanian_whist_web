@@ -13,9 +13,13 @@ const sheet = (page: Page, name: string) => page.locator(`.sheet[data-sheet="${n
 const bids = (page: Page) => page.locator(".bidstrip:not([hidden]) .opt:not(:disabled):not([hidden])");
 const playable = (page: Page) => page.locator(".hand .hcard.playable");
 
-// The first card that can be played, by its place in the fan.
-async function firstCard(page: Page): Promise<Locator> {
-  const slot = await page.evaluate(() => Math.min(...Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard.playable"), (card) => Number(card.dataset.slot))));
+// The first or the last card that can be played, by its place in the fan: the order of the elements is
+// not the order they are shown in.
+async function cardAt(page: Page, end: "first" | "last"): Promise<Locator> {
+  const slot = await page.evaluate((which) => {
+    const slots = Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard.playable"), (card) => Number(card.dataset.slot));
+    return which === "first" ? Math.min(...slots) : Math.max(...slots);
+  }, end);
   return page.locator(`.hand .hcard.playable[data-slot="${slot}"]`);
 }
 
@@ -24,27 +28,35 @@ async function tapNothing(page: Page): Promise<void> {
   await page.touchscreen.tap(60, 200);
 }
 
-// The first card: a first tap picks it and raises it and plays nothing, a tap on another card moves the
-// pick, a tap on nothing puts it down, and a second tap on the picked card plays it.
-async function playWithTwoTaps(page: Page, careful: boolean): Promise<void> {
-  const card = await firstCard(page);
+// What a turn showed of the pick: that a tap on nothing put it down, and that a tap on another card moved it.
+interface Checked {
+  cleared: boolean;
+  moved: boolean;
+}
+
+// A card: a first tap picks it and raises it and plays nothing, a tap on another card moves the pick, a
+// tap on nothing puts it down, and a second tap on the picked card plays it. The move can only be tried
+// with two cards to choose from, so it waits for a turn that has them.
+async function playWithTwoTaps(page: Page, done: Checked): Promise<Checked> {
+  const card = await cardAt(page, "first");
   const felt = page.locator(".trick .card:not([hidden])");
   const before = await felt.count();
+  const several = (await playable(page).count()) > 1;
   await card.tap();
   await expect(card).toHaveClass(/selected/);
   expect(await felt.count()).toBe(before);
-  if (careful) {
+  if (!done.moved && several) {
     expect(await card.locator(".face").evaluate((face) => getComputedStyle(face).transform)).toBe("matrix(1, 0, 0, 1, 0, -30)");
-    if ((await playable(page).count()) > 1) {
-      const other = playable(page).last();
-      await other.tap();
-      await expect(other).toHaveClass(/selected/);
-      await expect(card).not.toHaveClass(/selected/);
-      expect(await felt.count()).toBe(before);
-      await other.tap();
-      await expect(playable(page)).toHaveCount(0);
-      return;
-    }
+    const other = await cardAt(page, "last");
+    await other.tap();
+    await expect(other).toHaveClass(/selected/);
+    await expect(card).not.toHaveClass(/selected/);
+    expect(await felt.count()).toBe(before);
+    await other.tap();
+    await expect(playable(page)).toHaveCount(0);
+    return { ...done, moved: true };
+  }
+  if (!done.cleared) {
     await tapNothing(page);
     await expect(card).not.toHaveClass(/selected/);
     expect(await felt.count()).toBe(before);
@@ -53,6 +65,7 @@ async function playWithTwoTaps(page: Page, careful: boolean): Promise<void> {
   }
   await card.tap();
   await expect(playable(page)).toHaveCount(0);
+  return { ...done, cleared: true };
 }
 
 test("a whole solo game is played by taps on a phone held sideways, from the first bid to the final results", async ({ page }) => {
@@ -64,7 +77,7 @@ test("a whole solo game is played by taps on a phone held sideways, from the fir
 
   const until = Date.now() + 200_000;
   let answered = 0;
-  let careful = true;
+  let checked: Checked = { cleared: false, moved: false };
   while (Date.now() < until) {
     if ((await sheet(page, "game-over").count()) > 0) {
       break;
@@ -79,14 +92,15 @@ test("a whole solo game is played by taps on a phone held sideways, from the fir
       await bids(page).first().tap();
       answered += 1;
     } else if ((await playable(page).count()) > 0) {
-      await playWithTwoTaps(page, careful);
-      careful = false;
+      checked = await playWithTwoTaps(page, checked);
       answered += 1;
     } else {
       await page.waitForTimeout(15);
     }
   }
   expect(answered).toBe(20 + 76);
+  // A pick was put down by a tap on nothing, and moved to another card by a tap on it, in this game.
+  expect(checked).toEqual({ cleared: true, moved: true });
   await expect(sheet(page, "game-over").locator(".sheet-title")).toHaveText("Final results");
   // The ways on are reached by taps: the sheet fits a window of this height, or scrolls to them.
   await sheet(page, "game-over").locator('[data-action="main-menu"]').tap();

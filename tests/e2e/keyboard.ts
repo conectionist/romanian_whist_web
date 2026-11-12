@@ -82,3 +82,26 @@ export async function playToTheResults(page: Page, seconds = 150): Promise<numbe
   }
   throw new Error("the game did not reach its results");
 }
+
+// Answers what is asked, by keys, until the hand is asked for a card with at least this many that can
+// be played, and returns how many cards the hand holds then.
+export async function untilCardsToChooseFrom(page: Page, playable: number, seconds = 60): Promise<number> {
+  const until = Date.now() + seconds * 1000;
+  let answered = 0;
+  while (Date.now() < until) {
+    const now = await page.evaluate(() => ({
+      playable: document.querySelectorAll(".hand .hcard.playable").length,
+      held: document.querySelectorAll(".hand .hcard:not([hidden])").length,
+    }));
+    if (now.playable >= playable) {
+      return now.held;
+    }
+    if ((await sheet(page, "round").locator('[data-action="continue"]:not(:disabled)').count()) > 0) {
+      await page.keyboard.press("Space");
+    } else if (await answerByKeys(page, answered)) {
+      answered += 1;
+    }
+    await page.waitForTimeout(15);
+  }
+  throw new Error("the hand never had that many cards to choose from");
+}

@@ -211,6 +211,22 @@ const keyboard = new Keyboard({
     scene.hand.select(selected?.kind === "card" ? selected.value : null, focus && selected?.kind === "card");
     scene.bidStrip.select(selected?.kind === "bid" ? selected.value : null, focus && selected?.kind === "bid");
   },
+  focusedChoice: () => {
+    const node = document.activeElement;
+    if (node instanceof HTMLElement && node.matches(".hand .hcard")) {
+      return { kind: "card", value: Number(node.dataset.slot) };
+    }
+    if (node instanceof HTMLElement && node.matches(".bidstrip .opt")) {
+      return { kind: "bid", value: Number(node.dataset.bid) };
+    }
+    return null;
+  },
+  release: () => {
+    const node = document.activeElement;
+    if (node instanceof HTMLElement && node.matches(".hand .hcard, .bidstrip .opt")) {
+      node.blur();
+    }
+  },
 });
 scene.hand.setHandler((slot, pointer) => keyboard.press(slot, pointer));
 scene.hand.setFocusHandler((slot) => keyboard.focused("card", slot));

@@ -126,6 +126,9 @@ export class HandView {
         pressing = false;
         if (made.playable) {
           this.onPress(made.slot, how);
+        } else {
+          // The press took the focus; a card that cannot be played has no pick to hold it.
+          view.element.blur();
         }
       });
       view.element.addEventListener("pointercancel", () => {

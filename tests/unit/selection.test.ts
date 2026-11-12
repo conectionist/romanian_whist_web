@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HandView, TableModel } from "../../src/play/model";
 import { isTyping } from "../../src/play/keyboard";
-import { moveSelection, optionsFor, pressOn, stillSelected, type Options, type Selected } from "../../src/play/selection";
+import { moveSelection, optionsFor, pressOn, settleFocus, stillSelected, type Options, type Selected } from "../../src/play/selection";
 
 const hand: HandView = {
   entries: [
@@ -88,16 +88,47 @@ describe("holding on to a pick", () => {
 });
 
 describe("what a press on a card does", () => {
-  it("plays at once for a mouse, a pen and the keyboard", () => {
-    for (const pointer of ["mouse", "pen", "keyboard"]) {
+  it("plays at once for a mouse and a pen", () => {
+    for (const pointer of ["mouse", "pen"]) {
       expect(pressOn(pointer, false), pointer).toBe("play");
       expect(pressOn(pointer, true), pointer).toBe("play");
     }
   });
 
-  it("picks the card for a first touch and plays it for a second on the same card", () => {
-    expect(pressOn("touch", false)).toBe("select");
-    expect(pressOn("touch", true)).toBe("play");
+  it("picks the card for a first touch or Enter and plays it for a second on the same card", () => {
+    for (const pointer of ["touch", "keyboard"]) {
+      expect(pressOn(pointer, false), pointer).toBe("select");
+      expect(pressOn(pointer, true), pointer).toBe("play");
+    }
+  });
+});
+
+describe("where the keyboard is left", () => {
+  const options: Options = { prompt: 7, kind: "card", values: [1, 2, 3] };
+  const picked = (value: number): Selected => ({ prompt: 7, kind: "card", value });
+
+  it("is nowhere in particular when it is on no control of the table", () => {
+    expect(settleFocus(null, picked(2), options)).toEqual({ pick: picked(2), blur: false });
+    expect(settleFocus(null, null, options)).toEqual({ pick: null, blur: false });
+  });
+
+  it("is on the pick, which is as it should be", () => {
+    expect(settleFocus({ kind: "card", value: 2 }, picked(2), options)).toEqual({ pick: picked(2), blur: false });
+  });
+
+  it("is on a card that is on offer when nothing is picked, and that card becomes the pick, raised", () => {
+    expect(settleFocus({ kind: "card", value: 3 }, null, options)).toEqual({ pick: picked(3), blur: false });
+    expect(settleFocus({ kind: "bid", value: 1 }, null, { prompt: 4, kind: "bid", values: [0, 1] })).toEqual({ pick: { prompt: 4, kind: "bid", value: 1 }, blur: false });
+  });
+
+  it("is let go when it is on a card that is not the pick, whatever else is picked", () => {
+    expect(settleFocus({ kind: "card", value: 3 }, picked(2), options)).toEqual({ pick: picked(2), blur: true });
+  });
+
+  it("is let go when it is on a card that is not on offer, or nothing is asked", () => {
+    expect(settleFocus({ kind: "card", value: 4 }, null, options)).toEqual({ pick: null, blur: true });
+    expect(settleFocus({ kind: "card", value: 1 }, null, null)).toEqual({ pick: null, blur: true });
+    expect(settleFocus({ kind: "bid", value: 1 }, null, options)).toEqual({ pick: null, blur: true });
   });
 });
 

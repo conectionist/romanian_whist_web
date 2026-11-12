@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { ASK, answerByKeys, dealByKeys, playToTheResults, sheet, tabTo } from "./keyboard";
+import { ASK, answerByKeys, dealByKeys, playToTheResults, sheet, tabTo, untilCardsToChooseFrom } from "./keyboard";
 
 // Nothing flies, so what is on the table is what the server last said.
 test.beforeEach(async ({ page }) => {
@@ -132,6 +132,39 @@ test.describe("the table's keys", () => {
     expect(seen.some((one) => one.startsWith("opt"))).toBe(true);
     expect(seen.some((one) => one.startsWith("btn"))).toBe(true);
   });
+});
+
+test("Enter plays only what is picked: a card that kept the keyboard from a pick is not played in the next trick", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("/?solo=3&seed=7&speed=4");
+  await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+  const held = await untilCardsToChooseFrom(page, 2);
+  expect(held).toBeGreaterThanOrEqual(2);
+  const slots = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard.playable"), (card) => Number(card.dataset.slot)).sort((a, b) => a - b));
+  const title = await page.locator(".tp-title").textContent();
+
+  // Pick the first card with an arrow, then play the last that can be played by its digit.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator(`.hand .hcard.playable[data-slot="${slots[0]}"]`)).toHaveClass(/selected/);
+  await page.keyboard.press(String(slots[slots.length - 1] + 1));
+  await expect(page.locator(".hand .hcard.selected")).toHaveCount(0);
+
+  // In the next trick the first card is asked for again, and nothing is picked. The keyboard is not left
+  // on it, so Enter plays nothing, and a card Enter did play would have been raised first.
+  await expect(page.locator(".tp-title")).not.toHaveText(title ?? "");
+  await page.locator(".hand .hcard.playable").first().waitFor();
+  const asked = await page.locator(".hand .hcard.playable").count();
+  expect(await page.evaluate(() => document.activeElement?.closest(".hand, .bidstrip") ?? null)).toBeNull();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  await expect(page.locator(".hand .hcard.playable")).toHaveCount(asked);
+  await expect(page.locator(".hand .hcard.selected")).toHaveCount(0);
+
+  // Right picks, and Enter then plays what was seen raised.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator(".hand .hcard.selected")).toHaveCount(1);
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".hand .hcard.playable")).toHaveCount(0);
 });
 
 test("Space lets a held round go when the keyboard is on nothing, and the digits do not act in a text field", async ({ page }) => {

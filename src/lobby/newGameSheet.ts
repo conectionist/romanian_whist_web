@@ -293,7 +293,7 @@ export class NewGameSheet implements Sheet {
 
   focusDefault(): void {
     if (this.deal.element.disabled) {
-      this.humanName.focus();
+      this.humanName.focus({ preventScroll: true });
     } else {
       this.deal.focus();
     }

@@ -159,9 +159,9 @@ export class OnlineSheet implements Sheet {
 
   focusDefault(): void {
     if (this.name.value === "") {
-      this.name.focus();
+      this.name.focus({ preventScroll: true });
     } else if (this.fixed === null) {
-      this.code.focus();
+      this.code.focus({ preventScroll: true });
     } else {
       this.join.focus();
     }

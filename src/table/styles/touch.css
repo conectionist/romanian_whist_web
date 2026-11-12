@@ -54,6 +54,24 @@ body,
     transform: scale(var(--corner));
   }
 
+  /* The sliders are drawn where they were, 14 tall, in an input that is 44 tall about the same line.
+     The sheets' stylesheet comes later, so the selector is one class longer. */
+  .sliders .slider input {
+    top: -11px;
+    height: 44px;
+  }
+
+  /* A button drawn 32 tall takes touches 44 tall. The inset is measured from inside its 1px border. */
+  .sheet-btn.small {
+    position: relative;
+  }
+
+  .sheet-btn.small::after {
+    content: "";
+    position: absolute;
+    inset: -7px -5px;
+  }
+
   .field {
     height: 44px;
   }

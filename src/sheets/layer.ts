@@ -74,10 +74,6 @@ export class SheetLayer {
       this.giveBack();
     } else if (takesKeyboard) {
       sheet.focusDefault();
-      // On a touch screen a sheet taller than the window opens at its top, not where its first control is.
-      if (window.matchMedia("(pointer: coarse)").matches) {
-        sheet.element.scrollTop = 0;
-      }
     }
     return true;
   }

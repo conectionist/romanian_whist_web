@@ -1,4 +1,4 @@
-import { centre, handTop, type Placement, type Size } from "../space";
+import { centre, handTop, type Placement, type Point, type Size } from "../space";
 
 // The fan's shape, ported from the desktop's src/table/HandItem.cpp. The cards step this far apart,
 // and the fan is never wider than the second number: a hand of eight 155-wide cards would be 743
@@ -34,4 +34,10 @@ export function cardPlacement(count: number, slot: number, card: Size): Placemen
   const hinge = { x: left + card.w / 2, y: top + HINGE_DEPTH * card.h };
 
   return { x: hinge.x + arm * Math.sin(radians), y: hinge.y - arm * Math.cos(radians), rotation: degrees };
+}
+
+// Where a card rests when the whole fan is drawn scaled about a point, as the stylesheet does on a touch
+// screen: the card's centre goes along the line from that point, and its turn is its own.
+export function scaledAbout(place: Placement, scale: number, origin: Point): Placement {
+  return { x: origin.x + (place.x - origin.x) * scale, y: origin.y + (place.y - origin.y) * scale, rotation: place.rotation };
 }

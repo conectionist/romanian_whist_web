@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardPlacement } from "../../src/table/geometry/hand";
+import { cardPlacement, scaledAbout } from "../../src/table/geometry/hand";
 import { sizeForHeight } from "../../src/table/cards";
 
 const card = sizeForHeight(225);
@@ -49,5 +49,23 @@ describe("the hand's fan", () => {
     const first = cardPlacement(3, 0, wide);
     const second = cardPlacement(3, 1, wide);
     expect(second.x).toBeGreaterThanOrEqual(first.x - 40);
+  });
+});
+
+describe("the fan drawn larger on a touch screen", () => {
+  const origin = { x: 768, y: 1024 };
+
+  it("leaves a card where it is at the table's own scale", () => {
+    const placed = cardPlacement(4, 1, card);
+    expect(scaledAbout(placed, 1, origin)).toEqual(placed);
+  });
+
+  it("moves a card along the line from the origin, by the scale, and keeps its turn", () => {
+    const placed = { x: 868, y: 924, rotation: -3.8 };
+    expect(scaledAbout(placed, 1.5, origin)).toEqual({ x: 768 + 150, y: 1024 - 150, rotation: -3.8 });
+  });
+
+  it("leaves a card on the origin where it is, whatever the scale", () => {
+    expect(scaledAbout({ x: 768, y: 1024, rotation: 0 }, 2.7, origin)).toEqual({ x: 768, y: 1024, rotation: 0 });
   });
 });

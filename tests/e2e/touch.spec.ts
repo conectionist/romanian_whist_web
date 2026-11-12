@@ -142,6 +142,14 @@ for (const [width, height] of [
       await sheet(page, "create-table").locator('[data-action="create"]').tap();
       const lobby = sheet(page, "lobby");
       await expect(lobby).toBeVisible();
+      // "Take this seat" is drawn 32 tall and is 44 to a finger: a touch 21 above or below its middle lands on it.
+      const take = lobby.locator('[data-action="take-seat"]:visible').first();
+      await take.evaluate((node) => node.scrollIntoView({ block: "center" }));
+      const middle = (await take.boundingBox())!;
+      const lands = (y: number) =>
+        page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest("[data-action]")?.getAttribute("data-action") ?? null, [middle.x + middle.width / 2, y]);
+      expect(middle.height).toBe(32);
+      expect([await lands(middle.y + 16 - 21), await lands(middle.y + 16 + 21)]).toEqual(["take-seat", "take-seat"]);
       await lobby.locator('[data-action="fill"]').tap();
       await lobby.locator('[data-action="start"]:not(:disabled)').tap();
       await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
@@ -150,6 +158,21 @@ for (const [width, height] of [
     });
   });
 }
+
+// A sheet taller than the window opens at its top under a mouse too: focusing its Deal button, which
+// is at its foot, does not scroll to it.
+test.describe("a small window under a mouse", () => {
+  test.use({ viewport: { width: 740, height: 360 }, hasTouch: false, isMobile: false });
+
+  test("New Game opens at its top, with its Deal button focused", async ({ page }) => {
+    await page.goto("/");
+    await page.locator('[data-menu-page="new-game"]').click();
+    const newGame = sheet(page, "new-game");
+    await expect(newGame).toBeVisible();
+    await expect(newGame.locator('[data-action="deal"]')).toBeFocused();
+    expect(await newGame.evaluate((node) => node.scrollTop)).toBe(0);
+  });
+});
 
 test("a bid is 44 pixels from the next one under a finger, and a corner button is 44 tall", async ({ page }) => {
   await page.goto("/?solo=3&seed=7&speed=4");

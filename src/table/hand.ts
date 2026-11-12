@@ -4,8 +4,8 @@ import type { HandView as HandModel } from "../play/model";
 import { CardView } from "./card";
 import { handLabelFor } from "./names";
 import { sizeForHeight } from "./cards";
-import { cardPlacement } from "./geometry/hand";
-import { handCardHeight, type Placement } from "./space";
+import { cardPlacement, scaledAbout } from "./geometry/hand";
+import { handCardHeight, type Placement, type Point } from "./space";
 
 // Whether a click on this slot plays its card: the one rule for the mouse and for the keys, which
 // share it. Only on your turn, from the prompt, and a back is always playable: both blind rounds
@@ -207,13 +207,24 @@ export class HandView {
     }
   }
 
-  // Where this card rests in the fan, for a card that leaves it for the felt.
+  // The fan's scale and the point it is scaled about, as the stylesheet draws it: 1 under a mouse, and on a
+  // touch screen larger, which a card that leaves it has to start from.
+  drawnScale(): { scale: number; origin: Point } {
+    const style = getComputedStyle(this.element);
+    const scale = style.scale === "none" ? 1 : parseFloat(style.scale);
+    const [x, y] = style.transformOrigin.split(" ").map(parseFloat);
+    return { scale: Number.isFinite(scale) ? scale : 1, origin: { x: x ?? 0, y: y ?? 0 } };
+  }
+
+  // Where this card is drawn in the fan, for a card that leaves it for the felt: a blind round's back
+  // too, which is the fan's middle one.
   restingPlacement(card: Card): Placement | null {
     const slot = restingSlot(this.shown, card);
     const entry = slot === null ? undefined : this.slots.get(slotKey(this.shown, slot));
     if (entry === undefined || entry.view.element.hidden) {
       return null;
     }
-    return cardPlacement(this.count, entry.slot, sizeForHeight(handCardHeight));
+    const { scale, origin } = this.drawnScale();
+    return scaledAbout(cardPlacement(this.count, entry.slot, sizeForHeight(handCardHeight)), scale, origin);
   }
 }

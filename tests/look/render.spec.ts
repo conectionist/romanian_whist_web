@@ -271,6 +271,64 @@ test("a single word of lettering keeps the swash of its W, which a box the heigh
 test.describe("under a finger", () => {
   test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
 
+  test("a card played from the fan starts its flight where it is drawn, and as large", async ({ page }) => {
+    await page.goto("/look.html?shot=table-4-players&pace=normal");
+    await page.waitForSelector("body[data-ready]");
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hand")!).scale)).not.toBe("none");
+    const start = await page.evaluate(() => {
+      const centre = (rect: DOMRect) => ({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, width: rect.width });
+      const drawn = centre(document.querySelector<HTMLElement>('.hand [data-card="KC"]')!.getBoundingClientRect());
+      const look = (window as unknown as { look: { apply(text: string, animate: boolean): Promise<void> } }).look;
+      const message = {
+        type: "game",
+        seq: 1,
+        game: 1,
+        event: { kind: "cardPlayed", seat: 0, card: "KC" },
+        snapshot: {
+          you: 0,
+          status: "inProgress",
+          phase: "playing",
+          round: { index: 7, count: 26, type: "normal", tricks: 5, trick: 2, trump: "9S", leader: 3 },
+          active: null,
+          forbiddenBet: null,
+          bets: { placed: 4, sum: 1 },
+          table: { ledBy: 1, leadSuit: "C", cards: [{ seat: 1, card: "8C", winning: false }, { seat: 2, card: "7S", winning: false }, { seat: 3, card: "QS", winning: true }, { seat: 0, card: "KC", winning: false }] },
+          seats: [
+            { name: "Player", bidOrder: 2, bet: 0, won: 0, cards: 3, roundScore: 0, total: 23, wins: 0, losses: 1, hand: ["QD", "7C", "8H"] },
+            { name: "Ana", bidOrder: 3, bet: 1, won: 1, cards: 3, roundScore: 0, total: 31, wins: 1, losses: 0 },
+            { name: "Bogdan", bidOrder: 4, bet: 0, won: 0, cards: 3, roundScore: 0, total: 16, wins: 0, losses: 2 },
+            { name: "Cristina", bidOrder: 1, bet: 0, won: 0, cards: 3, roundScore: 0, total: 5, wins: 0, losses: 3 },
+          ],
+        },
+      };
+      const started = look.apply(JSON.stringify(message), true);
+      // The flight is made but not yet run: its first frame is where the card starts.
+      const flying = document.querySelector<HTMLElement>('.trick .card[data-card="KC"]')!;
+      const first = centre(flying.getBoundingClientRect());
+      void started;
+      return { drawn, first };
+    });
+    expect(Math.abs(start.first.x - start.drawn.x)).toBeLessThan(2);
+    expect(Math.abs(start.first.y - start.drawn.y)).toBeLessThan(2);
+    expect(Math.abs(start.first.width - start.drawn.width)).toBeLessThan(3);
+  });
+
+  test("the sliders are 44 tall under a finger, about the line they were drawn on", async ({ page }) => {
+    await page.goto("/look.html?shot=sheet-settings");
+    await page.waitForSelector("body[data-ready]");
+    const sliders = await page.locator(".sheet:not([hidden]) .slider").evaluateAll((rows) =>
+      rows.map((row) => {
+        const input = row.querySelector("input")!.getBoundingClientRect();
+        return { height: input.height, middle: input.y + input.height / 2 - row.getBoundingClientRect().y };
+      }),
+    );
+    expect(sliders.length).toBeGreaterThan(1);
+    for (const slider of sliders) {
+      expect(slider.height).toBeGreaterThanOrEqual(44);
+      expect(slider.middle).toBeCloseTo(11, 1);
+    }
+  });
+
   test("the hand's cards are drawn 32 pixels apart or more, and the bid strip 44, and neither is smaller than the mouse's", async ({ page }) => {
     await page.goto("/look.html?shot=hand-8-cards");
     await page.waitForSelector("body[data-ready]");
@@ -300,6 +358,14 @@ test.describe("under a mouse", () => {
     await page.waitForSelector("body[data-ready]");
     expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hand")!).scale)).toBe("none");
     expect(await page.evaluate(() => getComputedStyle(document.querySelector(".bidstrip")!).scale)).toBe("none");
+  });
+
+  test("the sliders are 14 tall, as they were", async ({ page }) => {
+    await page.goto("/look.html?shot=sheet-settings");
+    await page.waitForSelector("body[data-ready]");
+    const heights = await page.locator(".sheet:not([hidden]) .slider input").evaluateAll((inputs) => inputs.map((input) => input.getBoundingClientRect().height));
+    expect(heights).not.toHaveLength(0);
+    expect(new Set(heights)).toEqual(new Set([14]));
   });
 });
 

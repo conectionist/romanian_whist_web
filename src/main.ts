@@ -25,7 +25,7 @@ import { defaults, forgetSetup, loadSetup, saveSetup, type Setup } from "./lobby
 import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
 import { startIn } from "./i18n/document";
-import { currentLanguage, languageFromSearch, storeLanguage, storedLanguage, withoutLanguage } from "./i18n/language";
+import { addressForLanguage, currentLanguage, languageFromSearch, storeLanguage, storedLanguage } from "./i18n/language";
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
@@ -182,7 +182,7 @@ function changeLanguage(): void {
           return;
         }
         forgetSetup();
-        window.location.replace(withoutLanguage(window.location.href));
+        window.location.replace(addressForLanguage(window.location.href, chosen, storedLanguage() === chosen));
       },
       cancel: leave,
     },
@@ -256,7 +256,7 @@ function followAddress(): void {
   const move = addressMove(window.location.pathname, code, entered, flow.ui.joinCode !== null);
   switch (move.kind) {
     case "push":
-      window.history.pushState(null, "", move.path);
+      window.history.pushState(null, "", move.path + window.location.search);
       entered = move.entered;
       break;
     case "mark":
@@ -283,7 +283,7 @@ window.addEventListener("popstate", () => {
   const table = store.state.table;
   if (table !== null && table.mode === "online") {
     if (window.location.pathname !== pathFor(table.code)) {
-      window.history.pushState(null, "", pathFor(table.code));
+      window.history.pushState(null, "", pathFor(table.code) + window.location.search);
       entered = { code: table.code, pushed: true };
       flow.exit();
     }

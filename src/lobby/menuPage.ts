@@ -4,7 +4,7 @@ import { currentLanguage } from "../i18n/language";
 import { t } from "../i18n/t";
 import { logoLines, plaqueFor } from "../table/tableTop";
 import { flagFor } from "./flags";
-import { LANGUAGE_BUTTON_NAME } from "./languageDialog";
+import { languageButtonName } from "./languageDialog";
 
 // The page the client opens on, src/ui/MainMenuPage.cpp. Its second button is Play online where the
 // desktop's is Quit, which a page cannot do.
@@ -32,7 +32,11 @@ export class MenuPage {
   // The flag of the language the page is in, which opens the dialog again.
   readonly language = el(
     "button",
-    { class: "panel menu-lang", attrs: { type: "button", "aria-label": LANGUAGE_BUTTON_NAME, title: LANGUAGE_BUTTON_NAME }, data: { menuPage: "language" } },
+    {
+      class: "panel menu-lang",
+      attrs: { type: "button", "aria-label": languageButtonName(currentLanguage()), title: languageButtonName(currentLanguage()) },
+      data: { menuPage: "language" },
+    },
     flagFor(currentLanguage()),
   );
 

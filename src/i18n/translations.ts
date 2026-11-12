@@ -29,8 +29,7 @@ export function catalogueOf(...files: readonly { entries: readonly Entry[] }[]):
 }
 
 // Qt's rule for Romanian: the first form for exactly one, the second for none and for a count that
-// ends in 1 to 19, the third otherwise ("20 de puncte"). It is Qt's, not Intl's, since the
-// translation was written against it: they disagree on some counts over 100, 101 for one.
+// ends in 1 to 19, the third otherwise ("20 de puncte"). It is the rule the translation was written against.
 export function romanianForm(n: number): 0 | 1 | 2 {
   const last = n % 100;
   if (n === 1) {

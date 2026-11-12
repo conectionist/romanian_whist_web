@@ -3,13 +3,13 @@ import {
   LANGUAGE_KEY,
   LANGUAGES,
   NATIVE_NAMES,
+  addressForLanguage,
   currentLanguage,
   languageFromCode,
   languageFromSearch,
   setLanguage,
   storeLanguage,
   storedLanguage,
-  withoutLanguage,
 } from "../../src/i18n/language";
 
 afterEach(() => setLanguage("en"));
@@ -51,10 +51,15 @@ describe("the language the page runs in", () => {
     expect(currentLanguage()).toBe("ro");
   });
 
-  it("is removed from an address the page reloads at, and the rest of it stays", () => {
-    expect(withoutLanguage("https://example.org/?lang=ro")).toBe("https://example.org/");
-    expect(withoutLanguage("https://example.org/t/K7QM4P?lang=en&x=1")).toBe("https://example.org/t/K7QM4P?x=1");
-    expect(withoutLanguage("https://example.org/t/K7QM4P")).toBe("https://example.org/t/K7QM4P");
+  it("is removed from an address the page reloads at when the choice was kept, and the rest of it stays", () => {
+    expect(addressForLanguage("https://example.org/?lang=ro", "en", true)).toBe("https://example.org/");
+    expect(addressForLanguage("https://example.org/t/K7QM4P?lang=en&x=1", "ro", true)).toBe("https://example.org/t/K7QM4P?x=1");
+    expect(addressForLanguage("https://example.org/t/K7QM4P", "ro", true)).toBe("https://example.org/t/K7QM4P");
+  });
+
+  it("is the choice in the address the page reloads at when the browser did not keep it, and the rest of it stays", () => {
+    expect(addressForLanguage("https://example.org/", "en", false)).toBe("https://example.org/?lang=en");
+    expect(addressForLanguage("https://example.org/t/K7QM4P?lang=ro&x=1", "en", false)).toBe("https://example.org/t/K7QM4P?lang=en&x=1");
   });
 });
 

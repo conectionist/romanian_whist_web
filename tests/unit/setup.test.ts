@@ -233,9 +233,18 @@ describe("what is remembered between games", () => {
     const storage = memory();
     storage.setItem("whist.setup", "{not json");
     expect(loadSetup(storage)).toBeNull();
-    storage.setItem("whist.setup", JSON.stringify({ ...setup(), bots: [{ name: "x", gender: "male", level: "nobody" }] }));
+    storage.setItem("whist.setup", JSON.stringify({ language: "en", setup: { ...setup(), bots: [{ name: "x", gender: "male", level: "nobody" }] } }));
+    expect(loadSetup(storage)).toBeNull();
+    storage.setItem("whist.setup", JSON.stringify(setup()));
     expect(loadSetup(storage)).toBeNull();
     expect(loadSetup(null)).toBeNull();
+  });
+
+  it("is read back only in the language it was made in, and kept for it", () => {
+    const storage = memory();
+    saveSetup(setup({ seed: 12 }), storage, "en");
+    expect(loadSetup(storage, "ro")).toBeNull();
+    expect(loadSetup(storage, "en")).toEqual(setup({ seed: 12 }));
   });
 
   it("is lost quietly when storage refuses", () => {

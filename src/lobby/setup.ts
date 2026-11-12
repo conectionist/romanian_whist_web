@@ -334,20 +334,21 @@ function isSetup(value: unknown): value is Setup {
   );
 }
 
-// The last New Game, which the next one opens on. Wrapped: storage can be refused or come back empty.
-export function loadSetup(storage: Pick<Storage, "getItem"> | null = safe()): Setup | null {
+// The last New Game, which the next one opens on, if it was made in the language the page speaks: its
+// names were drawn, or are the defaults, in that language. Wrapped: storage can be refused or come back empty.
+export function loadSetup(storage: Pick<Storage, "getItem"> | null = safe(), speaks: Language = currentLanguage()): Setup | null {
   try {
     const text = storage?.getItem(STORAGE_KEY);
-    const parsed: unknown = text === null || text === undefined ? null : JSON.parse(text);
-    return isSetup(parsed) ? parsed : null;
+    const parsed = (text === null || text === undefined ? null : JSON.parse(text)) as { language?: unknown; setup?: unknown } | null;
+    return parsed?.language === speaks && isSetup(parsed.setup) ? parsed.setup : null;
   } catch {
     return null;
   }
 }
 
-export function saveSetup(setup: Setup, storage: Pick<Storage, "setItem"> | null = safe()): void {
+export function saveSetup(setup: Setup, storage: Pick<Storage, "setItem"> | null = safe(), speaks: Language = currentLanguage()): void {
   try {
-    storage?.setItem(STORAGE_KEY, JSON.stringify(setup));
+    storage?.setItem(STORAGE_KEY, JSON.stringify({ language: speaks, setup }));
   } catch {
     // The setup lasts until the page is closed.
   }

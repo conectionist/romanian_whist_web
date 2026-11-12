@@ -131,7 +131,7 @@ test.describe("a browser that has chosen", () => {
     });
     const flag = page.locator(".menu-lang");
     await expect(flag).toBeVisible();
-    await expect(flag).toHaveAccessibleName("Limba / Language");
+    await expect(flag).toHaveAccessibleName("Limba / Language: Română");
 
     // Esc closes it and gives the keyboard back to the flag.
     await flag.click();
@@ -156,6 +156,7 @@ test.describe("a browser that has chosen", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
     await expect(page.locator(".menu-btn span")).toHaveText(["New Game", "Play online"]);
+    await expect(flag).toHaveAccessibleName("Limba / Language: English");
     expect(await page.evaluate(() => (window as unknown as { marker?: number }).marker)).toBeUndefined();
     expect(await stored(page)).toBe("en");
     expect(await page.evaluate(() => window.localStorage.getItem("whist.setup"))).toBeNull();
@@ -171,5 +172,84 @@ test.describe("a browser that has chosen", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
     expect(new URL(page.url()).search).toBe("");
+  });
+});
+
+const sheet = (page: Page, name: string) => page.locator(`.sheet[data-sheet="${name}"]:not([hidden])`);
+
+test.describe("a browser that has English", () => {
+  test("?lang=ro opens New Game on a setup of its own though one was saved in English, and leaves what was saved", async ({ page }) => {
+    const saved = JSON.stringify({
+      language: "en",
+      setup: {
+        spectator: false,
+        human: { name: "Ana", gender: "female" },
+        bots: [
+          { name: "Bot One", gender: "male", level: "cyborg" },
+          { name: "Bot Two", gender: "female", level: "low-risk" },
+        ],
+        structure: "1-8-1",
+        foreheadAndHidden: true,
+        allOneCardForehead: false,
+        botSpeed: 2,
+        waitAfterRound: false,
+        seed: null,
+      },
+    });
+    await page.addInitScript((value) => window.localStorage.setItem("whist.setup", value), saved);
+    const opened = async () => {
+      await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+      await page.locator('[data-menu-page="new-game"]').click();
+      await expect(sheet(page, "new-game")).toBeVisible();
+      return {
+        name: await sheet(page, "new-game").locator('input[name="humanName"]').inputValue(),
+        opponents: await sheet(page, "new-game").locator('input[name="opponents"]').inputValue(),
+      };
+    };
+
+    // Names drawn, or typed, in English are not carried into a page that speaks Romanian.
+    await page.goto("/?lang=ro");
+    expect(await opened()).toEqual({ name: "Jucător", opponents: "3" });
+    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup"))).toBe(saved);
+
+    // The visit without it finds the English setup as it was left.
+    await page.goto("/");
+    expect(await opened()).toEqual({ name: "Ana", opponents: "2" });
+  });
+
+  test("?lang= stays in the address when it moves to the table's, so a reload there is in the same language", async ({ page }) => {
+    await page.goto("/?lang=ro");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await page.locator('[data-menu-page="online"]').click();
+    await sheet(page, "online").locator('input[name="profileName"]').fill("Maria");
+    await sheet(page, "online").locator('[data-action="create"]').click();
+    await sheet(page, "create-table").locator('[data-action="create"]').click();
+    await expect(sheet(page, "lobby")).toBeVisible();
+    const url = new URL(page.url());
+    expect(url.pathname).toMatch(/^\/t\/[A-Z0-9]{6}$/);
+    expect(url.search).toBe("?lang=ro");
+
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", "ro");
+  });
+});
+
+test.describe("a browser that keeps nothing", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("changing language from the main menu reloads in it, not at the first visit's question", async ({ page }) => {
+    await page.addInitScript(() => {
+      Storage.prototype.setItem = () => {
+        throw new DOMException("refused", "QuotaExceededError");
+      };
+    });
+    await page.goto("/?lang=ro");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await page.locator(".menu-lang").click();
+    await choice(page, "en").click();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await expect(dialog(page)).toHaveCount(0);
+    expect(new URL(page.url()).search).toBe("?lang=en");
   });
 });

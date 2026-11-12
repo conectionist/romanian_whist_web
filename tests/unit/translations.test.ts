@@ -16,7 +16,7 @@ describe("Qt's plural rule for Romanian", () => {
     expect([0, 1, 2, 3, 19, 20, 21, 99, 100].map(romanianForm)).toEqual([1, 0, 1, 1, 1, 2, 2, 2, 2]);
   });
 
-  it("takes 101 to 119 for the second form, where CLDR's rule says other for 101", () => {
+  it("takes 101 to 119 for the second form, as the last two digits decide it", () => {
     expect([101, 102, 119, 120, 201].map(romanianForm)).toEqual([1, 1, 1, 2, 1]);
   });
 });

@@ -1,7 +1,6 @@
-// Finds the strings the page translates, by reading its source: every t() call whose context and
-// source are literals, and the sources inside the gendered variants that translateGendered and
-// translateSentence take. A call whose context or source is not a literal is reported, so none
-// escapes the check.
+// Finds the strings the page translates by reading its source: every t() call whose context and source
+// are literals, and the sources inside the gendered variants translateGendered and translateSentence take.
+// A call whose context or source is not a literal is reported, so none escapes the check.
 
 export interface Literal {
   context: string;

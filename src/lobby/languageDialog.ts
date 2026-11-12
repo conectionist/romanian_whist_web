@@ -10,8 +10,13 @@ import { flagFor } from "./flags";
 export const DIALOG_WIDTH = 560;
 export const DIALOG_HEIGHT = 420;
 
-// Both languages' words, since whoever opens this may not read the one the page is in.
+// Both languages' words, since whoever opens this may not read the one the page is in, and the one it is
+// in now, by its own name, since the flag alone does not say it to a screen reader.
 export const LANGUAGE_BUTTON_NAME = "Limba / Language";
+
+export function languageButtonName(current: Language): string {
+  return `${LANGUAGE_BUTTON_NAME}: ${NATIVE_NAMES[current]}`;
+}
 
 export interface LanguageDialogActions {
   choose(language: Language): void;

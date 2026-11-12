@@ -167,20 +167,14 @@ test("Enter plays only what is picked: a card that kept the keyboard from a pick
   await expect(page.locator(".hand .hcard.playable")).toHaveCount(0);
 });
 
-test("Space lets a held round go when the keyboard is on nothing, and the digits do not act in a text field", async ({ page }) => {
-  await page.goto("/?solo=3&seed=7&speed=4&wait=1");
+// The slowest computer players rest 2.4 seconds on a round, so a sheet that is gone within one second
+// was closed by the key. A held round's Space is on its Continue, which the whole game above presses.
+test("Space closes the round sheet the game only rests on, with the keyboard on nothing as the last answer left it, and the digits do not act in a text field", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto("/?solo=3&seed=7&speed=0");
   await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
-  for (let answers = 0; answers < 2; answers++) {
-    await page.locator(ASK).first().waitFor();
-    await answerByKeys(page, answers);
-    await expect(page.locator(ASK)).toHaveCount(0);
-  }
-  const round = sheet(page, "round");
-  await expect(round).toBeVisible();
-  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-  await page.keyboard.press("Space");
-  await expect(round).toHaveCount(0);
-  await expect(page.locator(".score-round")).toHaveText("Round 2 of 23");
   await page.locator(ASK).first().waitFor();
 
   // A digit typed in New Game's name field is a character, with the table behind it asking for a bid.
@@ -191,4 +185,16 @@ test("Space lets a held round go when the keyboard is on nothing, and the digits
   await expect(sheet(page, "new-game").locator('input[name="humanName"]')).toHaveValue("A1");
   await page.keyboard.press("Escape");
   await expect(sheet(page, "new-game")).toHaveCount(0);
+
+  for (let answers = 0; answers < 2; answers++) {
+    await page.locator(ASK).first().waitFor();
+    await answerByKeys(page, answers);
+    await expect(page.locator(ASK)).toHaveCount(0);
+  }
+  const round = sheet(page, "round");
+  await expect(round).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("body")).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(round).toHaveCount(0, { timeout: 1000 });
+  await expect(page.locator(".score-round")).toHaveText("Round 2 of 23", { timeout: 10_000 });
 });

@@ -59,9 +59,15 @@ export function setLanguage(language: Language): void {
   running = language;
 }
 
-// The address without ?lang=, so a page reloaded for a new choice reads the choice and not the old ask.
-export function withoutLanguage(href: string): string {
+// The address a page is loaded anew at, in a language it was just given. When the browser kept the
+// choice, ?lang= goes, so the choice is the one read and not the old ask. When it did not, ?lang= is the
+// choice, so the page does not ask the first-visit question again.
+export function addressForLanguage(href: string, language: Language, kept: boolean): string {
   const url = new URL(href);
-  url.searchParams.delete("lang");
+  if (kept) {
+    url.searchParams.delete("lang");
+  } else {
+    url.searchParams.set("lang", language);
+  }
   return url.toString();
 }

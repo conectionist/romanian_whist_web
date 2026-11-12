@@ -14,7 +14,7 @@
     {
       "context": "newgame",
       "source": "Only a low-risk or a ducking computer player may have \"LowRisk\" or \"Ducking\" in its name.",
-      "translation": "Numai un bot Risc mic sau Eschivă poate avea „LowRisk” sau „Ducking” în nume."
+      "translation": "Numai un robot Risc mic sau Eschivă poate avea „LowRisk” sau „Ducking” în nume."
     },
     {
       "context": "newgame",
@@ -179,7 +179,7 @@
     {
       "context": "lobby",
       "source": "Computer: %1",
-      "translation": "Bot: %1"
+      "translation": "Robot: %1"
     },
     {
       "context": "lobby",
@@ -257,12 +257,12 @@
     {
       "context": "lobby",
       "source": "One seat is still open: ask someone to join, or fill it with a computer player.",
-      "translation": "Mai este un loc liber: cheamă pe cineva să se alăture sau ocupă-l cu un bot."
+      "translation": "Mai este un loc liber: cheamă pe cineva să se alăture sau ocupă-l cu un robot."
     },
     {
       "context": "lobby",
       "source": "%1 seats are still open: ask people to join, or fill them with computer players.",
-      "translation": "Mai sunt %1 locuri libere: cheamă oameni să se alăture sau ocupă-le cu boți."
+      "translation": "Mai sunt %1 locuri libere: cheamă oameni să se alăture sau ocupă-le cu roboți."
     },
     {
       "context": "lobby",
@@ -357,13 +357,13 @@
       "context": "online",
       "source": "%1 was replaced by a computer player.",
       "comment": "about a man",
-      "translation": "%1 a fost înlocuit de un bot."
+      "translation": "%1 a fost înlocuit de un robot."
     },
     {
       "context": "online",
       "source": "%1 was replaced by a computer player.",
       "comment": "about a woman",
-      "translation": "%1 a fost înlocuită de un bot."
+      "translation": "%1 a fost înlocuită de un robot."
     },
     {
       "context": "online",
@@ -408,7 +408,7 @@
     {
       "context": "online",
       "source": "The game goes on without you: a computer player takes your seat.",
-      "translation": "Jocul continuă fără tine: un bot îți ia locul."
+      "translation": "Jocul continuă fără tine: un robot îți ia locul."
     },
     {
       "context": "online",
@@ -493,7 +493,7 @@
     {
       "context": "trickpanel",
       "source": "Computer playing for %1",
-      "translation": "Un bot joacă pentru %1"
+      "translation": "Un robot joacă pentru %1"
     },
     {
       "context": "pagesheets",
@@ -720,6 +720,16 @@
       "source": "Waiting for %1: %2 s",
       "comment": "about several women",
       "translation": "Le așteptăm pe %1: %2 s"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Bot %1",
+      "translation": "Robot %1"
+    },
+    {
+      "context": "newgame",
+      "source": "Bot speed",
+      "translation": "Viteza roboților"
     }
   ]
 }

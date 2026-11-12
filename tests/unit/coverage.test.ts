@@ -108,9 +108,17 @@ describe("the strings the page translates", () => {
 });
 
 describe("the page's own Romanian strings", () => {
-  it("are not the desktop's, so that importing again never needs to choose", () => {
-    const desktopKeys = new Set(desktopEntries.map((entry) => keyOf(entry.context, entry.source, entry.comment)));
-    expect(pageEntries.filter((entry) => desktopKeys.has(keyOf(entry.context, entry.source, entry.comment))).map((entry) => entry.source)).toEqual([]);
+  // The desktop's words the page says another way, which win over them: the desktop calls a computer
+  // player a bot, and the page a robot.
+  const OVERRIDES = ["NewGameDialog: Bot %1", "newgame: Bot speed"];
+
+  it("are not the desktop's, so that importing again never needs to choose, but for the few it says another way", () => {
+    const desktopKeys = new Map(desktopEntries.map((entry) => [keyOf(entry.context, entry.source, entry.comment), entry]));
+    const same = pageEntries.filter((entry) => desktopKeys.has(keyOf(entry.context, entry.source, entry.comment)));
+    expect(same.map((entry) => `${entry.context}: ${entry.source}`)).toEqual(OVERRIDES);
+    for (const entry of same) {
+      expect(entry.translation, entry.source).not.toBe(desktopKeys.get(keyOf(entry.context, entry.source, entry.comment))?.translation);
+    }
   });
 
   it("are all used, and none twice", () => {

@@ -34,6 +34,22 @@ describe("the catalogues", () => {
     expect(catalogue?.get(keyOf("PauseOverlay", "Not a string"))).toBeUndefined();
   });
 
+  it("let the page's entry win over the desktop's with the same context and source", () => {
+    const desktop = { entries: [{ context: "newgame", source: "Bot speed", translation: "Viteza boților" }, { context: "newgame", source: "Slow", translation: "Lent" }] };
+    const page = { entries: [{ context: "newgame", source: "Bot speed", translation: "Viteza roboților" }] };
+    const merged = catalogueOf(desktop, page);
+    expect(merged.get(keyOf("newgame", "Bot speed"))?.translation).toBe("Viteza roboților");
+    expect(merged.get(keyOf("newgame", "Slow"))?.translation).toBe("Lent");
+    // And the Romanian the page runs in says robots, though the desktop's catalogue says bots.
+    expect(catalogueFor("ro")?.get(keyOf("newgame", "Bot speed"))?.translation).toBe("Viteza roboților");
+    expect(catalogueFor("ro")?.get(keyOf("NewGameDialog", "Bot %1"))?.translation).toBe("Robot %1");
+  });
+
+  it("say a robot and not a bot, in any of its forms", () => {
+    const wrong = [...(catalogueFor("ro") ?? new Map()).values()].flatMap((entry) => [entry.translation, ...(entry.forms ?? [])]).filter((text) => text !== undefined && /\bbo[tț]/i.test(text));
+    expect(wrong).toEqual([]);
+  });
+
   it("are built once", () => {
     expect(catalogueFor("ro")).toBe(catalogueFor("ro"));
   });

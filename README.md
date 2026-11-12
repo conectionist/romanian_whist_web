@@ -8,14 +8,17 @@ which is a submodule here, in `libs/romanian_whist_server`.
 server sends, in the desktop client's look. The main menu opens on New Game, with the desktop's
 fields, bounds and defaults, and on Play online, which makes a table or joins one by its code or its
 link (`/t/` and the code), waits in a lobby, and plays it. The round, history, last trick, game over,
-rules, settings and pause sheets are the desktop's. Romanian is not built yet.
-[`docs/page-plan.md`](docs/page-plan.md) is the plan for it.
+rules, settings and pause sheets are the desktop's. The page is in Romanian and English: it asks which
+the first time, with the desktop's language dialog, and keeps the answer in the browser; the flag at
+the top right of the main menu opens the dialog again. [`docs/page-plan.md`](docs/page-plan.md) is the
+plan for it.
 
 For a game the tests and a look at the page can start without the menu, `/?solo=4` starts a solo game
 against the computer players. `&seed=42` fixes the deal, `&speed=0` to `4` sets how fast they move (2 is
 the desktop's default, 4 is instant, and then their cards do not fly), `&forehead=all` makes every
 one-card round a Forehead round, which the first deal then is, and `&wait=1` holds the table after
-each round until you continue.
+each round until you continue. `&lang=ro` or `&lang=en` runs the page in that language for the visit,
+without asking and without keeping it.
 
 ## Deploy with Docker (recommended)
 
@@ -204,10 +207,13 @@ nice -n 19 npm run look -- --workers=1      # the look captures, below
 
 The unit tests read the server's protocol fixtures, so they need the submodule. They test the pages'
 decisions as pure functions: what a sheet shows, what a click sends, a lobby's seats, a New Game's
-names and validation. The end-to-end tests start the server built in the submodule, or the one
-`WHIST_SERVER` names, and play through the page: solo games, the sheets, New Game, and online tables
-played by three browsers at once, each in a context of its own. They need Playwright's Chromium once:
-`npx playwright install chromium`.
+names and validation. One reads the source for every string the page translates, and fails on one with
+no Romanian, a translation that loses a placeholder, or a count without its three forms. The
+end-to-end tests start the server built in the submodule, or the one `WHIST_SERVER` names, and play
+through the page: solo games, the sheets, New Game, the language dialog, a game in Romanian, and online
+tables played by three browsers at once, each in a context of its own. They start with English chosen,
+as a browser that has been through the dialog; the tests of the dialog start with nothing. They need
+Playwright's Chromium once: `npx playwright install chromium`.
 
 With the stack above running, one more test loads the page under the image's content-security-policy
 and starts a solo game, and fails on a violation, a script error, a failed request or an error answer:
@@ -225,8 +231,8 @@ checkable without a server:
   at the desktop picture's own size, into `build/shots/web/<name>.png`. The server's, in
   `libs/romanian_whist_server/protocol/look/*.json`, are nine captures: `table-3-players` to
   `table-6-players`, `bidding`, `table-empty` and `hand-1-card`, `hand-4-cards` and `hand-8-cards`.
-  The page's own, in `tests/look/fixtures/*.json`, are the seven sheets over a table and the main
-  menu. The desktop's tool builds those by hand, so `tools/sheet_fixtures.py` does too, from its
+  The page's own, in `tests/look/fixtures/*.json`, are the seven sheets over a table, the main
+  menu and the language dialog. The desktop's tool builds those by hand, so `tools/sheet_fixtures.py` does too, from its
   numbers; run it again after changing one, and commit what it writes.
 - `npm run compare` pairs each capture with the desktop's picture of the same name, which its
   screenshot tool writes (`WHIST_SHOTS_DIR=build/shots/web-reference ./build/tests/desktop_tests
@@ -234,6 +240,9 @@ checkable without a server:
   without them it says so and writes nothing. It writes, into `build/shots/compare/`,
   `compare-<name>.png` (the page on the left, the desktop on the right), `diff-<name>.png`, a
   `compare-hand-*-closeup.png` for each hand, and prints each pair's mean absolute difference.
+- The same captures are also taken in Romanian, into `build/shots/web-ro/`, for reading the
+  translation. The desktop has no pictures of them, so `npm run compare` leaves them alone. The
+  language dialog has no words, so it is taken once, and paired with the desktop's `language.png`.
 - `python3 tools/measure_shots.py` says, for each sheet, how many pixels each of its parts sits from
   the desktop's. The spacings in `src/sheets/styles/sheet.css` are numbers taken that way, and the
   tool takes them again after a change of a face, a size or a sheet.
@@ -253,6 +262,20 @@ python3 tools/import_assets.py --desktop ../romanian_whist_desktop
 The cards, the portraits and the table's textures become WebP, the fonts WOFF2 (each with its OFL
 licence), and the catalogues are copied. The card back is `public/cards/back.svg`, drawn by hand. The
 tool prints the size of a first load against its budget of 2 MiB.
+
+## The Romanian
+
+The desktop's translation is imported by `tools/import_ts.py` into `src/i18n/ro.desktop.json`, with
+the desktop's commit written into it. It needs only Python:
+
+```
+python3 tools/import_ts.py --desktop ../romanian_whist_desktop
+```
+
+The strings the desktop has no entry for are in `src/i18n/ro.page.json`, written by hand, so that
+importing again never overwrites them. English has no catalogue: the source text is English, as in Qt,
+and `t()` shows it where a catalogue has no entry. A count is chosen among a translation's three forms
+by Qt's rule for Romanian. The language is fixed once, before the page makes any text.
 
 ## Licence
 

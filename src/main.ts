@@ -38,6 +38,7 @@ import "./table/styles/rack.css";
 import "./table/styles/cards.css";
 import "./table/styles/hud.css";
 import "./table/styles/strip.css";
+import "./table/styles/touch.css";
 import "./sheets/styles/sheet.css";
 import "./lobby/styles/lobby.css";
 

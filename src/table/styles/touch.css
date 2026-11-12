@@ -1,0 +1,59 @@
+/* Touch. A tap is never a double tap that zooms, a long press raises no menu and selects nothing, and
+   a control the finger has to hit is at least 44 CSS pixels each way, by invisible padding where the
+   drawing is smaller, so the look is the mouse's. */
+html,
+body,
+.window,
+.view {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (pointer: coarse) {
+  /* The table is drawn at the window's scale, which on a phone makes a bid 15 pixels wide and a card of
+     the hand a slice 20 wide. The strip and the fan are drawn larger there, as large as it takes for a
+     bid to be 44 pixels from the next and a card 32: the strip about its middle and the fan about the
+     foot of the table, where they already are. They are never drawn smaller than the table's. */
+  .bidstrip {
+    scale: max(1, calc(44 / (68 * var(--s))));
+    transform-origin: 50% 50%;
+  }
+
+  .opt {
+    position: relative;
+  }
+
+  .opt::after {
+    content: "";
+    position: absolute;
+    inset: -6px -5px;
+  }
+
+  .hand {
+    scale: max(1, calc(32 / (80 * var(--s))));
+    transform-origin: 768px 1024px;
+  }
+
+  /* The corner buttons, their height made up to 44 pixels at the table's scale, upward, since they
+     stand on the window's edge. */
+  .corner-buttons .btn::after {
+    content: "";
+    position: absolute;
+    inset: min(0px, calc(76px - 44px / var(--s))) min(0px, calc((190px - 44px / var(--s)) / 2)) 0;
+  }
+
+  .field {
+    height: 44px;
+  }
+
+  .check {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .notice-btn,
+  .menu-lang {
+    min-height: 44px;
+  }
+}

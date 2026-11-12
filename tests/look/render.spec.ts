@@ -267,3 +267,38 @@ test("a single word of lettering keeps the swash of its W, which a box the heigh
   // Measured on the page, where the plaque is drawn at 1.26 of its size.
   expect(text.y - box.y).toBeCloseTo(14 * 1.26, 1);
 });
+
+test.describe("under a finger", () => {
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+
+  test("the hand's cards are drawn 32 pixels apart or more, and the bid strip 44, and neither is smaller than the mouse's", async ({ page }) => {
+    await page.goto("/look.html?shot=hand-8-cards");
+    await page.waitForSelector("body[data-ready]");
+    const lefts = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard:not([hidden])"), (card) => card.getBoundingClientRect().x).sort((a, b) => a - b));
+    expect(lefts).toHaveLength(8);
+    for (let at = 1; at < lefts.length; at++) {
+      expect(lefts[at] - lefts[at - 1]).toBeGreaterThanOrEqual(30);
+    }
+    // The fan is no wider than the window, and stays on it.
+    expect(lefts[0]).toBeGreaterThanOrEqual(0);
+
+    await page.goto("/look.html?shot=bidding");
+    await page.waitForSelector("body[data-ready]");
+    const pitch = await page.evaluate(() => {
+      const boxes = Array.from(document.querySelectorAll<HTMLElement>(".bidstrip .opt:not([hidden])"), (button) => button.getBoundingClientRect());
+      return boxes.length > 1 ? boxes[1].x - boxes[0].x : 0;
+    });
+    expect(pitch).toBeGreaterThanOrEqual(43.5);
+  });
+});
+
+test.describe("under a mouse", () => {
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: false, isMobile: false });
+
+  test("the same table is drawn as it always was: the fan and the strip at the table's own scale", async ({ page }) => {
+    await page.goto("/look.html?shot=hand-8-cards");
+    await page.waitForSelector("body[data-ready]");
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hand")!).scale)).toBe("none");
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector(".bidstrip")!).scale)).toBe("none");
+  });
+});

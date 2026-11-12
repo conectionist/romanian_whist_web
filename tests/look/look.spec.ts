@@ -8,6 +8,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const SERVER = join(ROOT, "libs/romanian_whist_server/protocol/look");
 const OWN = join(ROOT, "tests/look/fixtures");
 const OUT = join(ROOT, "build/shots/web");
+// The same captures in Romanian, for reading the translation. They are not paired with the desktop's.
+const OUT_RO = join(ROOT, "build/shots/web-ro");
 
 interface Shot {
   file: string;
@@ -36,27 +38,34 @@ test("every look fixture is rendered", () => {
   expect(own.filter((name) => server.includes(name))).toEqual([]);
 });
 
-async function capture(page: Page, folder: string, name: string): Promise<void> {
+async function capture(page: Page, folder: string, name: string, out: string, query: string): Promise<void> {
   const { shot } = JSON.parse(readFileSync(join(folder, `${name}.json`), "utf8")) as { shot: Shot };
-  mkdirSync(OUT, { recursive: true });
+  mkdirSync(out, { recursive: true });
 
   const problems: string[] = [];
   page.on("pageerror", (error) => problems.push(error.message));
 
   await page.setViewportSize({ width: shot.width, height: shot.height });
-  await page.goto(`/look.html?shot=${name}`);
+  await page.goto(`/look.html?shot=${name}${query}`);
   await page.waitForSelector("body[data-ready]");
 
   if (shot.raised !== undefined) {
     await page.locator(`.hand [data-card="${shot.raised}"]`).hover();
   }
 
-  await page.screenshot({ path: join(OUT, shot.file), animations: "disabled" });
+  await page.screenshot({ path: join(out, shot.file), animations: "disabled" });
   expect(problems).toEqual([]);
 }
 
 for (const [name, folder] of folders) {
   test(`renders ${name} at its own size`, async ({ page }) => {
-    await capture(page, folder, name);
+    await capture(page, folder, name, OUT, "");
+  });
+}
+
+// The language dialog has no words, so it looks the same in Romanian.
+for (const [name, folder] of folders.filter(([name]) => name !== "language")) {
+  test(`renders ${name} in Romanian`, async ({ page }) => {
+    await capture(page, folder, name, OUT_RO, "&lang=ro");
   });
 }

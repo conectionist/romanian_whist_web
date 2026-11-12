@@ -1,4 +1,6 @@
 import { el } from "../dom/el";
+import { startIn } from "../i18n/document";
+import { languageFromCode } from "../i18n/language";
 import { decode } from "../net/decode";
 import type { ServerMessage } from "../net/protocol";
 import { modelOf, type TableModel } from "../play/model";
@@ -72,6 +74,8 @@ async function decoded(url: string): Promise<void> {
 
 async function main(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
+  // English unless the capture asks for Romanian, so the desktop's pictures are compared like for like.
+  startIn(languageFromCode(params.get("lang")) ?? "en", document);
   const first = fixtureNamed(params.get("shot") ?? "table-empty");
   const then = params.get("then");
 

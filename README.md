@@ -273,11 +273,13 @@ tool prints the size of a first load against its budget of 2 MiB.
   Settings, Rules and Exit. No key acts while a sheet holds the table, nor while the language dialog is
   over the page, nor in a text field. Tab reaches every control, the hand being one stop, and the
   focus is always drawn.
-- **Screen readers.** Every picture of a card has a name ("Queen of spades"), and a card of the hand
-  says on your turn whether it is playable; each name panel has one too ("Ana, Taken/Bid: 1/2, to
+- **Screen readers.** Every picture of a card has a name ("Queen of spades", "Ana: Queen of hearts" for
+  a face in a rack), and a card of the hand says on your turn whether it is playable, and is a pressed
+  button while it is the pick, as a bid is; each name panel has a name too ("Ana, Taken/Bid: 1/2, to
   move"). A polite live region says each round begun, with its trump, the question put to you, and each
-  bid, card ("Ana plays the queen of hearts"), trick taken, round scored and the game's end, in the
-  page's language, and nothing else.
+  bid, card ("Ana played the queen of hearts"), trick taken, round scored and the game's end, in the
+  page's language, and nothing else. In Romanian a card is a rank in a word, "de" and its suit:
+  "Ana a pus damă de inimă roșie", "Atu: Zece de inimă neagră".
 - **Touch.** A first tap on a card picks it, as a key does, and a second tap on the same card plays it;
   a tap anywhere else puts the pick down; a mouse plays at once, and a tap on a bid bids. A touch screen
   gets no double-tap zoom, no callout and no selection. Where the pointer is coarse the bid strip and

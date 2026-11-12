@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { setLanguage } from "../../src/i18n/language";
 import { decode } from "../../src/net/decode";
 import type { ServerMessage, Snapshot } from "../../src/net/protocol";
+import { KEPT } from "../../src/dom/announcer";
 import { announcementFor, roundAnnouncement } from "../../src/play/announce";
 import { modelOf } from "../../src/play/model";
 import { Store } from "../../src/play/store";
@@ -37,20 +38,31 @@ describe("what a card is called", () => {
     expect((["S", "H", "D", "C"] as const).map(suitName)).toEqual(["spades", "hearts", "diamonds", "clubs"]);
   });
 
-  it("is said in Romanian as the deck is, with the desktop's court cards and the red heart", () => {
+  it("is said in Romanian with the rank as a word and no article, and a capital to start it", () => {
     setLanguage("ro");
     expect([cardNameFor("QS"), cardNameFor("TH"), cardNameFor("AD"), cardNameFor("JC"), cardNameFor("KH")]).toEqual([
-      "Damă de pică",
-      "10 de inimă roșie",
+      "Damă de inimă neagră",
+      "Zece de inimă roșie",
       "As de romb",
       "Valet de treflă",
       "Popă de inimă roșie",
     ]);
+    expect("23456789".split("").map((rank) => cardNameFor(`${rank}C`))).toEqual([
+      "Doi de treflă",
+      "Trei de treflă",
+      "Patru de treflă",
+      "Cinci de treflă",
+      "Șase de treflă",
+      "Șapte de treflă",
+      "Opt de treflă",
+      "Nouă de treflă",
+    ]);
+    expect((["S", "H", "D", "C"] as const).map(suitName)).toEqual(["inimă neagră", "inimă roșie", "romb", "treflă"]);
   });
 });
 
 describe("what a sentence calls a card", () => {
-  it("is its rank with the article and its suit, in lower case", () => {
+  it("is its rank and its suit with the article, in lower case", () => {
     expect([cardInSentence("QH"), cardInSentence("TH"), cardInSentence("AS"), cardInSentence("JC"), cardInSentence("KD"), cardInSentence("7C"), cardInSentence("2S")]).toEqual([
       "the queen of hearts",
       "the 10 of hearts",
@@ -62,28 +74,23 @@ describe("what a sentence calls a card", () => {
     ]);
   });
 
-  it("is said in Romanian with the rank's own definite article, which is not the label with a lower case", () => {
+  it("is said in Romanian as the label is, in lower case, with no article", () => {
     setLanguage("ro");
-    expect(cardInSentence("QH")).toBe("dama de inimă roșie");
-    expect(cardInSentence("KS")).toBe("popa de pică");
-    expect(cardInSentence("JD")).toBe("valetul de romb");
-    expect(cardInSentence("AC")).toBe("asul de treflă");
-    expect(cardInSentence("TH")).toBe("decarul de inimă roșie");
-    expect(cardInSentence("7C")).toBe("șaptele de treflă");
-    expect("23456789".split("").map((rank) => cardInSentence(`${rank}S`))).toEqual([
-      "doiul de pică",
-      "treiul de pică",
-      "patrul de pică",
-      "cincul de pică",
-      "șasele de pică",
-      "șaptele de pică",
-      "optul de pică",
-      "nouarul de pică",
-    ]);
-    expect(cardNameFor("QH")).toBe("Damă de inimă roșie");
+    expect(cardInSentence("QH")).toBe("damă de inimă roșie");
+    expect(cardInSentence("KS")).toBe("popă de inimă neagră");
+    expect(cardInSentence("JD")).toBe("valet de romb");
+    expect(cardInSentence("AC")).toBe("as de treflă");
+    expect(cardInSentence("TH")).toBe("zece de inimă roșie");
+    expect(cardInSentence("7C")).toBe("șapte de treflă");
+    for (const rank of "23456789TJQKA") {
+      for (const suit of "SHDC") {
+        const card = `${rank}${suit}`;
+        expect(cardInSentence(card)).toBe(cardNameFor(card).charAt(0).toLocaleLowerCase("ro") + cardNameFor(card).slice(1));
+      }
+    }
   });
 
-  it("has a form for every card of the deck, and it is not the label", () => {
+  it("is not the label in English, which has an article and no capital", () => {
     for (const rank of "23456789TJQKA") {
       for (const suit of "SHDC") {
         expect(cardInSentence(`${rank}${suit}`)).not.toBe(cardNameFor(`${rank}${suit}`));
@@ -108,8 +115,8 @@ describe("what a card of the hand says", () => {
 
   it("is said in Romanian", () => {
     setLanguage("ro");
-    expect(handLabelFor("QS", true, true)).toBe("Damă de pică, jucabilă");
-    expect(handLabelFor("QS", true, false)).toBe("Damă de pică, nejucabilă");
+    expect(handLabelFor("QS", true, true)).toBe("Damă de inimă neagră, se poate juca");
+    expect(handLabelFor("QS", true, false)).toBe("Damă de inimă neagră, nu se poate juca");
     expect(handLabelFor(null, true, true)).toBe("Cartea ta, cu fața în jos");
   });
 });
@@ -143,13 +150,13 @@ describe("what the live region says of a game", () => {
   const game = (event: object, shown: Snapshot | null = snapshot): ServerMessage => decode(JSON.stringify({ type: "game", seq: 5, game: 1, event, snapshot: shown }));
 
   it("says a bid, in your words for your own", () => {
-    expect(announcementFor(game({ kind: "betPlaced", seat: 1, bet: 2 }))).toBe("Ana bids 2");
+    expect(announcementFor(game({ kind: "betPlaced", seat: 1, bet: 2 }))).toBe("Ana bid 2");
     expect(announcementFor(game({ kind: "betPlaced", seat: 0, bet: 0 }))).toBe("You bid 0");
   });
 
   it("says a card played, by name", () => {
-    expect(announcementFor(game({ kind: "cardPlayed", seat: 2, card: "QH" }))).toBe("Bogdan plays the queen of hearts");
-    expect(announcementFor(game({ kind: "cardPlayed", seat: 0, card: "7C" }))).toBe("You play the 7 of clubs");
+    expect(announcementFor(game({ kind: "cardPlayed", seat: 2, card: "QH" }))).toBe("Bogdan played the queen of hearts");
+    expect(announcementFor(game({ kind: "cardPlayed", seat: 0, card: "7C" }))).toBe("You played the 7 of clubs");
   });
 
   it("says who took the trick, with the desktop's sentences", () => {
@@ -177,22 +184,23 @@ describe("what the live region says of a game", () => {
   it("is said in Romanian, with the count in its own form", () => {
     setLanguage("ro");
     const winners = [{ seat: 1, name: "Ana", score: 63, place: 1 }];
-    expect(announcementFor(game({ kind: "betPlaced", seat: 1, bet: 2 }))).toBe("Ana licitează 2");
+    expect(announcementFor(game({ kind: "betPlaced", seat: 1, bet: 2 }))).toBe("Ana a licitat 2");
     expect(announcementFor(game({ kind: "betPlaced", seat: 0, bet: 2 }))).toBe("Ai licitat 2");
-    expect(announcementFor(game({ kind: "cardPlayed", seat: 2, card: "QH" }))).toBe("Bogdan joacă dama de inimă roșie");
-    expect(announcementFor(game({ kind: "cardPlayed", seat: 0, card: "QH" }))).toBe("Joci dama de inimă roșie");
+    expect(announcementFor(game({ kind: "cardPlayed", seat: 2, card: "QH" }))).toBe("Bogdan a pus damă de inimă roșie");
+    expect(announcementFor(game({ kind: "cardPlayed", seat: 0, card: "QH" }))).toBe("Ai pus damă de inimă roșie");
     expect(announcementFor(game({ kind: "trickWon", seat: 3, trick: 2 }))).toBe("Cristina câștigă mâna.");
     expect(announcementFor(game({ kind: "gameOver", standings: winners, winners }))).toBe("Joc încheiat. Ana câștigă cu 63 de puncte.");
   });
 
   it("says a round begun: which, how many cards, a Forehead or Hidden one by name, and what is trump", () => {
     const round = (change: object) => ({ ...snapshot, round: { ...snapshot.round, ...change } });
-    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 7, count: 26, tricks: 5, type: "normal", trump: "9S" })))).toBe("Round 8 of 26. 5 cards. Trump: the 9 of spades.");
-    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 0, count: 26, tricks: 1, type: "forehead", trump: "QH" })))).toBe("Round 1 of 26. 1 card. Forehead. Trump: the queen of hearts.");
+    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 7, count: 26, tricks: 5, type: "normal", trump: "9S" })))).toBe("Round 8 of 26. 5 cards. Trump: 9 of spades.");
+    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 0, count: 26, tricks: 1, type: "forehead", trump: "QH" })))).toBe("Round 1 of 26. 1 card. Forehead. Trump: Queen of hearts.");
     expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 9, count: 26, tricks: 8, type: "normal", trump: null })))).toBe("Round 10 of 26. 8 cards. No trump.");
-    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 25, count: 26, tricks: 1, type: "hidden", trump: "TD" })))).toBe("Round 26 of 26. 1 card. Hidden. Trump: the 10 of diamonds.");
+    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 25, count: 26, tricks: 1, type: "hidden", trump: "TD" })))).toBe("Round 26 of 26. 1 card. Hidden. Trump: 10 of diamonds.");
     setLanguage("ro");
-    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 7, count: 26, tricks: 5, type: "normal", trump: "9H" })))).toBe("Runda 8 din 26. 5 cărți. Atu: nouarul de inimă roșie.");
+    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 7, count: 26, tricks: 5, type: "normal", trump: "9H" })))).toBe("Runda 8 din 26. 5 cărți. Atu: Nouă de inimă roșie.");
+    expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 7, count: 26, tricks: 5, type: "normal", trump: "TS" })))).toBe("Runda 8 din 26. 5 cărți. Atu: Zece de inimă neagră.");
     expect(announcementFor(game({ kind: "roundStarted" }, round({ index: 9, count: 26, tricks: 8, type: "normal", trump: null })))).toBe("Runda 10 din 26. 8 cărți. Fără atu.");
   });
 
@@ -206,10 +214,10 @@ describe("what the live region says of a game", () => {
     expect(said({ kind: "bet", max: 5, forbidden: null, first: false, roundType: "normal" })).toBe("Your bid. How many tricks?");
     expect(said({ kind: "play", blind: false, legal: [0] }, [{ card: "JS", legal: true }], null)).toBe("Your turn. You lead.");
     expect(said({ kind: "play", blind: true, legal: [0] }, [], null)).toBe("Your turn.");
-    expect(said({ kind: "play", blind: false, legal: [0] }, [{ card: "JS", legal: true }, { card: "2H", legal: false }], "S")).toBe("Your turn. You must follow ♠.");
+    expect(said({ kind: "play", blind: false, legal: [0] }, [{ card: "JS", legal: true }, { card: "2H", legal: false }], "S")).toBe("Your turn. You must follow spades.");
     setLanguage("ro");
     expect(said({ kind: "bet", max: 5, forbidden: null, first: false, roundType: "normal" })).toBe("Licitația ta. Câte faci?");
-    expect(said({ kind: "play", blind: false, legal: [0] }, [{ card: "JS", legal: true }, { card: "2H", legal: false }], "S")).toBe("E rândul tău. Trebuie să pui ♠.");
+    expect(said({ kind: "play", blind: false, legal: [0] }, [{ card: "JS", legal: true }, { card: "2H", legal: false }], "S")).toBe("E rândul tău. Trebuie să pui inimă neagră.");
     // Without the table to read the question from, there is nothing to say.
     expect(announcementFor(decode(JSON.stringify({ type: "prompt", seq: 6, id: 2, deadline: null, kind: "play", blind: false, legal: [0], hand: ["JS"] })), null)).toBeNull();
   });
@@ -220,5 +228,15 @@ describe("what the live region says of a game", () => {
     }
     expect(announcementFor(game({ kind: "betPlaced", seat: 1, bet: 2 }, null))).toBeNull();
     expect(announcementFor(decode(JSON.stringify({ type: "sync", seq: 0, ...fixture })))).toBeNull();
+  });
+});
+
+describe("what the live region keeps", () => {
+  it("is a whole round of the largest table: the start, every bid, the questions, every card, every trick and the scores", () => {
+    const seats = 6;
+    const cards = 8;
+    const round = 1 + seats + 1 + cards + seats * cards + cards + 1;
+    expect(round).toBe(73);
+    expect(KEPT).toBeGreaterThanOrEqual(round);
   });
 });

@@ -513,7 +513,7 @@
     {
       "context": "cardname",
       "source": "spades",
-      "translation": "pică"
+      "translation": "inimă neagră"
     },
     {
       "context": "cardname",
@@ -552,18 +552,18 @@
     },
     {
       "context": "announce",
-      "source": "%1 bids %2",
-      "translation": "%1 licitează %2"
+      "source": "%1 bid %2",
+      "translation": "%1 a licitat %2"
     },
     {
       "context": "announce",
-      "source": "You play %1",
-      "translation": "Joci %1"
+      "source": "You played %1",
+      "translation": "Ai pus %1"
     },
     {
       "context": "announce",
-      "source": "%1 plays %2",
-      "translation": "%1 joacă %2"
+      "source": "%1 played %2",
+      "translation": "%1 a pus %2"
     },
     {
       "context": "announce",
@@ -583,82 +583,105 @@
     {
       "context": "cardname",
       "source": "%1, playable",
-      "translation": "%1, jucabilă"
+      "translation": "%1, se poate juca"
     },
     {
       "context": "cardname",
       "source": "%1, not playable",
-      "translation": "%1, nejucabilă"
-    },
-    {
-      "context": "cardname",
-      "source": "the 2",
-      "translation": "doiul"
-    },
-    {
-      "context": "cardname",
-      "source": "the 3",
-      "translation": "treiul"
-    },
-    {
-      "context": "cardname",
-      "source": "the 4",
-      "translation": "patrul"
-    },
-    {
-      "context": "cardname",
-      "source": "the 5",
-      "translation": "cincul"
-    },
-    {
-      "context": "cardname",
-      "source": "the 6",
-      "translation": "șasele"
-    },
-    {
-      "context": "cardname",
-      "source": "the 7",
-      "translation": "șaptele"
-    },
-    {
-      "context": "cardname",
-      "source": "the 8",
-      "translation": "optul"
-    },
-    {
-      "context": "cardname",
-      "source": "the 9",
-      "translation": "nouarul"
-    },
-    {
-      "context": "cardname",
-      "source": "the 10",
-      "translation": "decarul"
-    },
-    {
-      "context": "cardname",
-      "source": "the jack",
-      "translation": "valetul"
-    },
-    {
-      "context": "cardname",
-      "source": "the queen",
-      "translation": "dama"
-    },
-    {
-      "context": "cardname",
-      "source": "the king",
-      "translation": "popa"
-    },
-    {
-      "context": "cardname",
-      "source": "the ace",
-      "translation": "asul"
+      "translation": "%1, nu se poate juca"
     },
     {
       "context": "announce",
       "source": "Trump: %1",
       "translation": "Atu: %1"
+    },
+    {
+      "context": "cardname",
+      "source": "2",
+      "comment": "a rank, in a card's name",
+      "translation": "doi"
+    },
+    {
+      "context": "cardname",
+      "source": "3",
+      "comment": "a rank, in a card's name",
+      "translation": "trei"
+    },
+    {
+      "context": "cardname",
+      "source": "4",
+      "comment": "a rank, in a card's name",
+      "translation": "patru"
+    },
+    {
+      "context": "cardname",
+      "source": "5",
+      "comment": "a rank, in a card's name",
+      "translation": "cinci"
+    },
+    {
+      "context": "cardname",
+      "source": "6",
+      "comment": "a rank, in a card's name",
+      "translation": "șase"
+    },
+    {
+      "context": "cardname",
+      "source": "7",
+      "comment": "a rank, in a card's name",
+      "translation": "șapte"
+    },
+    {
+      "context": "cardname",
+      "source": "8",
+      "comment": "a rank, in a card's name",
+      "translation": "opt"
+    },
+    {
+      "context": "cardname",
+      "source": "9",
+      "comment": "a rank, in a card's name",
+      "translation": "nouă"
+    },
+    {
+      "context": "cardname",
+      "source": "10",
+      "comment": "a rank, in a card's name",
+      "translation": "zece"
+    },
+    {
+      "context": "cardname",
+      "source": "jack",
+      "comment": "a rank, in a card's name",
+      "translation": "valet"
+    },
+    {
+      "context": "cardname",
+      "source": "queen",
+      "comment": "a rank, in a card's name",
+      "translation": "damă"
+    },
+    {
+      "context": "cardname",
+      "source": "king",
+      "comment": "a rank, in a card's name",
+      "translation": "popă"
+    },
+    {
+      "context": "cardname",
+      "source": "ace",
+      "comment": "a rank, in a card's name",
+      "translation": "as"
+    },
+    {
+      "context": "cardname",
+      "source": "the %1 of %2",
+      "translation": "%1 de %2"
+    },
+    {
+      "context": "cardname",
+      "source": "%1: %2",
+      "translation": "%1: %2"
     }
   ]
 }

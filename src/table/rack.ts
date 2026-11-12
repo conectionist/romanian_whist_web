@@ -1,5 +1,6 @@
 import { cardBackUrl, cardUrl } from "../assets/assets";
 import { el, setSrc, stamp } from "../dom/el";
+import { t } from "../i18n/t";
 import type { Card } from "../net/protocol";
 import type { SeatView } from "../play/model";
 import {
@@ -26,6 +27,8 @@ export interface Shown {
   // The cards face up, left to right in the rack's frame, where the seat's hand can be seen: a
   // Forehead round. Empty otherwise, and every card is a back.
   faces: Card[];
+  // Whose hand it is, which a face is named with.
+  owner: string;
 }
 
 // A seat's rack. The snapshot fills a seat's hand only where the viewer may see it, so a non-empty
@@ -34,13 +37,13 @@ export interface Shown {
 export function shownFor(seat: SeatView): Shown {
   if (seat.hand.length > 0) {
     const faces = seat.hand.map((entry) => entry.card);
-    return { count: faces.length, faces };
+    return { count: faces.length, faces, owner: seat.name };
   }
-  return { count: Math.min(seat.cardsLeft, MOST_CARDS), faces: [] };
+  return { count: Math.min(seat.cardsLeft, MOST_CARDS), faces: [], owner: seat.name };
 }
 
 export function sameShown(a: Shown, b: Shown): boolean {
-  return a.count === b.count && a.faces.length === b.faces.length && a.faces.every((card, index) => card === b.faces[index]);
+  return a.count === b.count && a.owner === b.owner && a.faces.length === b.faces.length && a.faces.every((card, index) => card === b.faces[index]);
 }
 
 // One opponent's hand, standing in a wooden rack on the rim. The frame has its origin on the rim,
@@ -51,7 +54,7 @@ export class RackView {
   private readonly row: HTMLElement;
   private readonly rail: HTMLElement;
   private readonly cards: { element: HTMLElement; picture: HTMLImageElement }[] = [];
-  private shown: Shown = { count: 0, faces: [] };
+  private shown: Shown = { count: 0, faces: [], owner: "" };
   private angle: number | null = null;
 
   constructor() {
@@ -93,8 +96,8 @@ export class RackView {
       }
       const face = shown.faces[index];
       setSrc(card.picture, face === undefined ? cardBackUrl : cardUrl(face));
-      // A card seen in a Forehead round is named; a back has nothing to say.
-      card.picture.alt = face === undefined ? "" : cardNameFor(face);
+      // A card seen in a Forehead round is named, with whose it is; a back has nothing to say.
+      card.picture.alt = face === undefined ? "" : t("cardname", "%1: %2", [shown.owner, cardNameFor(face)]);
       card.element.classList.toggle("face", face !== undefined);
       const matrix = cssMatrix3d(scaledSource(cardTransform(shown.count, index), SOURCE_SCALE));
       card.element.style.transform = matrix;

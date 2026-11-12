@@ -104,7 +104,16 @@ export class BidStrip {
   }
 
   private paintSelection(): void {
-    this.buttons.forEach((button, bet) => button.classList.toggle("selected", bet === this.selected && !button.disabled && !button.hidden));
+    this.buttons.forEach((button, bet) => {
+      const offered = !button.disabled && !button.hidden;
+      button.classList.toggle("selected", bet === this.selected && offered);
+      // A bid that is offered is a button that is pressed when it is the pick, which a screen reader says.
+      if (offered) {
+        button.setAttribute("aria-pressed", String(bet === this.selected));
+      } else {
+        button.removeAttribute("aria-pressed");
+      }
+    });
   }
 
   private button(bet: number): HTMLButtonElement {

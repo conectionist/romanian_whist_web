@@ -44,6 +44,9 @@ test.describe("the table's keys", () => {
     await page.keyboard.press("ArrowRight");
     await expect(strip.locator(".opt.selected")).toHaveText("0");
     await expect(strip.locator(".opt.selected")).toBeFocused();
+    // The pick is said to a screen reader as a pressed button, the others as not pressed.
+    await expect(strip.locator('.opt[aria-pressed="true"]')).toHaveText("0");
+    await expect(strip.locator('.opt[aria-pressed="false"]').first()).toHaveText("1");
     await page.keyboard.press("ArrowRight");
     await expect(strip.locator(".opt.selected")).toHaveText("1");
     await page.keyboard.press("ArrowLeft");
@@ -58,8 +61,10 @@ test.describe("the table's keys", () => {
     await expect(page.locator(".hand .hcard.playable").first()).toBeVisible();
     const card = page.locator(".hand .hcard.playable").first();
     // The picked card is raised and named, and nothing is played until Enter.
+    await expect(card).toHaveAttribute("aria-pressed", "false");
     await page.keyboard.press("ArrowRight");
     await expect(card).toHaveClass(/selected/);
+    await expect(card).toHaveAttribute("aria-pressed", "true");
     await expect(card).toHaveAccessibleName(/, playable$/);
     expect(await card.locator(".face").evaluate((face) => getComputedStyle(face).transform)).toBe("matrix(1, 0, 0, 1, 0, -30)");
     await expect(page.locator(".trick .card:not([hidden])")).toHaveCount(0);

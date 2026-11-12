@@ -46,6 +46,9 @@ interface Slot {
   playable: boolean;
 }
 
+// How long after a press is let go its click can still come, in milliseconds.
+const RELEASE_GRACE = 400;
+
 // How a card was pressed: by the pointer that pressed it, or "keyboard" for Enter and Space.
 export type Pointer = "mouse" | "pen" | "touch" | "keyboard";
 
@@ -92,7 +95,14 @@ export class HandView {
   // or else the first that can be played, so the fan is a single stop and not eight.
   private paintSelection(entry: Slot): void {
     const element = entry.view.element;
-    element.classList.toggle("selected", entry.playable && entry.slot === this.selected);
+    const picked = entry.playable && entry.slot === this.selected;
+    element.classList.toggle("selected", picked);
+    // A card that can be played is a button that is pressed when it is the pick, which a screen reader says.
+    if (entry.playable) {
+      element.setAttribute("aria-pressed", String(picked));
+    } else {
+      element.removeAttribute("aria-pressed");
+    }
     element.tabIndex = entry.playable && entry.slot === (this.selected ?? this.firstPlayable()) ? 0 : -1;
   }
 
@@ -120,6 +130,17 @@ export class HandView {
       view.element.addEventListener("pointerdown", (event) => {
         pressing = true;
         pointer = event.pointerType === "touch" || event.pointerType === "pen" ? event.pointerType : "mouse";
+        // A press let go somewhere else has no click on the card, and must not make a later bare
+        // activation a mouse's. A press let go on it has its click within a moment, which is not waited past.
+        document.addEventListener(
+          "pointerup",
+          () =>
+            setTimeout(() => {
+              pointer = "keyboard";
+              pressing = false;
+            }, RELEASE_GRACE),
+          { once: true, capture: true },
+        );
       });
       view.element.addEventListener("click", () => {
         const how = pointer;
@@ -195,6 +216,7 @@ export class HandView {
     entry.playable = false;
     entry.view.hide();
     entry.view.element.classList.remove("playable", "illegal", "selected");
+    entry.view.element.removeAttribute("aria-pressed");
     entry.view.element.setAttribute("aria-disabled", "true");
     entry.view.element.tabIndex = -1;
   }

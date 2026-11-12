@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { setLanguage } from "../../src/i18n/language";
 import { seededRandom } from "../../src/lobby/catalogue";
 import { DEFAULT_TURN_TIMER, TURN_TIMERS, defaultTable, tableError, tableSettingsFor, timerLabel, withSeats } from "../../src/lobby/online";
+
+afterEach(() => setLanguage("en"));
 
 const host = { name: "Hana", gender: "female" as const, avatar: "woman-long-red-hair" };
 
@@ -75,5 +78,16 @@ describe("how long a turn may take", () => {
 
   it("is said in seconds under a minute and in minutes above it", () => {
     expect(TURN_TIMERS.map(timerLabel)).toEqual(["No timer", "10 seconds", "30 seconds", "1 minute", "2 minutes", "5 minutes"]);
+  });
+
+  it("is a singular for one second, in English", () => {
+    expect(timerLabel(1000)).toBe("1 second");
+  });
+
+  it("is said with the form of Romanian that its number takes", () => {
+    setLanguage("ro");
+    expect(TURN_TIMERS.map(timerLabel)).toEqual(["Fără limită", "10 secunde", "30 de secunde", "1 minut", "2 minute", "5 minute"]);
+    expect(timerLabel(20000)).toBe("20 de secunde");
+    expect(timerLabel(1000)).toBe("1 secundă");
   });
 });

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { setLanguage } from "../../src/i18n/language";
 import { connectionText, errorText, presenceNews, waitingText } from "../../src/lobby/notices";
 import type { ErrorCode } from "../../src/net/protocol";
 import { decode } from "../../src/net/decode";
@@ -12,6 +13,8 @@ function table(name: string) {
   const { type: _type, seq: _seq, ...state } = decoded;
   return state;
 }
+
+afterEach(() => setLanguage("en"));
 
 describe("the server's refusals in words", () => {
   const codes: ErrorCode[] = ["badMessage", "version", "notFound", "tableFull", "nameTaken", "notHost", "notYourTurn", "stalePrompt", "illegal", "rateLimited", "draining", "openElsewhere"];
@@ -90,6 +93,27 @@ describe("who went away, was replaced or came back", () => {
     expect(presenceNews(away, replaced)).toEqual(["Bogdan was replaced by a computer player."]);
     expect(presenceNews(replaced, here)).toEqual(["Bogdan is back."]);
     expect(presenceNews(away, here)).toEqual(["Bogdan is back."]);
+  });
+
+  it("tells it in Romanian as the person's gender agrees it, a man and a woman", () => {
+    setLanguage("ro");
+    expect(presenceNews(here, away)).toEqual(["Bogdan a plecat."]);
+    expect(presenceNews(replaced, here)).toEqual(["Bogdan s-a întors."]);
+    expect(presenceNews(away, replaced)).toEqual(["Bogdan a fost înlocuit de un bot."]);
+    const woman = (state: typeof replaced) => ({
+      ...state,
+      seats: state.seats.map((seat, index) => (index === 1 && seat.kind === "human" ? { ...seat, gender: "female" as const } : seat)),
+    });
+    expect(presenceNews(woman(away), woman(replaced))).toEqual(["Bogdan a fost înlocuită de un bot."]);
+    expect(presenceNews(woman(here), woman(away))).toEqual(["Bogdan a plecat."]);
+  });
+
+  it("says a man's replacement the same in English as a woman's", () => {
+    const woman = (state: typeof replaced) => ({
+      ...state,
+      seats: state.seats.map((seat, index) => (index === 1 && seat.kind === "human" ? { ...seat, gender: "female" as const } : seat)),
+    });
+    expect(presenceNews(woman(away), woman(replaced))).toEqual(["Bogdan was replaced by a computer player."]);
   });
 
   it("tells of a person who left the lobby, and not of one who moved to another seat", () => {

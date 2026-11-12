@@ -72,7 +72,7 @@ class SeatRow {
     if (seat.kind === "computer" && seat.level !== null) {
       tags.push(levelName(seat.level));
     }
-    const presence = presenceText(seat.presence);
+    const presence = presenceText(seat.presence, seat.gender);
     if (presence !== "") {
       tags.push(presence);
     }

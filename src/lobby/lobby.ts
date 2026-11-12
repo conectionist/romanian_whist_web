@@ -1,3 +1,4 @@
+import { translateGendered, type Gendered } from "../i18n/person";
 import { t } from "../i18n/t";
 import type { ClientMessage, Gender, Level, Presence, Settings, TableSeat, TableState } from "../net/protocol";
 import { setSeat, updateSettings } from "../net/send";
@@ -113,12 +114,25 @@ export function fewestSeats(view: LobbyView): number {
   return Math.max(MIN_SEATS, last + 1);
 }
 
-export function presenceText(presence: Presence | null): string {
+// A person who has gone away, or whose seat a computer player holds, named as the person is: Romanian
+// says "plecat" of a man and "plecată" of a woman.
+const AWAY: Gendered = {
+  male: { source: "Away", comment: "about a man" },
+  female: { source: "Away", comment: "about a woman" },
+};
+
+const REPLACED: Gendered = {
+  male: { source: "Replaced", comment: "about a man" },
+  female: { source: "Replaced", comment: "about a woman" },
+};
+
+// A seat that is nobody's, or whose person is not known, is a man's.
+export function presenceText(presence: Presence | null, gender: Gender | null = "male"): string {
   switch (presence) {
     case "away":
-      return t("online", "Away");
+      return translateGendered("online", AWAY, gender ?? "male");
     case "replaced":
-      return t("online", "Replaced");
+      return translateGendered("online", REPLACED, gender ?? "male");
     default:
       return "";
   }

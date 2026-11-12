@@ -110,6 +110,38 @@ export function drawName(
   }
 }
 
+// What a portrait shows, in words, for the ones a person may choose among; any other is its id.
+export function faceName(id: string): string {
+  switch (id) {
+    case "man-black-hair-beard":
+      return t("lobby", "Man with black hair and a beard");
+    case "man-black-tee":
+      return t("lobby", "Man in a black T-shirt");
+    case "man-dark-hair-beard":
+      return t("lobby", "Man with dark hair and a beard");
+    case "man-hat-mustache":
+      return t("lobby", "Man in a hat, with a mustache");
+    case "man-short-hair":
+      return t("lobby", "Man with short hair");
+    case "man-stubble":
+      return t("lobby", "Man with stubble");
+    case "man-white-hair-hat":
+      return t("lobby", "Man with white hair and a hat");
+    case "woman-long-brown-hair":
+      return t("lobby", "Woman with long brown hair");
+    case "woman-long-dark-hair":
+      return t("lobby", "Woman with long dark hair");
+    case "woman-long-red-hair":
+      return t("lobby", "Woman with long red hair");
+    case "woman-shoulder-hair":
+      return t("lobby", "Woman with shoulder-length hair");
+    case "woman-wavy-black-hair":
+      return t("lobby", "Woman with wavy black hair");
+    default:
+      return id.replace(/-/g, " ");
+  }
+}
+
 function suitsFace(avatar: Avatar, who: Gender): boolean {
   return avatar.gender === null || avatar.gender === who;
 }

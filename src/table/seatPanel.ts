@@ -79,6 +79,7 @@ export class SeatPanel {
   private readonly chip: HTMLElement;
   private readonly ring: SVGRectElement;
   private presence: SeatView["presence"] = null;
+  private gender: SeatView["gender"] = "male";
   private counting = false;
 
   constructor() {
@@ -122,6 +123,7 @@ export class SeatPanel {
     setAttr(this.pill, "data-state", pill.state);
 
     this.presence = seat.presence;
+    this.gender = seat.gender;
     this.paintPresence();
 
     this.element.classList.toggle("active", state.active);
@@ -135,7 +137,7 @@ export class SeatPanel {
     if (this.counting) {
       return;
     }
-    const presence = presenceText(this.presence);
+    const presence = presenceText(this.presence, this.gender);
     this.chip.hidden = presence === "";
     setText(this.chip, presence);
     setAttr(this.chip, "data-state", this.presence);

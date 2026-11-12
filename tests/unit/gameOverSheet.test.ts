@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { setLanguage } from "../../src/i18n/language";
 import type { Standing } from "../../src/net/protocol";
 import { failureFields, fieldsFor, resultFor, resultFromSnapshot, standingsFor, winnerAnnouncement } from "../../src/sheets/gameOverSheet";
 import type { Cell } from "../../src/sheets/parts";
@@ -8,7 +9,23 @@ function standing(seat: number, name: string, score: number, place = 1): Standin
   return { seat, name, score, place };
 }
 
+afterEach(() => setLanguage("en"));
+
 describe("the announcement of who won", () => {
+  it("says a point in the singular, in English", () => {
+    expect(winnerAnnouncement([standing(0, "Ana", 1)])).toBe("Ana wins with 1 point.");
+    expect(winnerAnnouncement([standing(0, "Ana", 1), standing(1, "Bogdan", 1)])).toBe("Ana and Bogdan tie for first with 1 point.");
+  });
+
+  it("says the points with the form of Romanian that the score takes, and the names joined in its words", () => {
+    setLanguage("ro");
+    expect(winnerAnnouncement([standing(0, "Ana", 1)])).toBe("Ana câștigă cu 1 punct.");
+    expect(winnerAnnouncement([standing(0, "Ana", 12)])).toBe("Ana câștigă cu 12 puncte.");
+    expect(winnerAnnouncement([standing(0, "Ana", 47)])).toBe("Ana câștigă cu 47 de puncte.");
+    expect(winnerAnnouncement([standing(0, "Ana", 47), standing(1, "Bogdan", 47)])).toBe("Ana și Bogdan sunt la egalitate pe primul loc, cu 47 de puncte.");
+    expect(winnerAnnouncement([standing(0, "Ana", -3)])).toBe("Ana câștigă cu scorul -3.");
+  });
+
   it("names one winner with their points", () => {
     expect(winnerAnnouncement([standing(2, "Cristi", 47)])).toBe("Cristi wins with 47 points.");
   });

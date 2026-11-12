@@ -31,10 +31,10 @@ export function timerLabel(ms: number): string {
   }
   const seconds = ms / 1000;
   if (seconds < 60) {
-    return t("lobby", "%1 seconds", [seconds]);
+    return t("lobby", "%n seconds", [], { n: seconds, one: "%n second" });
   }
   const minutes = seconds / 60;
-  return minutes === 1 ? t("lobby", "1 minute") : t("lobby", "%1 minutes", [minutes]);
+  return t("lobby", "%n minutes", [], { n: minutes, one: "%n minute" });
 }
 
 function computerAt(index: number, taken: string[], random: Random): OtherSeat {

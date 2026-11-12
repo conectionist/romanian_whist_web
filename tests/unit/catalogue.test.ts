@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { assignFaces, avatarCatalogue, drawName, facesFor, nameCatalogue, seededRandom, suits, type Avatar, type NameEntry } from "../../src/lobby/catalogue";
+import { afterEach, describe, expect, it } from "vitest";
+import { setLanguage } from "../../src/i18n/language";
+import { assignFaces, avatarCatalogue, drawName, faceName, facesFor, nameCatalogue, seededRandom, suits, type Avatar, type NameEntry } from "../../src/lobby/catalogue";
 import { LEVELS } from "../../src/net/protocol";
 
 const names = nameCatalogue();
@@ -134,5 +135,39 @@ describe("faces for a table", () => {
     const given = assignFaces([{ gender: "male", strategy: "" }, { gender: "female", strategy: "" }, { gender: "male", strategy: "" }], [one, neutral], seededRandom(2));
     expect(given[1]).toBe("any");
     expect(new Set([given[0], given[2]]).size).toBe(2);
+  });
+});
+
+describe("what a portrait is called", () => {
+  afterEach(() => setLanguage("en"));
+
+  const chosen = [...facesFor("male"), ...facesFor("female")];
+
+  it("is a description for each of the faces a person may choose, and not its file name", () => {
+    expect(chosen).toHaveLength(12);
+    for (const id of chosen) {
+      expect(faceName(id), id).not.toBe(id.replace(/-/g, " "));
+      expect(faceName(id).length, id).toBeGreaterThan(10);
+    }
+    expect(new Set(chosen.map(faceName)).size).toBe(chosen.length);
+  });
+
+  it("is a man or a woman as the face is", () => {
+    for (const id of facesFor("male")) {
+      expect(faceName(id), id).toMatch(/^Man /);
+    }
+    for (const id of facesFor("female")) {
+      expect(faceName(id), id).toMatch(/^Woman /);
+    }
+  });
+
+  it("is in Romanian when the page is, and the id with spaces for a face it has no words for", () => {
+    setLanguage("ro");
+    expect(faceName("man-stubble")).toBe("Bărbat cu barba nerasă");
+    expect(faceName("woman-wavy-black-hair")).toBe("Femeie cu păr negru ondulat");
+    expect(faceName("cyborg-man-bald")).toBe("cyborg man bald");
+    for (const id of chosen) {
+      expect(faceName(id), id).toMatch(/^(Bărbat|Femeie) /);
+    }
   });
 });

@@ -77,6 +77,8 @@ describe("the defaults in Romanian", () => {
 });
 
 describe("the levels", () => {
+  afterEach(() => setLanguage("en"));
+
   it("are named as the desktop names them", () => {
     expect(levelName("reckoner-alpha")).toBe("Reckoner (Alpha)");
     expect(levelName("first-card")).toBe("First card");
@@ -84,12 +86,8 @@ describe("the levels", () => {
 
   it("are named as the desktop names them in Romanian", () => {
     setLanguage("ro");
-    try {
-      expect(levelName("reckoner-alpha")).toBe("Socotitor (Alfa)");
-      expect(levelName("first-card")).toBe("Prima carte");
-    } finally {
-      setLanguage("en");
-    }
+    expect(levelName("reckoner-alpha")).toBe("Socotitor (Alfa)");
+    expect(levelName("first-card")).toBe("Prima carte");
   });
 });
 

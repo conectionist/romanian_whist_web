@@ -186,10 +186,26 @@ describe("Continue", () => {
 });
 
 describe("the ways on from the end of a game", () => {
-  it("send startGame for Play again", () => {
+  it("open New Game for a solo game's Play again, as the desktop does, and send nothing yet", () => {
     const { flow, sent } = setup("sheet-game-over");
     flow.playAgain();
+    expect(flow.shown()).toBe("new-game");
+    expect(sent.messages).toEqual([]);
+    // Cancel puts the results back.
+    flow.closeMenu();
+    expect(flow.shown()).toBe("game-over");
+  });
+
+  it("go back to an online table from its results, where the host starts the next game", () => {
+    const { flow, sent, receive } = setup("sheet-game-over", online("finished"));
+    expect(flow.shown()).toBe("game-over");
+    flow.playAgain();
+    expect(flow.shown()).toBe("lobby");
+    expect(sent.messages).toEqual([]);
+    flow.startGame();
     expect(sent.messages).toEqual([{ type: "startGame" }]);
+    receive(message({ type: "game", game: 2, event: { kind: "gameStarted" }, snapshot: serverFixture("game.gameStarted").snapshot }, 4));
+    expect(flow.ui.backAtTable).toBe(false);
   });
 
   it("send leaveTable for Main menu, and show nothing for the table that is being left", () => {
@@ -293,7 +309,7 @@ describe("the settings", () => {
     expect(none.sent.messages).toEqual([]);
   });
 
-  it("reach a solo table that has just ended, so Play again starts the next game at the new speed", () => {
+  it("reach a solo table that has just ended, and the next New Game", () => {
     const { flow, sent } = setup("sheet-game-over");
     flow.changeSettings({ botSpeed: 1, waitAfterRound: true, pace: "normal" });
     expect(types(sent.messages)).toEqual(["updateSettings"]);
@@ -301,7 +317,7 @@ describe("the settings", () => {
 });
 
 // A table of the screenshot tool's, made an online one in its lobby or its game.
-function online(state: "lobby" | "playing", change: (sync: any) => void = () => undefined) {
+function online(state: "lobby" | "playing" | "finished", change: (sync: any) => void = () => undefined) {
   return (sync: any) => {
     sync.table.mode = "online";
     sync.table.state = state;
@@ -495,6 +511,29 @@ describe("Play online", () => {
   });
 });
 
+describe("an online table between games", () => {
+  it("shows the lobby, not another game's results, to someone who sat down after it", () => {
+    // A sync of a finished table to a newcomer holds no game.
+    const { flow } = setup("sheet-pause", online("finished", (sync) => {
+      sync.snapshot = null;
+      sync.history = [];
+      sync.lastTrick = null;
+    }));
+    expect(flow.shown()).toBe("lobby");
+  });
+
+  it("is left from its results with leaveTable, and Exit over its lobby offers to leave", () => {
+    const { flow, sent } = setup("sheet-game-over", online("finished"));
+    flow.playAgain();
+    flow.exit();
+    expect(flow.shown()).toBe("leave");
+    flow.resume();
+    expect(flow.shown()).toBe("lobby");
+    flow.mainMenu();
+    expect(types(sent.messages)).toEqual(["leaveTable"]);
+  });
+});
+
 describe("an online table's lobby", () => {
   it("is shown while the game has not started, and Exit offers Leave table over it", () => {
     const { flow, sent } = setup("sheet-pause", online("lobby"));
@@ -522,7 +561,7 @@ describe("an online table's lobby", () => {
     flow.changeTurnTimer(10000);
     flow.changeOptions({ structure: "8-1-8", foreheadAndHidden: false, allOneCardForehead: true, botSpeed: 3, waitAfterRound: true });
     flow.fillSeats("low-risk");
-    flow.playAgain();
+    flow.startGame();
     expect(types(sent.messages)).toEqual(["takeSeat", "setSeat", "updateSettings", "updateSettings", "updateSettings", "updateSettings", "setSeat", "setSeat", "startGame"]);
     expect(sent.messages[1]).toEqual({ type: "setSeat", seat: 4, kind: "computer", level: "cyborg" });
     expect(sent.messages[4]).toMatchObject({ settings: { turnTimer: 10000 } });

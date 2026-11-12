@@ -121,6 +121,7 @@ export class Flow {
       case "game":
         if (message.event.kind === "gameStarted") {
           this.continued = null;
+          this.ui = { ...this.ui, backAtTable: false };
         }
         break;
       default:
@@ -146,6 +147,9 @@ export class Flow {
     }
     if (!this.ui.pauseMenu) {
       this.afterLeave = null;
+    }
+    if (this.ui.backAtTable && !atTable(this.state)) {
+      this.ui = { ...this.ui, backAtTable: false };
     }
     this.hold();
   }
@@ -217,7 +221,18 @@ export class Flow {
     }
   }
 
+  // From the results. A solo game's Play again opens New Game on the setup just played, as the
+  // desktop's does; an online table's goes back to the table, where the host starts the next.
   playAgain(): void {
+    if (isOnline(this.state)) {
+      this.ask({ ...this.ui, backAtTable: true });
+    } else {
+      this.openMenu("new-game");
+    }
+  }
+
+  // The host's Start in the lobby.
+  startGame(): void {
     this.deps.send({ type: "startGame" });
   }
 

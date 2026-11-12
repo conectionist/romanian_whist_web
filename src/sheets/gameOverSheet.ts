@@ -140,8 +140,11 @@ export class GameOverSheet implements Sheet {
     this.playAgain.onClick(handlers.playAgain);
   }
 
-  // A guest at an online table does not start the next game.
-  update(fields: GameOverFields, options: { canPlayAgain: boolean } = { canPlayAgain: true }): void {
+  // At an online table the ways on are the table's: back to it, where the next game is started, or
+  // out of it.
+  update(fields: GameOverFields, options: { online: boolean } = { online: false }): void {
+    this.mainMenu.setLabel(options.online ? t("online", "Leave table") : t("GameOverPanel", "Main menu"));
+    this.playAgain.setLabel(options.online ? t("online", "Back to the table") : t("GameOverPanel", "Play again"));
     setText(this.title, fields.title);
     setText(this.announcement, fields.announcement);
     this.table.element.hidden = fields.table === null;
@@ -149,7 +152,7 @@ export class GameOverSheet implements Sheet {
       this.table.update(fields.table);
     }
     // The green one is last, and on the failure face it is Main menu: Round history, then Main menu.
-    const showPlayAgain = !fields.failed && options.canPlayAgain;
+    const showPlayAgain = !fields.failed || options.online;
     this.playAgain.element.hidden = !showPlayAgain;
     this.mainMenu.setKind(showPlayAgain ? "quiet" : "primary");
     if (this.arranged !== showPlayAgain) {

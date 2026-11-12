@@ -36,8 +36,8 @@ describe("which sheet is up", () => {
 
   it("puts the pause menu under a sheet from the menu bar", () => {
     const { state } = storeFor("sheet-pause");
-    expect(sheetFor(state, { menu: "rules", pauseMenu: true, joinCode: null })).toBe("rules");
-    expect(sheetFor(state, { menu: null, pauseMenu: true, joinCode: null })).toBe("pause");
+    expect(sheetFor(state, { menu: "rules", pauseMenu: true, joinCode: null, backAtTable: false })).toBe("rules");
+    expect(sheetFor(state, { menu: null, pauseMenu: true, joinCode: null, backAtTable: false })).toBe("pause");
   });
 
   it("is never the pause menu over a round sheet that holds the game: that sheet has its own way on", () => {

@@ -173,6 +173,41 @@ test.describe("with nothing moving", () => {
     await bob.context.close();
   });
 
+  test("a table whose game ended with a seat left is a lobby again: the host fills the seat and starts a second game", async ({ page: alice, browser }) => {
+    test.setTimeout(180_000);
+    const problems: string[] = [];
+    alice.on("pageerror", (error) => problems.push(error.message));
+    const code = await createTable(alice, "Alice", { seats: 2, others: ["open"], speed: "fastest" });
+    const bob = await joinByLink(browser, code, "Bob");
+    await sheet(alice, "lobby").locator('[data-action="start"]').click();
+    await expect(bob.page.locator(".seat:not([hidden])")).toHaveCount(2);
+
+    // Bob leaves the game, and a computer player plays his seat to the end.
+    await bob.page.locator('[data-menu="exit"]').click();
+    await sheet(bob.page, "leave").getByRole("button", { name: "Leave table" }).click();
+    await expect(bob.page.locator("body")).toHaveAttribute("data-status", "at no table");
+    const over = sheet(alice, "game-over");
+    await playUntil([alice], async () => (await over.count()) > 0, 600);
+
+    // The results come first, with the table's ways on.
+    await expect(over.locator(".sheet-title")).toHaveText("Final results");
+    await expect(over.getByRole("button", { name: "Leave table" })).toBeVisible();
+    await over.getByRole("button", { name: "Back to the table" }).click();
+
+    // Bob's seat is open again, so the game cannot start until it is filled.
+    const lobby = sheet(alice, "lobby");
+    await expect(lobby.locator(".lobby-seat[data-kind='open']")).toHaveCount(1);
+    await expect(lobby.locator('[data-action="start"]')).toBeDisabled();
+    await lobby.locator('[data-action="fill"]').click();
+    await expect(lobby.locator('[data-action="start"]')).toBeEnabled();
+    await lobby.locator('[data-action="start"]').click();
+    await expect(lobby).toHaveCount(0);
+    await expect(over).toHaveCount(0);
+    await expect(alice.locator(".score-round")).toHaveText(/^Round 1 of \d+$/);
+    expect(problems).toEqual([]);
+    await bob.context.close();
+  });
+
   test("a player who drops is waited for, then replaced by a computer player, and is given the seat back on return", async ({ page: alice, browser }) => {
     // The wait is the turn timer, at its shortest.
     test.setTimeout(120_000);

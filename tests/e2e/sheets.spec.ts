@@ -237,7 +237,7 @@ test.describe("pause", () => {
 });
 
 test.describe("the end of a game", () => {
-  test("shows the standings with the winner starred, Play again deals the next game and Main menu leaves", async ({ page }) => {
+  test("shows the standings with the winner starred, Play again opens New Game for the next and Main menu leaves", async ({ page }) => {
     test.setTimeout(120_000);
     const problems: string[] = [];
     page.on("pageerror", (error) => problems.push(error.message));
@@ -270,9 +270,16 @@ test.describe("the end of a game", () => {
     await expect(over).toBeVisible();
     expect((await column(page, "game-over", 4, 1)).map((cell) => cell.text).sort()).toEqual(["Ana", "Player"]);
 
+    // As the desktop's, Play again opens New Game, and Cancel puts the results back.
     await over.getByRole("button", { name: "Play again" }).click();
+    const game = sheet(page, "new-game");
+    await expect(game).toBeVisible();
+    await game.getByRole("button", { name: "Cancel" }).click();
+    await expect(over).toBeVisible();
+    await over.getByRole("button", { name: "Play again" }).click();
+    await game.getByRole("button", { name: "Deal" }).click();
     await expect(anySheet(page)).toHaveCount(0);
-    await expect(page.locator(".score-round")).toHaveText("Round 1 of 20");
+    await expect(page.locator(".score-round")).toHaveText(/^Round 1 of \d+$/);
     await waitForTurn(page);
 
     // Esc, then Main menu: the table is left and nothing is shown for it.

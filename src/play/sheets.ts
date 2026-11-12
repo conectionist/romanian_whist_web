@@ -18,9 +18,11 @@ export interface UiState {
   pauseMenu: boolean;
   // The table the address names, which the person has not yet joined.
   joinCode: string | null;
+  // Whether the person has gone back to an online table from its game's results.
+  backAtTable: boolean;
 }
 
-export const NOTHING_ASKED: UiState = { menu: null, pauseMenu: false, joinCode: null };
+export const NOTHING_ASKED: UiState = { menu: null, pauseMenu: false, joinCode: null, backAtTable: false };
 
 export function atTable(state: Pick<StoreState, "table">): boolean {
   return state.table !== null;
@@ -34,9 +36,18 @@ export function isOnline(state: Pick<StoreState, "table">): boolean {
   return state.table?.mode === "online";
 }
 
-// An online table before its game starts.
+// An online table between games: before its first, and again once one is over.
 export function inLobby(state: Pick<StoreState, "table">): boolean {
-  return isOnline(state) && state.table?.state === "lobby";
+  return isOnline(state) && (state.table?.state === "lobby" || state.table?.state === "finished");
+}
+
+// Whether the lobby is what a table between games shows. After a game its results come first, for
+// those who have them: someone who sat down since was sent no game.
+function lobbyShown(state: StoreState, ui: UiState): boolean {
+  if (state.table?.state === "lobby" || ui.backAtTable) {
+    return true;
+  }
+  return state.snapshot === null && state.result === null && !state.stopped;
 }
 
 // Whether the game at the table has ended, by what the server said or what the snapshot shows. A
@@ -88,7 +99,7 @@ export function sheetFor(state: StoreState, ui: UiState): SheetName | null {
   if (!atTable(state)) {
     return ui.joinCode === null ? null : "online";
   }
-  if (inLobby(state)) {
+  if (inLobby(state) && (ui.pauseMenu || lobbyShown(state, ui))) {
     return ui.pauseMenu ? "leave" : "lobby";
   }
   if (ui.pauseMenu && isOnline(state) && canLeave(state)) {

@@ -139,7 +139,7 @@ const sheets = new Sheets(
     replacement: (level) => flow.changeReplacement(level),
     turnTimer: (ms) => flow.changeTurnTimer(ms),
     fill: (level) => flow.fillSeats(level),
-    start: () => flow.playAgain(),
+    start: () => flow.startGame(),
     leave: () => flow.mainMenu(),
   },
   { setup: () => remembered, profile: () => profile, pace: storedPace },

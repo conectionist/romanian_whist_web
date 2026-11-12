@@ -1,5 +1,4 @@
 import { CreateTableSheet } from "../lobby/createTableSheet";
-import { youSeatOf } from "../lobby/lobby";
 import { LobbySheet, type LobbyActions } from "../lobby/lobbySheet";
 import { NewGameSheet } from "../lobby/newGameSheet";
 import type { TableSetup } from "../lobby/online";
@@ -172,9 +171,7 @@ export class Sheets {
       case "game-over": {
         const result = resultFor(state);
         const failed = state.stopped || result === null || state.snapshot?.status === "stopped";
-        // A guest at an online table does not start the next game: only the host's Play again would be heard.
-        const host = state.table !== null && youSeatOf(state.table) === state.table.host;
-        this.gameOver.update(failed ? failureFields() : gameOverFields(result), { canPlayAgain: !isOnline(state) || host });
+        this.gameOver.update(failed ? failureFields() : gameOverFields(result), { online: isOnline(state) });
         break;
       }
       case "rules":

@@ -1,4 +1,4 @@
-import { centre, handTop, type Placement, type Point, type Size } from "../space";
+import { centre, handTop, type Placement, type Point, type Rect, type Size } from "../space";
 
 // The fan's shape, ported from the desktop's src/table/HandItem.cpp. The cards step this far apart,
 // and the fan is never wider than the second number: a hand of eight 155-wide cards would be 743
@@ -34,6 +34,29 @@ export function cardPlacement(count: number, slot: number, card: Size): Placemen
   const hinge = { x: left + card.w / 2, y: top + HINGE_DEPTH * card.h };
 
   return { x: hinge.x + arm * Math.sin(radians), y: hinge.y - arm * Math.cos(radians), rotation: degrees };
+}
+
+// The most cards a hand holds.
+export const MOST_IN_HAND = 8;
+
+// The room the fan takes with all the cards a hand holds, drawn scaled about a point: the box round
+// every card, turned as it is.
+export function fanBounds(card: Size, scale: number, origin: Point): Rect {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let slot = 0; slot < MOST_IN_HAND; slot++) {
+    const place = scaledAbout(cardPlacement(MOST_IN_HAND, slot, card), scale, origin);
+    const turn = (place.rotation * Math.PI) / 180;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const x = (sx * card.w * scale) / 2;
+      const y = (sy * card.h * scale) / 2;
+      xs.push(place.x + x * Math.cos(turn) - y * Math.sin(turn));
+      ys.push(place.y + x * Math.sin(turn) + y * Math.cos(turn));
+    }
+  }
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  return { x: left, y: top, w: Math.max(...xs) - left, h: Math.max(...ys) - top };
 }
 
 // Where a card rests when the whole fan is drawn scaled about a point, as the stylesheet does on a touch

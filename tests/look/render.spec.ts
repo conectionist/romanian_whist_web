@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { panelRect } from "../../src/table/geometry/seats";
+import { measure, panelsOn } from "./panels";
 
 test("a second state keeps the panels and racks and changes what they show", async ({ page }) => {
   const problems: string[] = [];
@@ -421,3 +423,83 @@ for (const [width, height] of [
     });
   });
 }
+
+// The other players' name panels on a phone held sideways: drawn as large as the room round the table
+// allows up to 0.55 of their size, which a name needs to be read, and on nothing. Each table size has
+// the smallest it reaches in each window, in the pixels of the name's text height; the table's own size
+// drew it 7.1 and 6.5 high.
+const PHONES: { width: number; height: number; smallest: Record<string, number> }[] = [
+  { width: 844, height: 390, smallest: { "table-2-players": 15.5, "table-3-players": 15.5, "table-4-players": 15.5, "table-5-players": 13.5, "table-6-players": 13.5, bidding: 13.5, "table-6-players-full-hand": 13.5 } },
+  { width: 740, height: 360, smallest: { "table-2-players": 15.5, "table-3-players": 15.5, "table-4-players": 14.5, "table-5-players": 11.5, "table-6-players": 11.5, bidding: 11.5, "table-6-players-full-hand": 11.5 } },
+];
+
+for (const { width, height, smallest } of PHONES) {
+  test.describe(`the other players' panels in a window of ${width} by ${height} under a finger`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    for (const [shot, least] of Object.entries(smallest)) {
+      test(`${shot}: their names are at least ${least} high, and the panels are on nothing`, async ({ page }) => {
+        await page.goto(`/look.html?shot=${shot}`);
+        await page.waitForSelector("body[data-ready]");
+        const table = await measure(page);
+        const others = Object.entries(table.names).filter(([seat]) => seat !== "0");
+        expect(others.length).toBeGreaterThan(0);
+        for (const [seat, high] of others) {
+          expect(high, `seat ${seat}`).toBeGreaterThanOrEqual(least);
+          // The table's own size would be drawn at this scale: the panels are never drawn smaller.
+          expect(table.seats[seat] * table.scale, `seat ${seat}`).toBeGreaterThanOrEqual(table.scale);
+        }
+        expect(panelsOn(table.drawn)).toEqual([]);
+      });
+    }
+
+    test("a table of fewer seats and a window of another size draw them again, as a fresh page would", async ({ page }) => {
+      await page.goto("/look.html?shot=table-6-players&then=table-3-players");
+      await page.waitForSelector("body[data-ready]");
+      const later = await measure(page);
+      expect(panelsOn(later.drawn)).toEqual([]);
+      await page.goto("/look.html?shot=table-3-players");
+      await page.waitForSelector("body[data-ready]");
+      const fresh = await measure(page);
+      expect(later.seats["1"]).toBeCloseTo(fresh.seats["1"], 3);
+    });
+  });
+}
+
+test.describe("the other players' panels when the window changes under a finger", () => {
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+
+  test("are laid out again for the new size, as a page opened at it lays them out", async ({ page }) => {
+    await page.goto("/look.html?shot=table-6-players");
+    await page.waitForSelector("body[data-ready]");
+    const before = await measure(page);
+    await page.setViewportSize({ width: 740, height: 360 });
+    await expect.poll(async () => (await measure(page)).scale).not.toBeCloseTo(before.scale, 3);
+    const after = await measure(page);
+    expect(panelsOn(after.drawn)).toEqual([]);
+    await page.goto("/look.html?shot=table-6-players");
+    await page.waitForSelector("body[data-ready]");
+    const fresh = await measure(page);
+    expect(after.seats["1"]).toBeCloseTo(fresh.seats["1"], 3);
+    expect(after.names["1"]).toBeCloseTo(fresh.names["1"], 1);
+  });
+});
+
+test.describe("the other players' panels under a mouse", () => {
+  test.use({ hasTouch: false, isMobile: false });
+
+  for (const { width, height } of [...PHONES, { width: 1920, height: 1080 }]) {
+    test(`are the table's own size, at the places it has for them, in a window of ${width} by ${height}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await page.goto("/look.html?shot=table-6-players");
+      await page.waitForSelector("body[data-ready]");
+      const table = await measure(page);
+      for (const seat of [0, 1, 2, 3, 4, 5]) {
+        expect(table.seats[String(seat)]).toBe(1);
+        const at = (await page.locator(`.seat[data-seat="${seat}"]`).evaluate((node) => ({ x: parseFloat((node as HTMLElement).style.left), y: parseFloat((node as HTMLElement).style.top) })));
+        const own = panelRect(6, 0, seat)!;
+        expect(at).toEqual({ x: own.x, y: own.y });
+      }
+    });
+  }
+});

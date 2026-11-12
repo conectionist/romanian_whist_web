@@ -4,8 +4,8 @@ import type { HandView as HandModel } from "../play/model";
 import { CardView } from "./card";
 import { handLabelFor } from "./names";
 import { sizeForHeight } from "./cards";
-import { cardPlacement, scaledAbout } from "./geometry/hand";
-import { handCardHeight, type Placement, type Point } from "./space";
+import { cardPlacement, fanBounds as fanBoundsOf, scaledAbout } from "./geometry/hand";
+import { handCardHeight, type Placement, type Point, type Rect } from "./space";
 
 // Whether a click on this slot plays its card: the one rule for the mouse and for the keys, which
 // share it. Only on your turn, from the prompt, and a back is always playable: both blind rounds
@@ -205,6 +205,12 @@ export class HandView {
     if (entry !== undefined) {
       this.retire(entry);
     }
+  }
+
+  // The room the fan takes with all the cards a hand holds, as it is drawn now.
+  fanBounds(): Rect {
+    const { scale, origin } = this.drawnScale();
+    return fanBoundsOf(sizeForHeight(handCardHeight), scale, origin);
   }
 
   // The fan's scale and the point it is scaled about, as the stylesheet draws it: 1 under a mouse, and on a

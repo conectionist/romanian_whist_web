@@ -5,7 +5,7 @@ import { presenceText } from "../lobby/lobby";
 import { seatLabelFor } from "./names";
 import type { SeatView } from "../play/model";
 import type { Rect } from "./space";
-import { z } from "./space";
+import { panelSize, z } from "./space";
 
 // How a seat's pill reads: nothing judged while bids are still coming in, then on target, owing
 // tricks or over.
@@ -104,11 +104,13 @@ export class SeatPanel {
     stamp(this.element);
   }
 
-  // Draws the seat at its panel. Yours is under the others, and over your hand.
+  // Draws the seat at its panel, larger than the table's own size if the panel is. Yours is under the
+  // others, and over your hand.
   update(seat: SeatView, panel: Rect, state: { active: boolean; biddingOpen: boolean; human: boolean }): void {
     const style = this.element.style;
     style.left = `${panel.x}px`;
     style.top = `${panel.y}px`;
+    style.scale = panel.w === panelSize.w ? "" : String(panel.w / panelSize.w);
     style.zIndex = String(state.human ? z.humanPanel : z.panels);
 
     const line = nameLineFor(seat, state.active);

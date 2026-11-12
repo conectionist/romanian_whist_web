@@ -32,7 +32,7 @@ const folders = [...server.map((name) => [name, SERVER] as const), ...own.map((n
 test("every look fixture is rendered", () => {
   expect(server).toHaveLength(9);
   expect(own).toEqual(
-    expect.arrayContaining(["menu", "language", "sheet-round", "sheet-history", "sheet-last-trick", "sheet-game-over", "sheet-rules", "sheet-settings", "sheet-pause"]),
+    expect.arrayContaining(["menu", "language", "sheet-round", "sheet-history", "sheet-last-trick", "sheet-game-over", "sheet-rules", "sheet-settings", "sheet-pause", "table-2-players", "table-6-players-full-hand"]),
   );
   // A name in both folders would be one picture drawn twice.
   expect(own.filter((name) => server.includes(name))).toEqual([]);

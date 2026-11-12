@@ -282,7 +282,10 @@ tool prints the size of a first load against its budget of 2 MiB.
   a tap anywhere else puts the pick down; a mouse plays at once, and a tap on a bid bids. A touch screen
   gets no double-tap zoom, no callout and no selection. Where the pointer is coarse the bid strip and
   the hand are drawn larger on a small window, so that a bid is 44 pixels from the next and a card of the
-  fan 32, and the corner panels are drawn no smaller than half; the look is the mouse's everywhere else.
+  fan 32, and the corner panels are drawn no smaller than half; the other players' name panels are drawn
+  at 0.55 of their size where the room round the table has it, at 740 by 360 with six players at 0.41, and
+  stand clear of each other, the racks, the corner panels, the bid strip and the fan; the look is the
+  mouse's everywhere else.
 - **Small windows.** The page works down to 740 by 360: the main menu draws smaller to fit, a sheet taller
   than the window scrolls and opens at its top, and the table is fitted as always. A phone held upright is
   told to turn it.

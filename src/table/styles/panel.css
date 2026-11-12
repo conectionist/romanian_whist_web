@@ -25,6 +25,8 @@
 .seat {
   width: 259px;
   height: 118px;
+  /* A panel drawn larger stands from its top-left corner, where its place puts it. */
+  transform-origin: 0 0;
   display: flex;
   align-items: center;
   gap: 12px;

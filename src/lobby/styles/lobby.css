@@ -256,10 +256,9 @@ select.field option {
   outline: none;
 }
 
-/* The language dialog, src/ui/LanguageDialog.cpp: the room over the whole page, and in it a box of the
-   desktop dialog's 560 by 420, shown smaller where the window is. The plaque is at 1.4 of the table's
-   logo, its top 32 down; the buttons are 160 by 112, 248 down and 32 apart, each with its name 12
-   under it. */
+/* The language dialog, src/ui/LanguageDialog.cpp: the room covers the page and the desktop's 560 by
+   420 sits in it, smaller where the window is. Its measures are the desktop's: the plaque at 1.4, 32
+   down; buttons 160 by 112, 248 down and 32 apart; each name 12 under its button. */
 .lang-page {
   position: fixed;
   inset: 0;
@@ -277,9 +276,9 @@ select.field option {
   transform: translate(-50%, -50%) scale(var(--lang-fit, 1));
 }
 
-/* The desktop lays its picture of the plaque on whole pixels, which puts the plaque a fraction of a
-   pixel right and down of where the arithmetic says. A translation moves it by less than a pixel,
-   where a position would be rounded to one; the lettering and ornaments settle by their own fraction. */
+/* The desktop lays its picture of the plaque on whole pixels, which puts it a fraction of a pixel right
+   and down of the arithmetic. A translation moves it by less than a pixel, where a position would be
+   rounded to one; the lettering and ornaments settle by their own fraction. */
 .lang-logo {
   --plaque-scale: 1.26;
   --letters-drop: 0.8px;

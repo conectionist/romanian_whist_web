@@ -1,10 +1,9 @@
 import { svg } from "../dom/el";
 import type { Language } from "../i18n/language";
 
-// The flag the language dialog shows for a language, src/ui/LanguageDialog.cpp paintFlag(): Romania's
-// tricolour for Romanian and the Union Flag for English, both on a 120 by 80 box with a hairline
-// round it so the yellow and the white keep an edge on the panel. A flag is the same in every
-// scheme, so its colours are written here and not taken from the theme.
+// The flags of src/ui/LanguageDialog.cpp paintFlag(), on a 120 by 80 box with a hairline round it so
+// the yellow and the white keep an edge on the panel. A flag is the same in every scheme, so its
+// colours are written here and not taken from the theme.
 export const FLAG_WIDTH = 120;
 export const FLAG_HEIGHT = 80;
 

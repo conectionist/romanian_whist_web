@@ -11,11 +11,9 @@ export interface TranslateOptions {
   one?: string;
 }
 
-// Mirrors Qt's translate() and multi-argument arg(): the language's catalogue is asked for the
-// source in its context, and a source it has no entry for is shown as it is. One pass over the
-// text, so an argument that holds "%2" is never substituted again. The arguments go to the
-// placeholders of the source, lowest-numbered first, so a translation may reorder them or leave one
-// out.
+// Mirrors Qt's translate(): a source the language's catalogue has no entry for is shown as it is.
+// One pass over the text, so an argument that holds "%2" is never substituted again. The arguments
+// go to the source's placeholders, lowest-numbered first, so a translation may reorder or drop one.
 export function t(
   context: string,
   source: string,

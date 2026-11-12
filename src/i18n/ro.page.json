@@ -584,6 +584,11 @@
       "context": "announce",
       "source": "%1: %2, total %3.",
       "translation": "%1: %2, total %3."
+    },
+    {
+      "context": "hint",
+      "source": "Turn your phone sideways: the table needs the room.",
+      "translation": "Ține telefonul pe orizontală: masa are nevoie de loc."
     }
   ]
 }

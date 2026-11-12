@@ -15,6 +15,7 @@ import { NO_CHANGE, Store } from "./play/store";
 import { Announcer } from "./dom/announcer";
 import { el } from "./dom/el";
 import { holdNote } from "./sheets/roundSheet";
+import { rotateHint } from "./table/rotateHint";
 import { seatingOf } from "./sheets/seating";
 import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
@@ -219,7 +220,7 @@ keyboard.install();
 const announcer = new Announcer();
 
 const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage });
-frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element);
+frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element, rotateHint());
 
 scene.onHistory(() => flow.openMenu("history"));
 scene.onLastTrick(() => flow.openMenu("last-trick"));

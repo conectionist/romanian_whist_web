@@ -263,6 +263,28 @@ The cards, the portraits and the table's textures become WebP, the fonts WOFF2 (
 licence), and the catalogues are copied. The card back is `public/cards/back.svg`, drawn by hand. The
 tool prints the size of a first load against its budget of 2 MiB.
 
+## Keyboard, screen readers and touch
+
+- **Keys.** At the table, `0` to `8` bid while the strip asks (the struck-out bid's digit is ignored),
+  and `1` to `8` play that card of the hand, counted from the left, if a click on it would. Only bare
+  digits, the keypad's too, and never a held key. Left and Right pick a card that can be played, or a
+  bid, and Enter takes the pick; it is raised as the cursor raises a card. Space lets a held round
+  go, Esc raises the pause menu or closes a sheet, and Alt+N, Alt+S, Alt+R and Alt+X are New Game,
+  Settings, Rules and Exit. No key acts while a sheet holds the table, nor while the language dialog is
+  over the page, nor in a text field. Tab reaches every control, the hand being one stop, and the
+  focus is always drawn.
+- **Screen readers.** Each card of the hand and each name panel has a name ("Queen of spades, can be
+  played"; "Ana, Taken/Bid: 1/2, to move"). A polite live region says each bid, card, trick taken, round
+  scored and the game's end, in the page's language, and nothing else.
+- **Touch.** A first tap on a card picks it, as a key does, and a second tap on the same card plays it;
+  a tap anywhere else puts the pick down; a mouse plays at once, and a tap on a bid bids. A touch screen
+  gets no double-tap zoom, no callout and no selection. Where the pointer is coarse the bid strip and
+  the hand are drawn larger on a small window, so that a bid is 44 pixels from the next and a card of the
+  fan 32, and the corner panels are drawn no smaller than half; the look is the mouse's everywhere else.
+- **Small windows.** The page works down to 740 by 360: the main menu draws smaller to fit, a sheet taller
+  than the window scrolls and opens at its top, and the table is fitted as always. A phone held upright is
+  told to turn it.
+
 ## The Romanian
 
 The desktop's translation is imported by `tools/import_ts.py` into `src/i18n/ro.desktop.json`, with

@@ -40,7 +40,20 @@ body,
   .corner-buttons .btn::after {
     content: "";
     position: absolute;
-    inset: min(0px, calc(76px - 44px / var(--s))) min(0px, calc((190px - 44px / var(--s)) / 2)) 0;
+    inset: min(0px, calc(76px - 44px / var(--corner))) min(0px, calc((190px - 44px / var(--corner)) / 2)) 0;
+  }
+
+  /* The corner panels are drawn at a tenth of their size on a phone, and are read at that: not
+     smaller than half, which is what a line of their text needs to be read, and a button's text is
+     as large. */
+  .trickpanel,
+  .score {
+    transform: scale(max(calc(var(--hud-scale) * var(--s)), 0.55));
+  }
+
+  .corner-buttons {
+    --corner: max(var(--s), 0.5);
+    transform: scale(var(--corner));
   }
 
   .field {
@@ -55,5 +68,27 @@ body,
   .notice-btn,
   .menu-lang {
     min-height: 44px;
+  }
+}
+
+/* A phone held upright: a hint at the foot of the window, where the table, which is fitted to the
+   width, leaves room. It is no more than a hint, and takes no touch. */
+.rotate-hint {
+  display: none;
+}
+
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 700px) {
+  .rotate-hint {
+    display: block;
+    left: 16px;
+    right: 16px;
+    bottom: 24px;
+    z-index: 88;
+    padding: 14px 18px;
+    font-family: var(--f-head);
+    font-size: 19px;
+    line-height: 1.3;
+    text-align: center;
+    pointer-events: none;
   }
 }

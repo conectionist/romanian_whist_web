@@ -164,6 +164,32 @@ select.field option {
   margin: auto;
 }
 
+/* The plaque and the two buttons are 462 tall, and a landscape phone leaves the page 344: drawn smaller
+   in steps until they, and the margin to the bar, fit. */
+@media (max-height: 523px) {
+  .menu-column {
+    zoom: 0.85;
+  }
+}
+
+@media (max-height: 453px) {
+  .menu-column {
+    zoom: 0.7;
+  }
+}
+
+@media (max-height: 384px) {
+  .menu-column {
+    zoom: 0.62;
+  }
+}
+
+@media (max-height: 347px) {
+  .menu-column {
+    zoom: 0.52;
+  }
+}
+
 /* The plaque is drawn at 0.9 of its 270 by 142 frame, and at twice that here. */
 .menu-logo {
   position: relative;

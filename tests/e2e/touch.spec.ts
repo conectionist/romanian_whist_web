@@ -94,6 +94,49 @@ test("a whole solo game is played by taps on a phone held sideways, from the fir
   expect(problems).toEqual([]);
 });
 
+// The smallest windows the page is asked to work in: a phone held sideways, and a smaller one.
+for (const [width, height] of [
+  [844, 390],
+  [740, 360],
+]) {
+  test.describe(`a window of ${width} by ${height}`, () => {
+    test.use({ viewport: { width, height } });
+
+    test("the main menu, New Game and Deal, and Play online, Create and the lobby's Fill and Start, are all within a tap's reach", async ({ page }) => {
+      await page.goto("/");
+      await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+      // Nothing of the main menu is cut off at the top or the foot, whatever its size.
+      const fits = await page.evaluate(() => {
+        const bar = document.querySelector(".menu-band")!.getBoundingClientRect().bottom;
+        const logo = document.querySelector(".menu-logo")!.getBoundingClientRect();
+        const last = document.querySelector('[data-menu-page="online"]')!.getBoundingClientRect();
+        return { top: logo.top >= bar, foot: last.bottom <= window.innerHeight, across: document.documentElement.scrollWidth <= window.innerWidth };
+      });
+      expect(fits).toEqual({ top: true, foot: true, across: true });
+
+      await page.locator('[data-menu-page="new-game"]').tap();
+      await expect(sheet(page, "new-game")).toBeVisible();
+      // A sheet taller than the window opens at its top, and its Deal is reached by scrolling to it.
+      expect(await sheet(page, "new-game").evaluate((node) => node.scrollTop)).toBe(0);
+      await sheet(page, "new-game").locator('[data-action="cancel"]').tap();
+      await expect(sheet(page, "new-game")).toHaveCount(0);
+
+      await page.locator('[data-menu-page="online"]').tap();
+      await expect(sheet(page, "online")).toBeVisible();
+      await sheet(page, "online").locator('input[name="profileName"]').fill("Maria");
+      await sheet(page, "online").locator('[data-action="create"]').tap();
+      await sheet(page, "create-table").locator('[data-action="create"]').tap();
+      const lobby = sheet(page, "lobby");
+      await expect(lobby).toBeVisible();
+      await lobby.locator('[data-action="fill"]').tap();
+      await lobby.locator('[data-action="start"]:not(:disabled)').tap();
+      await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+      await page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable").first().waitFor();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  });
+}
+
 test("a bid is 44 pixels from the next one under a finger, and a corner button is 44 tall", async ({ page }) => {
   await page.goto("/?solo=3&seed=7&speed=4");
   await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
@@ -132,4 +175,43 @@ test("the table asks for no zoom and no callout, and selects nothing, whatever i
   });
   expect(styles.action).toBe("manipulation");
   expect(styles.select).toBe("none");
+});
+
+test.describe("a phone held upright", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("is asked to turn it, in the page's language, and is not when it is turned", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    const hint = page.locator(".rotate-hint");
+    await expect(hint).toBeVisible();
+    await expect(hint).toHaveText("Turn your phone sideways: the table needs the room.");
+    // It does not stand in the way of a touch, nor over the table.
+    expect(await hint.evaluate((node) => getComputedStyle(node).pointerEvents)).toBe("none");
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(hint).toBeHidden();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(hint).toBeVisible();
+
+    await page.goto("/?lang=ro");
+    await expect(page.locator(".rotate-hint")).toHaveText("Ține telefonul pe orizontală: masa are nevoie de loc.");
+  });
+
+  test("is asked at a table too, below it", async ({ page }) => {
+    await page.goto("/?solo=3&seed=7&speed=4");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+    const hint = (await page.locator(".rotate-hint").boundingBox())!;
+    const felt = (await page.locator(".wood").boundingBox())!;
+    expect(hint.y).toBeGreaterThan(felt.y + felt.height);
+  });
+});
+
+test.describe("a narrow upright window with a mouse", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: false, isMobile: false });
+
+  test("is not asked to turn anything", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await expect(page.locator(".rotate-hint")).toBeHidden();
+  });
 });

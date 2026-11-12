@@ -1,0 +1,96 @@
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  LANGUAGE_KEY,
+  LANGUAGES,
+  NATIVE_NAMES,
+  currentLanguage,
+  languageFromCode,
+  languageFromSearch,
+  setLanguage,
+  storeLanguage,
+  storedLanguage,
+  withoutLanguage,
+} from "../../src/i18n/language";
+
+afterEach(() => setLanguage("en"));
+
+describe("the language a code names", () => {
+  it("reads en and ro, in any case, with or without a country", () => {
+    for (const code of ["ro", "RO", "ro_RO", "ro-RO", " ro ", "Ro-md"]) {
+      expect(languageFromCode(code), code).toBe("ro");
+    }
+    for (const code of ["en", "EN", "en-GB", "en_US"]) {
+      expect(languageFromCode(code), code).toBe("en");
+    }
+  });
+
+  it("takes anything else for none", () => {
+    for (const code of ["", "  ", "fr", "rom", "ron", "english", "r", "ro,en", "en;ro", "xx-ro", null, undefined]) {
+      expect(languageFromCode(code), String(code)).toBeNull();
+    }
+  });
+
+  it("reads ?lang= from an address", () => {
+    expect(languageFromSearch("?lang=ro")).toBe("ro");
+    expect(languageFromSearch("?solo=4&lang=en&seed=1")).toBe("en");
+    expect(languageFromSearch("?lang=fr")).toBeNull();
+    expect(languageFromSearch("?solo=4")).toBeNull();
+    expect(languageFromSearch("")).toBeNull();
+  });
+
+  it("offers Romanian first, each named in itself", () => {
+    expect(LANGUAGES).toEqual(["ro", "en"]);
+    expect(NATIVE_NAMES).toEqual({ ro: "Română", en: "English" });
+  });
+});
+
+describe("the language the page runs in", () => {
+  it("is English until it is set", () => {
+    expect(currentLanguage()).toBe("en");
+    setLanguage("ro");
+    expect(currentLanguage()).toBe("ro");
+  });
+
+  it("is removed from an address the page reloads at, and the rest of it stays", () => {
+    expect(withoutLanguage("https://example.org/?lang=ro")).toBe("https://example.org/");
+    expect(withoutLanguage("https://example.org/t/K7QM4P?lang=en&x=1")).toBe("https://example.org/t/K7QM4P?x=1");
+    expect(withoutLanguage("https://example.org/t/K7QM4P")).toBe("https://example.org/t/K7QM4P");
+  });
+});
+
+describe("the choice kept in the browser", () => {
+  function memory(initial: Record<string, string> = {}) {
+    const kept = new Map(Object.entries(initial));
+    return { kept, getItem: (key: string) => kept.get(key) ?? null, setItem: (key: string, value: string) => void kept.set(key, value) };
+  }
+
+  it("is read back as it was stored", () => {
+    const storage = memory();
+    expect(storedLanguage(storage)).toBeNull();
+    storeLanguage("ro", storage);
+    expect(storage.kept.get(LANGUAGE_KEY)).toBe("ro");
+    expect(storedLanguage(storage)).toBe("ro");
+    storeLanguage("en", storage);
+    expect(storedLanguage(storage)).toBe("en");
+  });
+
+  it("is none when what was stored is not a language", () => {
+    expect(storedLanguage(memory({ [LANGUAGE_KEY]: "klingon" }))).toBeNull();
+    expect(storedLanguage(memory({ [LANGUAGE_KEY]: "" }))).toBeNull();
+  });
+
+  it("is none, and storing it changes nothing, where storage is refused or missing", () => {
+    const refusing = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("blocked");
+      },
+    };
+    expect(storedLanguage(refusing)).toBeNull();
+    expect(() => storeLanguage("ro", refusing)).not.toThrow();
+    expect(storedLanguage(null)).toBeNull();
+    expect(() => storeLanguage("ro", null)).not.toThrow();
+  });
+});

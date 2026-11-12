@@ -4,12 +4,18 @@ The browser page for Romanian Whist: solo games against computer players, and on
 game is played on [the Romanian Whist server](https://github.com/conectionist/romanian_whist_server),
 which is a submodule here, in `libs/romanian_whist_server`.
 
-**Status:** the table page. It draws the table from what the server sends, in the desktop client's
-look, and plays a solo game: `/?solo=4` starts one against the computer players. `&seed=42` fixes the
-deal, `&speed=0` to `4` sets how fast they move (2 is the desktop's default, 4 is instant, and then
-their cards do not fly), and `&forehead=all` makes every one-card round a Forehead round, which the
-first deal then is. The sheets, the menus, the lobby and Romanian are not built yet.
-[`docs/page-plan.md`](docs/page-plan.md) is the plan for them.
+**Status:** the table, the sheets, the menus and the online lobby. It draws the table from what the
+server sends, in the desktop client's look. The main menu opens on New Game, with the desktop's
+fields, bounds and defaults, and on Play online, which makes a table or joins one by its code or its
+link (`/t/` and the code), waits in a lobby, and plays it. The round, history, last trick, game over,
+rules, settings and pause sheets are the desktop's. Romanian is not built yet.
+[`docs/page-plan.md`](docs/page-plan.md) is the plan for it.
+
+For a game the tests and a look at the page can start without the menu, `/?solo=4` starts a solo game
+against the computer players. `&seed=42` fixes the deal, `&speed=0` to `4` sets how fast they move (2 is
+the desktop's default, 4 is instant, and then their cards do not fly), `&forehead=all` makes every
+one-card round a Forehead round, which the first deal then is, and `&wait=1` holds the table after
+each round until you continue.
 
 ## Deploy with Docker (recommended)
 
@@ -157,7 +163,14 @@ Then, from this repository's root, after `npm run build`:
 libs/romanian_whist_server/build/server/app/whist_server --config server.json
 ```
 
-and open http://127.0.0.1:8080/?solo=4. `server.json` points the server at `dist/`.
+and open http://127.0.0.1:8080/, which shows the main menu, or http://127.0.0.1:8080/?solo=4 for a game
+at once. `server.json` points the server at `dist/`.
+
+**An online table on one machine.** Choose Play online, give a name, and Create a table: its lobby shows
+the link, `/t/` and the table's code. Open that link in a private window, or another browser: a page
+is one member by its token, kept in the browser, so a second tab of the same browser takes the table
+from the first (the first is told so). Say who you are there and Join, fill any other seat with a
+computer player from the host's lobby, and Start game.
 
 While working on the page, `npm run dev` serves it on port 5173 and passes `/ws` through to the
 server on port 8080, so an edit shows without a build.
@@ -189,9 +202,12 @@ nice -n 19 npm run e2e -- --workers=1       # the page against the server, in Ch
 nice -n 19 npm run look -- --workers=1      # the look captures, below
 ```
 
-The unit tests read the server's protocol fixtures, so they need the submodule. The end-to-end tests
-start the server built in the submodule, or the one `WHIST_SERVER` names, and play a solo game through
-the page. They need Playwright's Chromium once: `npx playwright install chromium`.
+The unit tests read the server's protocol fixtures, so they need the submodule. They test the pages'
+decisions as pure functions: what a sheet shows, what a click sends, a lobby's seats, a New Game's
+names and validation. The end-to-end tests start the server built in the submodule, or the one
+`WHIST_SERVER` names, and play through the page: solo games, the sheets, New Game, and online tables
+played by three browsers at once, each in a context of its own. They need Playwright's Chromium once:
+`npx playwright install chromium`.
 
 With the stack above running, one more test loads the page under the image's content-security-policy
 and starts a solo game, and fails on a violation, a script error, a failed request or an error answer:
@@ -205,16 +221,22 @@ WHIST_URL=http://127.0.0.1:8000 npx playwright test --config playwright.docker.c
 The page must look like the desktop client, which decides every difference. Two things make that
 checkable without a server:
 
-- `npm run look` builds `look.html` into `dist-look/` (never shipped) and renders each of the
-  server's look fixtures, `libs/romanian_whist_server/protocol/look/*.json`, at the desktop picture's
-  own size, into `build/shots/web/<name>.png`. Nine captures: `table-3-players` to `table-6-players`,
-  `bidding`, `table-empty` and `hand-1-card`, `hand-4-cards` and `hand-8-cards`.
+- `npm run look` builds `look.html` into `dist-look/` (never shipped) and renders each look fixture
+  at the desktop picture's own size, into `build/shots/web/<name>.png`. The server's, in
+  `libs/romanian_whist_server/protocol/look/*.json`, are nine captures: `table-3-players` to
+  `table-6-players`, `bidding`, `table-empty` and `hand-1-card`, `hand-4-cards` and `hand-8-cards`.
+  The page's own, in `tests/look/fixtures/*.json`, are the seven sheets over a table and the main
+  menu. The desktop's tool builds those by hand, so `tools/sheet_fixtures.py` does too, from its
+  numbers; run it again after changing one, and commit what it writes.
 - `npm run compare` pairs each capture with the desktop's picture of the same name, which its
   screenshot tool writes (`WHIST_SHOTS_DIR=build/shots/web-reference ./build/tests/desktop_tests
-  "[.screenshot]"` in the desktop's checkout). Put those nine pictures in `build/shots/desktop/`;
+  "[.screenshot]"` in the desktop's checkout). Put those pictures in `build/shots/desktop/`;
   without them it says so and writes nothing. It writes, into `build/shots/compare/`,
   `compare-<name>.png` (the page on the left, the desktop on the right), `diff-<name>.png`, a
   `compare-hand-*-closeup.png` for each hand, and prints each pair's mean absolute difference.
+- `python3 tools/measure_shots.py` says, for each sheet, how many pixels each of its parts sits from
+  the desktop's. The spacings in `src/sheets/styles/sheet.css` are numbers taken that way, and the
+  tool takes them again after a change of a face, a size or a sheet.
 
 Everything under `build/`, `dist-look/` and `test-results/` is git-ignored.
 

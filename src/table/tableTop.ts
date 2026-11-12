@@ -44,7 +44,7 @@ export function letteringScale(side: number, widest: number, lineCount: number):
 
 // One of the two ornaments: strokes over the lettering, waves under it, and a diamond in both. The
 // dots are over the lettering only.
-function ornament(wavy: boolean): SVGSVGElement {
+export function ornament(wavy: boolean): SVGSVGElement {
   const stroke = { "stroke-width": "1.2", stroke: "currentColor" };
   const path = (d: string, fill: string) =>
     svg("path", { attrs: { d, fill, ...stroke, "stroke-linejoin": "miter", "stroke-miterlimit": "4" } });

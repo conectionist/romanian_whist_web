@@ -4,7 +4,9 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const LOOK = join(ROOT, "libs/romanian_whist_server/protocol/look");
+// The server's fixtures, which are real games, and the page's own, which are built by hand.
+const SERVER = join(ROOT, "libs/romanian_whist_server/protocol/look");
+const OWN = join(ROOT, "tests/look/fixtures");
 const OUT = join(ROOT, "build/shots/web");
 
 interface Shot {
@@ -15,17 +17,28 @@ interface Shot {
   raised?: string;
 }
 
-const names = readdirSync(LOOK)
-  .filter((file) => file.endsWith(".json"))
-  .map((file) => file.replace(/\.json$/, ""));
+function namesIn(directory: string): string[] {
+  return readdirSync(directory)
+    .filter((file) => file.endsWith(".json"))
+    .map((file) => file.replace(/\.json$/, ""));
+}
+
+const server = namesIn(SERVER);
+const own = namesIn(OWN);
+const folders = [...server.map((name) => [name, SERVER] as const), ...own.map((name) => [name, OWN] as const)];
 
 test("every look fixture is rendered", () => {
-  expect(names).toHaveLength(9);
+  expect(server).toHaveLength(9);
+  expect(own).toEqual(
+    expect.arrayContaining(["menu", "sheet-round", "sheet-history", "sheet-last-trick", "sheet-game-over", "sheet-rules", "sheet-settings", "sheet-pause"]),
+  );
+  // A name in both folders would be one picture drawn twice.
+  expect(own.filter((name) => server.includes(name))).toEqual([]);
 });
 
-for (const name of names) {
+for (const [name, folder] of folders) {
   test(`renders ${name} at its own size`, async ({ page }) => {
-    const { shot } = JSON.parse(readFileSync(join(LOOK, `${name}.json`), "utf8")) as { shot: Shot };
+    const { shot } = JSON.parse(readFileSync(join(folder, `${name}.json`), "utf8")) as { shot: Shot };
     mkdirSync(OUT, { recursive: true });
 
     const problems: string[] = [];

@@ -63,7 +63,10 @@
   font-weight: 500;
 }
 
+/* An empty prompt keeps its line, so the panel does not jump: a line of content under the 6 of padding
+   and the 1 of the rule. */
 .tp-prompt {
+  min-height: calc(1.45em + 7px);
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid var(--hud-rule);

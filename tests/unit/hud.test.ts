@@ -177,6 +177,18 @@ describe("the trick panel", () => {
     expect(fields.prompt[0]).toEqual({ text: "Bogdan", elide: true });
   });
 
+  it("says that a computer player is playing for someone it stands in for", () => {
+    const fields = fieldsFor(
+      modelFor("bidding", (state) => {
+        state.snapshot.active = 2;
+        state.prompt = null;
+        const seat = state.table.seats[2];
+        state.table.seats[2] = { kind: "human", name: seat.name, gender: seat.gender, avatar: seat.avatar, presence: "replaced", you: false };
+      }),
+    );
+    expect(textOf(fields.prompt)).toBe("Computer playing for Bogdan");
+  });
+
   it("says Round over and Game over", () => {
     expect(plainFields(fieldsFor(modelFor("table-4-players", (state) => { state.snapshot.phase = "roundScored"; })))).toEqual({
       title: "Round over",

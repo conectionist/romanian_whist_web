@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   BUBBLE_MS,
   BUBBLE_STILL_MS,
@@ -10,6 +10,8 @@ import {
   flightDuration,
   paceAt,
   stopOf,
+  storePace,
+  storedPace,
   sweepDuration,
 } from "../../src/play/motion";
 import { arrivalsFor, sweepWinner, type TrickMemory } from "../../src/table/trick";
@@ -136,5 +138,40 @@ describe("which seats bid", () => {
   it("has nothing to compare with the first time, or at another table", () => {
     expect(newBids(null, { roundNumber: 1, seats: seats([true]) })).toBeNull();
     expect(newBids({ roundNumber: 1, seats: seats([true, true]) }, { roundNumber: 1, seats: seats([true]) })).toBeNull();
+  });
+});
+
+describe("the pace the viewer keeps", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function memory(): Storage {
+    const held = new Map<string, string>();
+    return {
+      getItem: (key: string) => held.get(key) ?? null,
+      setItem: (key: string, value: string) => void held.set(key, value),
+    } as unknown as Storage;
+  }
+
+  it("is read back as it was stored", () => {
+    vi.stubGlobal("window", { localStorage: memory() });
+    expect(storedPace()).toBe("normal");
+    storePace("slow");
+    expect(storedPace()).toBe("slow");
+    storePace("off");
+    expect(storedPace()).toBe("off");
+  });
+
+  it("lasts only until the page closes when the browser refuses to store it", () => {
+    const refusing = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("blocked");
+      },
+    };
+    vi.stubGlobal("window", { localStorage: refusing });
+    expect(() => storePace("quick")).not.toThrow();
+    expect(storedPace()).toBe("normal");
   });
 });

@@ -1,0 +1,10 @@
+{
+  "page": "menu",
+  "shot": {
+    "file": "menu.png",
+    "height": 1080,
+    "view": "window",
+    "width": 1920
+  },
+  "state": null
+}

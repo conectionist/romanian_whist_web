@@ -157,3 +157,52 @@ describe("the store", () => {
     expect(store.state.lastError).toEqual({ code: "illegal" });
   });
 });
+
+describe("how a game ends", () => {
+  it("keeps the standings and the winners from gameOver, and forgets them when a game starts", () => {
+    const store = new Store();
+    store.apply(of("sync", "sync"), 0);
+    expect(store.state.result).toBeNull();
+    store.apply(of("game.gameOver", "game"), 1);
+    expect(store.state.result?.standings.map((row) => [row.place, row.name, row.score])).toEqual([
+      [1, "Bogdan", 40],
+      [2, "Cora", 18],
+      [3, "Ana", -4],
+    ]);
+    expect(store.state.result?.winners.map((row) => row.name)).toEqual(["Bogdan"]);
+    expect(store.state.stopped).toBe(false);
+    store.apply(of("game.gameStarted", "game"), 2);
+    expect(store.state.result).toBeNull();
+  });
+
+  it("forgets them on a sync, which does not carry them", () => {
+    const store = new Store();
+    store.apply(of("game.gameOver", "game"), 1);
+    store.apply(of("sync", "sync"), 2);
+    expect(store.state.result).toBeNull();
+  });
+
+  it("notes that a game stopped, and clears it when the next one starts or on a sync", () => {
+    const store = new Store();
+    store.apply(of("sync", "sync"), 0);
+    store.apply({ ...of("game.gameStopped", "game"), snapshot: null }, 1);
+    expect(store.state.stopped).toBe(true);
+    expect(store.state.result).toBeNull();
+    store.apply(of("game.gameStarted", "game"), 2);
+    expect(store.state.stopped).toBe(false);
+    store.apply({ ...of("game.gameStopped", "game"), snapshot: null }, 3);
+    store.apply(of("sync", "sync"), 4);
+    expect(store.state.stopped).toBe(false);
+  });
+
+  it("drops the whole game when the table closes, and keeps the last error", () => {
+    const store = new Store();
+    store.apply(of("sync", "sync"), 0);
+    store.apply(of("error", "error"), 1);
+    store.apply({ ...of("tableState", "tableState"), state: "closed" }, 2);
+    expect(store.state.table).toBeNull();
+    expect(store.state.snapshot).toBeNull();
+    expect(store.state.history).toEqual([]);
+    expect(store.state.lastError).toEqual({ code: "illegal" });
+  });
+});

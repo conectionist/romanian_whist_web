@@ -1,0 +1,505 @@
+/* New Game, the table's lobby and the main menu page: the sheets' look, with its forms. */
+
+.field {
+  box-sizing: border-box;
+  height: 30px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid #654c2b;
+  border-radius: 3px;
+  background: #130d09;
+  font-family: var(--f-body);
+  font-size: 17px;
+  color: var(--cream);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.field:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 1px;
+}
+
+.field:disabled {
+  color: var(--muted);
+  border-color: #4d3d28;
+}
+
+.field.number {
+  width: 72px;
+}
+
+select.field {
+  padding-right: 4px;
+}
+
+select.field option {
+  background: #1a1009;
+  color: var(--cream);
+}
+
+.ng-label {
+  font-size: 17px;
+  color: var(--cream);
+  white-space: nowrap;
+}
+
+.ng-label.off {
+  color: var(--muted);
+}
+
+.ng-who {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.ng-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 16px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.ng-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ng-line .field:first-child:not(.number) {
+  flex: 1 1 auto;
+}
+
+.ng-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ng-opponent {
+  display: grid;
+  grid-template-columns: 2em minmax(0, 1fr) auto auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.ng-head {
+  margin-top: 20px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sheet-head-rule);
+}
+
+.sheet.newgame .check {
+  margin-top: 10px;
+}
+
+.ng-summary {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.ng-speed {
+  margin-top: 12px;
+}
+
+.ng-error {
+  min-height: 21px;
+  margin-top: 14px;
+  font-size: 17px;
+  line-height: 21px;
+  color: var(--bad);
+  white-space: pre-wrap;
+}
+
+/* Radios: a ring, with a dot inside it when chosen. */
+.check.radio .box {
+  border-radius: 50%;
+}
+
+.check.radio input:checked + .box::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 6px;
+  height: 6px;
+  border: 0;
+  border-radius: 50%;
+  background: #e6dcc3;
+  transform: none;
+}
+
+.sheet.newgame .check .box,
+.sheet.newgame .check input,
+.sheet.lobby .check .box,
+.sheet.lobby .check input {
+  flex: none;
+}
+
+/* The main menu page: the room, the plaque and two buttons, in a column centred on the page below
+   the menu bar. */
+.menu-page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--band, 0px);
+  bottom: 0;
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: radial-gradient(ellipse at 50% 42%, var(--room-centre) 0%, var(--room-middle) 58%, var(--room-edge) 100%);
+}
+
+.menu-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto;
+}
+
+/* The plaque is drawn at 0.9 of its 270 by 142 frame, and at twice that here. */
+.menu-logo {
+  position: relative;
+  width: 486px;
+  height: 255.6px;
+  flex: none;
+}
+
+.medal.plaque {
+  left: 50%;
+  top: 50%;
+  width: 270px;
+  height: 142px;
+  border-radius: 14px;
+  transform: translate(-50%, -50%) scale(1.8);
+}
+
+.medal.plaque::before {
+  border-radius: 9px;
+}
+
+/* At twice the size the desktop's lettering sits a pixel lower against its ornaments, which half a
+   pixel of the unscaled plaque is. */
+.medal.plaque .medal-letters {
+  transform: translateY(0.55px);
+}
+
+.medal.plaque .club {
+  position: absolute;
+  top: 50%;
+  font-family: var(--f-body);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--logo-ornament);
+  transform: translateY(-50%);
+}
+
+.medal.plaque .club.left {
+  left: 18.5px;
+}
+
+.medal.plaque .club.right {
+  right: 18.5px;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 40px;
+}
+
+/* Both as wide as the wider, and not stretched to the window. */
+.menu-btn {
+  justify-content: center;
+}
+
+/* Notices: panels in a strip under the menu bar, over the sheets, new to the page. */
+.notices {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--band, 0px) + 10px);
+  transform: translateX(-50%);
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+}
+
+.notice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 18px;
+  font-size: 17px;
+  line-height: 21px;
+  color: var(--cream);
+  pointer-events: auto;
+}
+
+.notice[data-kind="error"] {
+  border-color: var(--bad);
+}
+
+.notice[data-kind="warn"],
+.notice[data-kind="wait"] {
+  border-color: var(--warn);
+}
+
+.notice-btn {
+  padding: 3px 12px;
+  border: 1px solid var(--button-border);
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--button-top), var(--button-bottom));
+  font-family: var(--f-head);
+  font-size: 16px;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.notice-btn:hover {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+
+/* Who is here, on a name panel: a chip over its top edge. */
+.seat .presence {
+  position: absolute;
+  top: -12px;
+  right: 14px;
+  padding: 1px 12px;
+  border: 1px solid var(--pill-border);
+  border-radius: 999px;
+  background: var(--panel-bottom);
+  font-size: 17px;
+  line-height: 22px;
+  color: var(--muted);
+  z-index: 2;
+}
+
+.seat .presence[data-state="away"] {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.seat .presence[data-state="timer"] {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+
+/* The turn's last seconds, a ring that empties round the panel. */
+.seat .ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.seat .ring rect {
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.seat .ring rect[data-urgent="true"] {
+  stroke: var(--bad);
+}
+
+/* Play online: the portraits to choose from. */
+.portrait-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portrait-choice {
+  box-sizing: border-box;
+  width: 44px;
+  height: 50px;
+  padding: 0;
+  border: 1px solid var(--button-border);
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--portrait-edge);
+  cursor: pointer;
+}
+
+.portrait-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portrait-choice[aria-checked="true"] {
+  box-shadow: 0 0 0 2px var(--gold-bright);
+}
+
+.portrait-choice:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
+.ng-seat {
+  display: grid;
+  grid-template-columns: 2em minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.ng-more {
+  margin-top: 16px;
+}
+
+/* The table's lobby. */
+.field.link {
+  flex: 1 1 auto;
+}
+
+.lobby-share {
+  margin-top: 14px;
+}
+
+.lobby-seats {
+  margin-top: 14px;
+}
+
+.lobby-seat {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--sheet-row-rule);
+}
+
+.lobby-seat .portrait {
+  box-sizing: border-box;
+  width: 44px;
+  height: 50px;
+  border: 1px solid var(--button-border);
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--portrait-edge);
+}
+
+.lobby-seat .portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lobby-seat .portrait img:not([src]) {
+  visibility: hidden;
+}
+
+.lobby-who {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lobby-name {
+  font-family: var(--f-head);
+  font-size: 22px;
+  line-height: 24px;
+  color: var(--cream);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lobby-name.muted {
+  color: var(--muted);
+}
+
+.lobby-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lobby-tags .pill {
+  font-size: 15px;
+  padding: 0 10px;
+}
+
+.lobby-seat.away .lobby-name {
+  color: var(--muted);
+}
+
+.lobby-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sheet-btn.small {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.lobby-host {
+  margin-top: 6px;
+}
+
+.lobby-summary,
+.lobby-note {
+  margin-top: 14px;
+}
+
+.lobby-note {
+  min-height: 21px;
+  font-size: 17px;
+  color: var(--gold-bright);
+}
+
+.lobby-actions {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lobby-fill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.lobby-settings-head {
+  margin-top: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sheet-head-rule);
+  font-family: var(--f-head);
+  font-size: 19px;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.lobby-host[open] .lobby-settings-head {
+  color: var(--gold-bright);
+}
+
+.lobby-settings-head:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 3px;
+}

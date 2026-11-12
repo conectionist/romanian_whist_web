@@ -27,6 +27,13 @@ describe("a solo game from the address", () => {
     expect(soloSettings({ players: 4 }).allOneCardForehead).toBe(false);
   });
 
+  it("reads &wait=1, which makes the round sheet wait for you, and nothing else for it", () => {
+    expect(soloRequestFrom("?solo=4&wait=1")).toEqual({ players: 4, wait: true });
+    expect(soloRequestFrom("?solo=4&wait=0")).toEqual({ players: 4 });
+    expect(soloSettings({ players: 4, wait: true }).waitAfterRound).toBe(true);
+    expect(soloSettings({ players: 4 }).waitAfterRound).toBe(false);
+  });
+
   it("ignores a speed that is not one of the five", () => {
     expect(soloRequestFrom("?solo=4&speed=5")).toEqual({ players: 4 });
     expect(soloRequestFrom("?solo=4&speed=fast")).toEqual({ players: 4 });

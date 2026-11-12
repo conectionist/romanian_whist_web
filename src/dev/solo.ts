@@ -1,7 +1,7 @@
 import type { ClientMessage, Settings, SettingsSeat } from "../net/protocol";
 
-// A solo game started from the address: /?solo=4, with &seed=42, &speed=4 or &forehead=all as well.
-// The page has no menu to start one, and the end-to-end tests start theirs this way.
+// A solo game started from the address: /?solo=4, with &seed=42, &speed=4, &forehead=all or &wait=1 as
+// well. The end-to-end tests start theirs this way, without going through New Game.
 
 // The players the desktop's screenshot tool plays with: "Player", a man, and Ana, Bogdan, Cristina,
 // Dan and Elena, Low risk and Ducking by turns, wearing the faces the look fixtures give them.
@@ -21,6 +21,8 @@ export interface SoloRequest {
   speed?: number;
   // Every one-card round is a Forehead round, blind from the first deal.
   foreheadAll?: boolean;
+  // The round sheet waits for you after each round.
+  wait?: boolean;
 }
 
 // The desktop's default. At the top speed the messages come faster than the table plays them, so it
@@ -50,6 +52,9 @@ export function soloRequestFrom(search: string): SoloRequest | null {
   if (params.get("forehead") === "all") {
     request.foreheadAll = true;
   }
+  if (params.get("wait") === "1") {
+    request.wait = true;
+  }
   return request;
 }
 
@@ -60,7 +65,7 @@ export function soloSettings(request: SoloRequest): Settings {
     foreheadAndHidden: true,
     allOneCardForehead: request.foreheadAll === true,
     botSpeed: request.speed ?? DEFAULT_SPEED,
-    waitAfterRound: false,
+    waitAfterRound: request.wait === true,
   };
   if (request.seed !== undefined) {
     settings.seed = request.seed;

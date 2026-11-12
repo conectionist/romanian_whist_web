@@ -1,0 +1,467 @@
+/* The sheets, src/ui/Overlay.cpp: a dim over the page and a panel on it, in screen pixels and never
+   scaled with the table. A sheet is read, so in a window too small for it, it narrows and scrolls. */
+
+.sheet-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--band, 0px);
+  bottom: 0;
+  z-index: 90;
+  background: var(--scrim);
+}
+
+/* The panel of src/paint/Panel.cpp, 720 wide with its border, inside a padding of 26 30 24. */
+.sheet {
+  /* Placed by layer.ts, on whole pixels: a sheet centred on half a pixel would be drawn blurred. */
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  width: min(720px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-border) transparent;
+  padding: 26px 30px 24px;
+  background: linear-gradient(180deg, var(--panel-top), var(--panel-bottom));
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
+  box-shadow:
+    inset 0 0 0 3px var(--panel-inner-shadow),
+    inset 0 0 0 4px var(--panel-inner-line),
+    0 12px 26px var(--panel-shadow);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* The last trick is as wide as its row of cards, and no wider than a sheet. */
+.sheet.fit {
+  width: max-content;
+  max-width: min(720px, calc(100% - 32px));
+}
+
+/* What a line of a sheet is. The line heights are Qt's: a label is as tall as its face's ascent and
+   descent, which is less than the 1.2 the table's panels are set in. */
+.sheet-title {
+  margin: 0;
+  font-family: var(--f-head);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 37px;
+  color: var(--cream);
+}
+
+.sheet-meta {
+  margin: var(--meta-top, 0px) 0 min(var(--meta-extra, 0px), 0px);
+  padding-bottom: max(var(--meta-extra, 0px), 0px);
+  font-size: 17px;
+  line-height: 21px;
+  color: var(--muted);
+}
+
+.sheet-meta .black {
+  color: inherit;
+}
+
+/* The title's line, 37 tall with its glyphs where Qt puts them, and the room under the line below it,
+   which Qt measures per sheet. */
+.sheet[data-sheet="round"] {
+  --meta-top: 2px;
+  --meta-extra: 3px;
+}
+
+.sheet[data-sheet="history"] {
+  --meta-extra: -2px;
+}
+
+.sheet-after-head {
+  margin-top: 16px;
+}
+
+.sheet-body {
+  font-size: 17px;
+  color: var(--cream);
+}
+
+.sheet-note {
+  font-size: 15px;
+  line-height: 15px;
+  color: var(--muted);
+}
+
+/* The streak warning: one line for each seat on four. */
+.sheet-note.streak {
+  margin-top: 12px;
+  white-space: pre-line;
+}
+
+.sheet-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sheet-center {
+  text-align: center;
+}
+
+/* The buttons, at the bottom right, 12 apart and 20 below what is above them. */
+.sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: var(--actions-top, 20px);
+}
+
+.sheet[data-sheet="settings"],
+.sheet[data-sheet="last-trick"] {
+  --actions-top: 22px;
+}
+
+.sheet-actions.center {
+  justify-content: center;
+}
+
+.sheet-btn {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: none;
+  font-family: var(--f-head);
+  font-size: 19px;
+  line-height: 22px;
+  color: var(--cream);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sheet-btn.primary {
+  background: linear-gradient(180deg, var(--button-top), var(--button-bottom));
+}
+
+.sheet-btn:not(:disabled):hover,
+.sheet-btn:not(:disabled):focus-visible {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+
+.sheet-btn:focus-visible {
+  outline: none;
+}
+
+.sheet-btn:disabled {
+  border-color: var(--muted);
+  color: var(--muted);
+  cursor: default;
+}
+
+/* A table: headings in small spaced capitals over a faint gold rule, rows of 18-pixel figures that
+   line up, each over a fainter rule. Every column is as wide as the others, and wider where its
+   cells need it. */
+.sheet-table {
+  display: grid;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-table .th,
+.sheet-table .td {
+  box-sizing: border-box;
+  min-width: 0;
+  border-bottom: 1px solid var(--sheet-row-rule);
+  white-space: nowrap;
+}
+
+.sheet-table .th {
+  padding: 6px 8px;
+  border-bottom-color: var(--sheet-head-rule);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 13px;
+  text-transform: uppercase;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet-table .td {
+  padding: 7px 8px;
+  font-size: 18px;
+  line-height: 18px;
+  color: var(--cream);
+}
+
+.sheet-table .right {
+  text-align: right;
+}
+
+.sheet-table .strong {
+  font-weight: 700;
+}
+
+.sheet-table .good {
+  color: var(--good);
+}
+
+.sheet-table .bad {
+  color: var(--bad);
+}
+
+.sheet-table .muted {
+  color: var(--muted);
+}
+
+/* After a cell's text, on its baseline: the history's "+6 1/1". */
+.sheet-table .side {
+  font-size: 15px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+/* A row Qt makes taller than its figures need: the star column of the standings, and the totals. */
+.sheet-table .td.tall {
+  padding-top: var(--tall, 9px);
+  padding-bottom: var(--tall, 9px);
+}
+
+.sheet-table .td.tall.strong {
+  padding-top: var(--tall-strong, 9px);
+  padding-bottom: var(--tall-strong, 9px);
+}
+
+.sheet-table .span {
+  grid-column: 1 / -1;
+  font-size: 15px;
+  text-align: left;
+  color: var(--muted);
+}
+
+/* The last trick's row of cards, .sheet .mini: each 88 wide, 12 apart, its name 6 under it. */
+.mini-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.mini {
+  margin: 0;
+  width: 88px;
+}
+
+.mini-face {
+  display: block;
+  width: 88px;
+  border-radius: 6px;
+}
+
+.mini.win .mini-face {
+  box-shadow:
+    0 0 0 2px var(--gold-bright),
+    0 0 16px var(--sheet-win-glow);
+}
+
+.mini-name {
+  margin-top: 7px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The rules: a bulleted list, lines 1.5 tall, as long as reads comfortably whatever the sheet's
+   width: 62 of the font's zeros. */
+.rules {
+  box-sizing: border-box;
+  max-width: 62ch;
+  margin: 6.5px 0 0;
+  padding: 0 0 7.5px 40px;
+  line-height: 31.5px;
+  list-style: none;
+}
+
+.rules li {
+  position: relative;
+}
+
+.rules li::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* The settings: two sliders in the columns of one grid, so they start and end together, and the
+   wait under them. src/ui/SettingsSheet.cpp, with the sliders drawn as the desktop's style draws
+   them from the sheet's dark palette. */
+.sliders {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(240px, 1fr) max-content;
+  column-gap: 8px;
+  row-gap: 10px;
+  align-items: center;
+  margin-top: 11px;
+}
+
+.sliders .name {
+  padding-right: 12px;
+  white-space: nowrap;
+}
+
+.sliders .name,
+.sliders .end {
+  position: relative;
+  top: 4px;
+}
+
+.sliders .end {
+  white-space: nowrap;
+}
+
+.slider {
+  position: relative;
+  height: 20px;
+}
+
+.slider input {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.slider input:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.slider input::-webkit-slider-runnable-track {
+  box-sizing: border-box;
+  height: 6px;
+  margin: 0 1px;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, #5b4527 0 1px, #9f8351 1px 2px, #e1bb72 2px 3px, #eac377 3px 4px, #ab8d57 4px 5px, #3d2e1b 5px 6px)
+      0 0 / calc(7px + (100% - 14px) * var(--v, 0)) 100% no-repeat,
+    linear-gradient(180deg, #5b4527 0 1px, #2f251c 1px 4px, #5b4527 4px 5px, transparent 5px 6px);
+}
+
+.slider input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border: 1px solid #3d2e1b;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #574734 0, #44382c 20%, #352a20 78%, #50412f 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 235, 200, 0.1);
+}
+
+.slider input::-moz-range-track {
+  height: 5px;
+  border: 1px solid #5b4527;
+  border-radius: 3px;
+  box-sizing: border-box;
+  background: #2f251c;
+}
+
+.slider input::-moz-range-progress {
+  height: 3px;
+  border-radius: 2px 0 0 2px;
+  background: #ebc377;
+}
+
+.slider input::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #3d2e1b;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #574734 0, #44382c 20%, #352a20 78%, #50412f 100%);
+}
+
+.slider .ticks span {
+  position: absolute;
+  top: 19px;
+  width: 1px;
+  height: 3px;
+  background: #5b4527;
+}
+
+/* The wait: a box 14 square with a check in it, its label 5 after it. The input is the real control,
+   over the box and unseen. */
+.check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 21px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.check input {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.check .box {
+  position: relative;
+  box-sizing: border-box;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #654c2b;
+  border-radius: 2px;
+  background: #130d09;
+}
+
+.check input:checked + .box::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 0.5px;
+  width: 4px;
+  height: 8px;
+  border: solid #e6dcc3;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(40deg);
+}
+
+.check input:focus-visible + .box {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.sheet[data-sheet="game-over"] {
+  --meta-extra: 1px;
+  --tall: 9px;
+  --tall-strong: 8.5px;
+}

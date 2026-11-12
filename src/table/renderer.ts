@@ -11,7 +11,7 @@ import { HandView } from "./hand";
 import { LeadMark } from "./leadMark";
 import { RackView, shownFor } from "./rack";
 import { Scoreboard } from "./scoreboard";
-import { SeatPanel } from "./seatPanel";
+import { SeatPanel, countdownFor } from "./seatPanel";
 import { TableTop } from "./tableTop";
 import { TrickView } from "./trick";
 import { TrickPanel } from "./trickPanel";
@@ -62,6 +62,25 @@ export class TableScene {
     view.space.append(this.top.element, this.trick.element, this.leadMark.element, this.hand.element);
     view.hud.append(this.trickPanel.element, this.scoreboard.element, this.buttons.element);
     view.top.append(this.bidStrip.element);
+  }
+
+  // Draws the ring on your name panel for the last seconds of the prompt that is open, and takes it
+  // away when there is none. Asked as time passes, since nothing else about the table moves.
+  updateCountdown(now: number): void {
+    const model = this.last;
+    this.panels.forEach((panel, seat) => {
+      const mine = model !== null && seat === model.humanSeat;
+      panel.countdown(mine ? countdownFor(model.prompt?.deadlineAt ?? null, now) : null);
+    });
+  }
+
+  // Told when a corner button is clicked.
+  onHistory(handler: () => void): void {
+    this.buttons.onHistory(handler);
+  }
+
+  onLastTrick(handler: () => void): void {
+    this.buttons.onLastTrick(handler);
   }
 
   private ensureSeats(count: number): void {

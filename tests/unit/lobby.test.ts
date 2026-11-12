@@ -96,11 +96,11 @@ describe("who is away or replaced, as a man or a woman", () => {
 
   it("agrees with the person in Romanian, and is a man's where the person is not known", () => {
     setLanguage("ro");
-    expect(presenceText("away", "male")).toBe("Plecat");
-    expect(presenceText("away", "female")).toBe("Plecată");
+    expect(presenceText("away", "male")).toBe("Deconectat");
+    expect(presenceText("away", "female")).toBe("Deconectată");
     expect(presenceText("replaced", "male")).toBe("Înlocuit");
     expect(presenceText("replaced", "female")).toBe("Înlocuită");
-    expect(presenceText("away", null)).toBe("Plecat");
+    expect(presenceText("away", null)).toBe("Deconectat");
     expect(presenceText("here", "female")).toBe("");
   });
 });

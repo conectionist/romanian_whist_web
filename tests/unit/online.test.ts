@@ -86,7 +86,7 @@ describe("how long a turn may take", () => {
 
   it("is said with the form of Romanian that its number takes", () => {
     setLanguage("ro");
-    expect(TURN_TIMERS.map(timerLabel)).toEqual(["Fără limită", "10 secunde", "30 de secunde", "1 minut", "2 minute", "5 minute"]);
+    expect(TURN_TIMERS.map(timerLabel)).toEqual(["Fără timp limită", "10 secunde", "30 de secunde", "1 minut", "2 minute", "5 minute"]);
     expect(timerLabel(20000)).toBe("20 de secunde");
     expect(timerLabel(1000)).toBe("1 secundă");
   });

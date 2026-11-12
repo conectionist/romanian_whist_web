@@ -135,13 +135,13 @@ describe("what a name panel says", () => {
     }).slice(1);
     expect(seatLabelFor(bogdan, { active: false, human: false, pill: "No bid yet" })).toBe("Bogdan, No bid yet, Away");
     setLanguage("ro");
-    expect(seatLabelFor(bogdan, { active: false, human: false, pill: "Fără licitație" })).toBe("Bogdan, Fără licitație, Plecat");
+    expect(seatLabelFor(bogdan, { active: false, human: false, pill: "Fără licitație" })).toBe("Bogdan, Fără licitație, Deconectat");
   });
 
   it("is said in Romanian, with the 'to move' and the 'you' of its own", () => {
     setLanguage("ro");
     const [you] = seats();
-    expect(seatLabelFor(you, { active: true, human: true, pill: "Fără licitație" })).toBe("Player (tu), Fără licitație, la rând");
+    expect(seatLabelFor(you, { active: true, human: true, pill: "Fără licitație" })).toBe("Player (tu), Fără licitație, mută");
   });
 });
 

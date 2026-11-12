@@ -6,7 +6,7 @@ import { DASH } from "../table/hudText";
 import { cardsText, roundTypeText } from "../table/roundText";
 import type { Sheet } from "./layer";
 import { SheetButton, SheetTable, actions, joinNames, sheetNumber, suitedLine, type Tone, type TableFields } from "./parts";
-import { nameOf, type Seating } from "./seating";
+import { genderOf, nameOf, type Seating } from "./seating";
 
 // The round sheet, src/ui/RoundSheet.cpp: what the round just scored was worth, per seat.
 
@@ -107,11 +107,36 @@ export function holdNote(waitingFor: readonly number[], seating: Seating, second
   if (waitingFor.length === 0) {
     return "";
   }
-  const names = waitingFor.map((seat) => nameOf(seating, seat));
-  const who = joinNames(names);
-  return secondsLeft === null
-    ? t("online", "Waiting for %1.", [who])
-    : t("online", "Waiting for %1: %2 s", [who, Math.max(0, Math.ceil(secondsLeft))]);
+  const who = joinNames(waitingFor.map((seat) => nameOf(seating, seat)));
+  const seconds = secondsLeft === null ? null : Math.max(0, Math.ceil(secondsLeft));
+  const women = waitingFor.every((seat) => genderOf(seating, seat) === "female");
+  if (waitingFor.length === 1) {
+    return waitingText(who, seconds, women ? "woman" : "man");
+  }
+  return waitingText(who, seconds, women ? "women" : "several");
+}
+
+// Whom the hold waits for, in the sentence that agrees with them: Romanian says him, her, them with a
+// man among them, or them, of one man, one woman, several people or several women.
+function waitingText(who: string, seconds: number | null, people: "man" | "woman" | "several" | "women"): string {
+  switch (people) {
+    case "man":
+      return seconds === null
+        ? t("online", "Waiting for %1.", [who], { comment: "about a man" })
+        : t("online", "Waiting for %1: %2 s", [who, seconds], { comment: "about a man" });
+    case "woman":
+      return seconds === null
+        ? t("online", "Waiting for %1.", [who], { comment: "about a woman" })
+        : t("online", "Waiting for %1: %2 s", [who, seconds], { comment: "about a woman" });
+    case "women":
+      return seconds === null
+        ? t("online", "Waiting for %1.", [who], { comment: "about several women" })
+        : t("online", "Waiting for %1: %2 s", [who, seconds], { comment: "about several women" });
+    case "several":
+      return seconds === null
+        ? t("online", "Waiting for %1.", [who], { comment: "about several, a man among them" })
+        : t("online", "Waiting for %1: %2 s", [who, seconds], { comment: "about several, a man among them" });
+  }
 }
 
 export interface RoundActions {

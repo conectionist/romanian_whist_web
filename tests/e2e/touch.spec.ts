@@ -323,7 +323,7 @@ test.describe("a phone held upright", () => {
     await expect(hint).toBeVisible();
 
     await page.goto("/?lang=ro");
-    await expect(page.locator(".rotate-hint")).toHaveText("Ține telefonul pe orizontală: masa are nevoie de loc.");
+    await expect(page.locator(".rotate-hint")).toHaveText("Rotește telefonul: masa are nevoie de loc.");
   });
 
   test("is asked at a table too, below it", async ({ page }) => {

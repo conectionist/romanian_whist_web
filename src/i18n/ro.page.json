@@ -64,12 +64,12 @@
     {
       "context": "lobby",
       "source": "Make a table and share its link, or join one by its code.",
-      "translation": "Creează o masă și trimite linkul ei, sau alătură-te uneia cu ajutorul codului."
+      "translation": "Creează o masă și trimite linkul ei sau alătură-te uneia cu ajutorul codului."
     },
     {
       "context": "lobby",
       "source": "Say who you are, and sit down.",
-      "translation": "Spune cine ești și așază-te la masă."
+      "translation": "Spune cine ești și așează-te la masă."
     },
     {
       "context": "lobby",
@@ -109,7 +109,7 @@
     {
       "context": "lobby",
       "source": "Man with stubble",
-      "translation": "Bărbat cu barba nerasă"
+      "translation": "Bărbat nebărbierit"
     },
     {
       "context": "lobby",
@@ -194,17 +194,17 @@
     {
       "context": "lobby",
       "source": "A person's turn may take",
-      "translation": "Rândul unei persoane poate dura"
+      "translation": "Mutarea unei persoane poate dura"
     },
     {
       "context": "lobby",
       "source": "A turn may take",
-      "translation": "Un rând poate dura"
+      "translation": "O mutare poate dura"
     },
     {
       "context": "lobby",
       "source": "No timer",
-      "translation": "Fără limită"
+      "translation": "Fără timp limită"
     },
     {
       "context": "lobby",
@@ -232,7 +232,7 @@
     {
       "context": "lobby",
       "source": "%1 s a turn",
-      "translation": "%1 s pe rând"
+      "translation": "%1 s per mutare"
     },
     {
       "context": "lobby",
@@ -252,7 +252,7 @@
     {
       "context": "lobby",
       "source": "Waiting for the host to start the game.",
-      "translation": "Se așteaptă ca gazda să înceapă jocul."
+      "translation": "Așteptăm ca gazda să înceapă jocul."
     },
     {
       "context": "lobby",
@@ -328,13 +328,13 @@
       "context": "online",
       "source": "Away",
       "comment": "about a man",
-      "translation": "Plecat"
+      "translation": "Deconectat"
     },
     {
       "context": "online",
       "source": "Away",
       "comment": "about a woman",
-      "translation": "Plecată"
+      "translation": "Deconectată"
     },
     {
       "context": "online",
@@ -368,7 +368,7 @@
     {
       "context": "online",
       "source": "%1 went away.",
-      "translation": "%1 a plecat."
+      "translation": "%1 nu mai răspunde."
     },
     {
       "context": "online",
@@ -378,17 +378,7 @@
     {
       "context": "online",
       "source": "Waiting for %1 to come back: %2 s",
-      "translation": "Se așteaptă ca %1 să revină: %2 s"
-    },
-    {
-      "context": "online",
-      "source": "Waiting for %1.",
-      "translation": "Se așteaptă %1."
-    },
-    {
-      "context": "online",
-      "source": "Waiting for %1: %2 s",
-      "translation": "Se așteaptă %1: %2 s"
+      "translation": "Așteptăm ca %1 să revină: %2 s"
     },
     {
       "context": "online",
@@ -438,7 +428,7 @@
     {
       "context": "errors",
       "source": "This page is out of date. Reload it.",
-      "translation": "Pagina este depășită. Reîncarcă-o."
+      "translation": "Pagina este veche. Reîncarcă-o."
     },
     {
       "context": "errors",
@@ -448,7 +438,7 @@
     {
       "context": "errors",
       "source": "That table is full.",
-      "translation": "Masa aceea este plină."
+      "translation": "Această masă este plină."
     },
     {
       "context": "errors",
@@ -548,7 +538,7 @@
     {
       "context": "seat",
       "source": "to move",
-      "translation": "la rând"
+      "translation": "mută"
     },
     {
       "context": "announce",
@@ -578,7 +568,7 @@
     {
       "context": "hint",
       "source": "Turn your phone sideways: the table needs the room.",
-      "translation": "Ține telefonul pe orizontală: masa are nevoie de loc."
+      "translation": "Rotește telefonul: masa are nevoie de loc."
     },
     {
       "context": "cardname",
@@ -682,6 +672,54 @@
       "context": "cardname",
       "source": "%1: %2",
       "translation": "%1: %2"
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1.",
+      "comment": "about a man",
+      "translation": "Îl așteptăm pe %1."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1: %2 s",
+      "comment": "about a man",
+      "translation": "Îl așteptăm pe %1: %2 s"
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1.",
+      "comment": "about a woman",
+      "translation": "O așteptăm pe %1."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1: %2 s",
+      "comment": "about a woman",
+      "translation": "O așteptăm pe %1: %2 s"
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1.",
+      "comment": "about several, a man among them",
+      "translation": "Îi așteptăm pe %1."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1: %2 s",
+      "comment": "about several, a man among them",
+      "translation": "Îi așteptăm pe %1: %2 s"
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1.",
+      "comment": "about several women",
+      "translation": "Le așteptăm pe %1."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1: %2 s",
+      "comment": "about several women",
+      "translation": "Le așteptăm pe %1: %2 s"
     }
   ]
 }

@@ -97,7 +97,7 @@ describe("who went away, was replaced or came back", () => {
 
   it("tells it in Romanian as the person's gender agrees it, a man and a woman", () => {
     setLanguage("ro");
-    expect(presenceNews(here, away)).toEqual(["Bogdan a plecat."]);
+    expect(presenceNews(here, away)).toEqual(["Bogdan nu mai răspunde."]);
     expect(presenceNews(replaced, here)).toEqual(["Bogdan s-a întors."]);
     expect(presenceNews(away, replaced)).toEqual(["Bogdan a fost înlocuit de un bot."]);
     const woman = (state: typeof replaced) => ({
@@ -105,7 +105,7 @@ describe("who went away, was replaced or came back", () => {
       seats: state.seats.map((seat, index) => (index === 1 && seat.kind === "human" ? { ...seat, gender: "female" as const } : seat)),
     });
     expect(presenceNews(woman(away), woman(replaced))).toEqual(["Bogdan a fost înlocuită de un bot."]);
-    expect(presenceNews(woman(here), woman(away))).toEqual(["Bogdan a plecat."]);
+    expect(presenceNews(woman(here), woman(away))).toEqual(["Bogdan nu mai răspunde."]);
   });
 
   it("says a man's replacement the same in English as a woman's", () => {

@@ -60,7 +60,7 @@ test("it is told in Romanian in a Romanian page, to the desktop's words", async 
   await page.goto("/?solo=3&seed=7&speed=4&wait=1&lang=ro");
   await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
   await waitForTurn(page);
-  await expect(page.locator('.seat[data-seat="0"]')).toHaveAccessibleName("Jucător (tu), Licitează…, la rând");
+  await expect(page.locator('.seat[data-seat="0"]')).toHaveAccessibleName("Jucător (tu), Licitează…, mută");
   await decide(page);
   await expect(page.locator(".hand .hcard.playable").first()).toBeVisible();
   expect(await page.locator(".hand .hcard:not([hidden])").first().getAttribute("aria-label")).toMatch(

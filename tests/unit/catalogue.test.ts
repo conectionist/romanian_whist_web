@@ -163,7 +163,7 @@ describe("what a portrait is called", () => {
 
   it("is in Romanian when the page is, and the id with spaces for a face it has no words for", () => {
     setLanguage("ro");
-    expect(faceName("man-stubble")).toBe("Bărbat cu barba nerasă");
+    expect(faceName("man-stubble")).toBe("Bărbat nebărbierit");
     expect(faceName("woman-wavy-black-hair")).toBe("Femeie cu păr negru ondulat");
     expect(faceName("cyborg-man-bald")).toBe("cyborg man bald");
     for (const id of chosen) {

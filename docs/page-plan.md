@@ -2,8 +2,7 @@
 
 > **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
 > draws the table and plays a solo game against the server (PR #3). Phase 7, the sheets, the menus
-> and online tables, is built and reviewed twice, and waits for the owner's approval (PR #7).
-> Phase 8 is not built. Outside the phases, the page's Docker image is built, has had two reviews,
+> and online tables, is complete (2026-11-12, PR #7). Phase 8 is not built. Outside the phases, the page's Docker image is built, has had two reviews,
 > and waits for the owner's approval (PR #5, [§14](#the-docker-image-outcome)).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
@@ -857,7 +856,7 @@ of code `e2eef2e`):
     the server's build and a browser.
   - **The owner approved** the phase on 2026-11-10.
 
-### Phase 7: sheets and menus — L
+### Phase 7: sheets and menus — L ✅ COMPLETE
 
 - **Work:**
   - first, the submodule moves to the head of the server's parent branch, `df37bd8` or later. It
@@ -885,7 +884,7 @@ of code `e2eef2e`):
     needed.
 
 **Outcome** (branch `web/phase-7-sheets-and-menus`, PR #7, parent `ccr-209c0806-o444sp`, the last
-commit of code `2e100c4`). It waits for the owner's approval.
+commit of code `2e100c4`).
 
 - **The branch.**
   - **The commits,** in the plan's order:
@@ -991,7 +990,9 @@ commit of code `2e100c4`). It waits for the owner's approval.
   - **Not tried in a browser:** joining a table whose game has started, a second tab taking over, a
     host who goes away handing the table over, and changing seats or settings after guests have
     joined. These have unit tests.
-  - **The desktop's throwaway branch** is not deleted yet: that is the owner's word, after approval.
+  - **The desktop's throwaway branch `ccr-209c0806-o444sp`** is left for the owner to delete: the
+    session's git proxy refused the deletion (HTTP 403). Its 18 pictures were checked byte for byte
+    against the copies in `build/shots/desktop/` first.
 - **Tests:** 591 unit tests in 40 files (318 at the start of the phase), 25 look tests and 31
   end-to-end tests.
   - **End to end,** against `whist_server`:
@@ -1056,7 +1057,8 @@ commit of code `2e100c4`). It waits for the owner's approval.
 - **Builds and CI.**
   - **`npm run build` and `npm run build:look`** pass at `2e100c4`, and the unit, look and end-to-end
     tests pass: 591, 25 and 31.
-  - **CI** (Build (Linux) and the Docker image) is green at `4eec5c5`.
+  - **CI** (Build (Linux) and the Docker image) is green at `4eec5c5` and `7924e0c`.
+  - **The owner approved** the phase on 2026-11-12.
 
 ### Phase 8: Romanian, keyboard, touch — M
 

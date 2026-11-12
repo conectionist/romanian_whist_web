@@ -2,6 +2,7 @@ import { portraitUrl } from "../assets/assets";
 import { el, setAttr, setSrc, setText, stamp, svg } from "../dom/el";
 import { t } from "../i18n/t";
 import { presenceText } from "../lobby/lobby";
+import { seatLabelFor } from "./names";
 import type { SeatView } from "../play/model";
 import type { Rect } from "./space";
 import { z } from "./space";
@@ -94,7 +95,7 @@ export class SeatPanel {
     ring.style.display = "none";
     this.element = el(
       "div",
-      { class: "panel seat" },
+      { class: "panel seat", attrs: { role: "group" } },
       el("div", { class: "portrait" }, this.picture),
       el("div", { class: "who" }, el("div", { class: "name" }, this.marker, this.name), this.pill),
       this.chip,
@@ -126,6 +127,7 @@ export class SeatPanel {
     this.gender = seat.gender;
     this.paintPresence();
 
+    setAttr(this.element, "aria-label", seatLabelFor(seat, { active: state.active, human: state.human, pill: pill.text }));
     this.element.classList.toggle("active", state.active);
     this.element.dataset.seat = String(seat.seat);
     this.element.hidden = false;

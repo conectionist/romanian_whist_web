@@ -509,6 +509,81 @@
       "context": "pagesheets",
       "source": "The server could not go on with this game.",
       "translation": "Serverul nu a putut continua jocul."
+    },
+    {
+      "context": "cardname",
+      "source": "spades",
+      "translation": "pică"
+    },
+    {
+      "context": "cardname",
+      "source": "hearts",
+      "translation": "inimă"
+    },
+    {
+      "context": "cardname",
+      "source": "diamonds",
+      "translation": "romb"
+    },
+    {
+      "context": "cardname",
+      "source": "clubs",
+      "translation": "treflă"
+    },
+    {
+      "context": "cardname",
+      "source": "%1 of %2",
+      "translation": "%1 de %2"
+    },
+    {
+      "context": "cardname",
+      "source": "Your card, face down",
+      "translation": "Cartea ta, cu fața în jos"
+    },
+    {
+      "context": "cardname",
+      "source": "%1, can be played",
+      "translation": "%1, se poate juca"
+    },
+    {
+      "context": "cardname",
+      "source": "%1, cannot be played",
+      "translation": "%1, nu se poate juca"
+    },
+    {
+      "context": "seat",
+      "source": "%1 (you)",
+      "translation": "%1 (tu)"
+    },
+    {
+      "context": "seat",
+      "source": "to move",
+      "translation": "la rând"
+    },
+    {
+      "context": "announce",
+      "source": "%1 bids %2",
+      "translation": "%1 licitează %2"
+    },
+    {
+      "context": "announce",
+      "source": "You play %1",
+      "translation": "Joci %1"
+    },
+    {
+      "context": "announce",
+      "source": "%1 plays %2",
+      "translation": "%1 joacă %2"
+    },
+    {
+      "context": "announce",
+      "source": "Round %1 is scored.",
+      "translation": "Punctajele rundei %1 sunt gata."
+    },
+    {
+      "context": "announce",
+      "source": "%1: %2, total %3.",
+      "translation": "%1: %2, total %3."
     }
   ]
 }

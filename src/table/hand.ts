@@ -2,6 +2,7 @@ import { el } from "../dom/el";
 import type { Card } from "../net/protocol";
 import type { HandView as HandModel } from "../play/model";
 import { CardView } from "./card";
+import { handLabelFor } from "./names";
 import { sizeForHeight } from "./cards";
 import { cardPlacement } from "./geometry/hand";
 import { handCardHeight, type Placement } from "./space";
@@ -171,6 +172,7 @@ export class HandView {
       view.element.classList.toggle("playable", playable);
       view.element.classList.toggle("illegal", hand.playable && !playable);
       view.element.setAttribute("aria-disabled", playable ? "false" : "true");
+      view.element.setAttribute("aria-label", handLabelFor(hand.backs > 0 ? null : hand.entries[slot].card, hand.playable, playable));
       view.show();
     }
 

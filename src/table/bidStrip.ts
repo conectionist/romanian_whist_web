@@ -78,7 +78,8 @@ export class BidStrip {
   private selected: number | null = null;
 
   constructor() {
-    this.element = el("div", { class: "panel bidstrip" }, this.question, this.row, this.note);
+    this.question.id = "bid-question";
+    this.element = el("div", { class: "panel bidstrip", attrs: { role: "group", "aria-labelledby": "bid-question" } }, this.question, this.row, this.note);
     this.element.hidden = true;
     stamp(this.element);
   }

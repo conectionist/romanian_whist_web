@@ -7,10 +7,12 @@ import { Controller } from "./play/controller";
 import { modelOf } from "./play/model";
 import { currentPace, storePace, storedPace } from "./play/motion";
 import { Flow, type Memory } from "./play/flow";
+import { announcementFor } from "./play/announce";
 import { Keyboard } from "./play/keyboard";
 import { atTable, type SheetName } from "./play/sheets";
 import { PlaybackQueue } from "./play/queue";
 import { NO_CHANGE, Store } from "./play/store";
+import { Announcer } from "./dom/announcer";
 import { el } from "./dom/el";
 import { holdNote } from "./sheets/roundSheet";
 import { seatingOf } from "./sheets/seating";
@@ -213,8 +215,10 @@ scene.hand.setFocusHandler((slot) => keyboard.focused("card", slot));
 scene.bidStrip.setFocusHandler((bet) => keyboard.focused("bid", bet));
 keyboard.install();
 
+const announcer = new Announcer();
+
 const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage });
-frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element);
+frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element);
 
 scene.onHistory(() => flow.openMenu("history"));
 scene.onLastTrick(() => flow.openMenu("last-trick"));
@@ -343,6 +347,10 @@ const queue = new PlaybackQueue(
       const answers = flow.asking();
       controller.onApply(message, change);
       flow.onApply(message);
+      const said = announcementFor(message);
+      if (said !== null) {
+        announcer.say(said);
+      }
       if (message.type === "error") {
         // A refusal is said once, in words: in the sheet that asked, and else in the strip under the
         // bar. A late answer to a prompt is not worth saying.

@@ -7,6 +7,7 @@ import {
   defaultLevel,
   estimatedMinutes,
   firstError,
+  forgetSetup,
   isReservedName,
   nameError,
   levelName,
@@ -214,7 +215,11 @@ describe("the settings a game is dealt from", () => {
 describe("what is remembered between games", () => {
   function memory() {
     const kept = new Map<string, string>();
-    return { getItem: (key: string) => kept.get(key) ?? null, setItem: (key: string, value: string) => void kept.set(key, value) };
+    return {
+      getItem: (key: string) => kept.get(key) ?? null,
+      setItem: (key: string, value: string) => void kept.set(key, value),
+      removeItem: (key: string) => void kept.delete(key),
+    };
   }
 
   it("is read back as it was kept", () => {
@@ -241,9 +246,22 @@ describe("what is remembered between games", () => {
       setItem: () => {
         throw new Error("blocked");
       },
+      removeItem: () => {
+        throw new Error("blocked");
+      },
     };
     expect(() => saveSetup(setup(), refusing)).not.toThrow();
+    expect(() => forgetSetup(refusing)).not.toThrow();
     expect(loadSetup(refusing)).toBeNull();
+  });
+
+  it("is forgotten when the page changes language, since its names were drawn in the old one", () => {
+    const storage = memory();
+    saveSetup(setup(), storage);
+    expect(loadSetup(storage)).not.toBeNull();
+    forgetSetup(storage);
+    expect(loadSetup(storage)).toBeNull();
+    expect(() => forgetSetup(null)).not.toThrow();
   });
 });
 

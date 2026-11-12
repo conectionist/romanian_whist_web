@@ -117,4 +117,59 @@ test.describe("a browser that has chosen", () => {
     await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("lang", "ro");
   });
+
+  test("changes from the main menu page: Esc and the same flag leave things as they were, another reloads in its language", async ({ page }) => {
+    const problems: string[] = [];
+    page.on("pageerror", (error) => problems.push(error.message));
+    const hellos = helloLanguages(page);
+    await page.goto("/");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    // What the last game's setup held was drawn in the language that is being left.
+    await page.evaluate(() => {
+      window.localStorage.setItem("whist.setup", "{}");
+      (window as unknown as { marker: number }).marker = 1;
+    });
+    const flag = page.locator(".menu-lang");
+    await expect(flag).toBeVisible();
+    await expect(flag).toHaveAccessibleName("Limba / Language");
+
+    // Esc closes it and gives the keyboard back to the flag.
+    await flag.click();
+    await expect(dialog(page)).toBeVisible();
+    await expect(choice(page, "ro")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(dialog(page)).toHaveCount(0);
+    await expect(flag).toBeFocused();
+
+    // The language it already has only closes it, and the page is not loaded again.
+    await flag.click();
+    await choice(page, "ro").click();
+    await expect(dialog(page)).toHaveCount(0);
+    expect(await page.evaluate(() => (window as unknown as { marker?: number }).marker)).toBe(1);
+    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup"))).toBe("{}");
+
+    // Another one is kept, the last game's setup forgotten, and the page loads again in it.
+    await flag.click();
+    await expect(dialog(page)).toBeVisible();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Enter");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await expect(page.locator(".menu-btn span")).toHaveText(["New Game", "Play online"]);
+    expect(await page.evaluate(() => (window as unknown as { marker?: number }).marker)).toBeUndefined();
+    expect(await stored(page)).toBe("en");
+    expect(await page.evaluate(() => window.localStorage.getItem("whist.setup"))).toBeNull();
+    expect(hellos).toEqual(["ro", "en"]);
+    expect(problems).toEqual([]);
+  });
+
+  test("drops ?lang= from the address it reloads at, so the new choice is the one that is read", async ({ page }) => {
+    await page.goto("/?lang=ro");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await page.locator(".menu-lang").click();
+    await choice(page, "en").click();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    expect(new URL(page.url()).search).toBe("");
+  });
 });

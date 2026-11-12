@@ -221,7 +221,27 @@ select.field option {
   justify-content: center;
 }
 
+/* The flag that opens the language dialog again, in the page's top right corner. */
+.menu-lang {
+  top: 18px;
+  right: 22px;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 40px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.menu-lang svg {
+  display: block;
+  width: 36px;
+  height: 24px;
+}
+
 /* A flag lit as the desktop's buttons are: under the mouse, held down, or holding the keyboard. */
+.menu-lang:hover,
+.menu-lang:focus-visible,
 .lang-choice:hover .flag-box,
 .lang-choice:active .flag-box,
 .lang-choice:focus .flag-box {
@@ -230,6 +250,10 @@ select.field option {
     inset 0 0 0 4px var(--panel-inner-line-hover),
     0 0 18px var(--button-glow),
     0 12px 26px var(--panel-shadow);
+}
+
+.menu-lang:focus-visible {
+  outline: none;
 }
 
 /* The language dialog, src/ui/LanguageDialog.cpp: the room over the whole page, and in it a box of the

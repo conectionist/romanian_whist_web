@@ -17,11 +17,11 @@ import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
 import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
 import { Notices, connectionText, errorText, presenceNews, waitingText } from "./lobby/notices";
-import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
-import { askLanguage } from "./lobby/languageDialog";
+import { defaults, forgetSetup, loadSetup, saveSetup, type Setup } from "./lobby/setup";
+import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
 import { startIn } from "./i18n/document";
-import { currentLanguage, languageFromSearch, storedLanguage } from "./i18n/language";
+import { currentLanguage, languageFromSearch, storeLanguage, storedLanguage, withoutLanguage } from "./i18n/language";
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
@@ -160,7 +160,36 @@ const menuBar = new MenuBar({
   exit: () => flow.exit(),
 });
 
-const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online") });
+// The language dialog again, from the main menu page. A new choice is kept and the page loaded anew in
+// it, since every string was made in the old one; the same choice only closes it.
+function changeLanguage(): void {
+  const app = document.getElementById("app") as HTMLElement;
+  const leave = () => {
+    dialog.close();
+    app.inert = false;
+    menuPage.language.focus();
+  };
+  const dialog = new LanguageDialog(
+    {
+      choose: (chosen) => {
+        storeLanguage(chosen);
+        if (chosen === currentLanguage()) {
+          leave();
+          return;
+        }
+        forgetSetup();
+        window.location.replace(withoutLanguage(window.location.href));
+      },
+      cancel: leave,
+    },
+    currentLanguage(),
+  );
+  app.inert = true;
+  document.body.append(dialog.element);
+  dialog.focus();
+}
+
+const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage });
 frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element);
 
 scene.onHistory(() => flow.openMenu("history"));

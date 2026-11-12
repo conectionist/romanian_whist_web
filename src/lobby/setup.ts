@@ -353,6 +353,15 @@ export function saveSetup(setup: Setup, storage: Pick<Storage, "setItem"> | null
   }
 }
 
+// The last New Game, forgotten: its names were drawn, or typed, in the language the page has left.
+export function forgetSetup(storage: Pick<Storage, "removeItem"> | null = safe()): void {
+  try {
+    storage?.removeItem(STORAGE_KEY);
+  } catch {
+    // What is left is only an old setup.
+  }
+}
+
 function safe(): Storage | null {
   try {
     return window.localStorage;

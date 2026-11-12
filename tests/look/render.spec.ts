@@ -257,6 +257,8 @@ test("the language dialog is shown smaller in a window that cannot hold it, and 
 
   // A tall narrow one, like a phone held upright, shrinks it by its width and centres it.
   await page.setViewportSize({ width: 390, height: 844 });
+  // The dialog is refitted when the window's resize is told to the page, a moment after the size is set.
+  await expect.poll(async () => (await page.locator(".lang-dialog").boundingBox())!.width).toBeCloseTo(390, 0);
   const tall = (await page.locator(".lang-dialog").boundingBox())!;
   expect(tall.width).toBeCloseTo(390, 0);
   expect(tall.x).toBeCloseTo(0, 0);

@@ -386,6 +386,14 @@ describe("New Game", () => {
     expect(flow.shown()).toBe("new-game");
   });
 
+  it("waits for an answer only once something was asked, not while a sheet is merely open", () => {
+    const { flow } = setup("sheet-pause");
+    flow.openMenu("new-game");
+    expect(flow.asking()).toBe(false);
+    flow.deal(defaults(seededRandom(1)));
+    expect(flow.asking()).toBe(true);
+  });
+
   it("stops waiting when the connection comes back at no table, the answer lost with it", () => {
     const { flow, receive } = setup("sheet-pause", (sync) => {
       sync.table = null;
@@ -429,6 +437,8 @@ describe("New Game", () => {
     leaves.flow.mainMenu();
     expect(types(leaves.sent.messages)).toEqual(["leaveTable", "createSolo"]);
     expect(leaves.flow.shown()).toBe("new-game");
+    // The online table goes on, and can be joined again: a refused game does not lose it.
+    expect(leaves.flow.lostTable()).toBe(false);
     // A later Exit is the plain question again.
     const plain = setup("sheet-pause", online);
     plain.flow.openMenu("new-game");

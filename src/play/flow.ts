@@ -285,7 +285,8 @@ export class Flow {
       return false;
     }
     this.leaving = true;
-    this.leftForIt = true;
+    // An online table goes on without the person, who can join it again by its code.
+    this.leftForIt = isSolo(this.state);
     this.paused = false;
     return true;
   }

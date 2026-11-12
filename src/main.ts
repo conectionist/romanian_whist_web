@@ -274,6 +274,8 @@ const queue = new PlaybackQueue(
     hidden: () => document.visibilityState === "hidden",
     now: () => performance.now(),
     onApply: (message, change) => {
+      // Whether a sheet waits for this answer, asked before the flow takes the answer in.
+      const answers = flow.asking();
       controller.onApply(message, change);
       flow.onApply(message);
       if (message.type === "error") {
@@ -283,7 +285,7 @@ const queue = new PlaybackQueue(
         const text = errorText(message.code, message.detail) + lost;
         // The connection's own notice says when another window took the game over.
         const quiet = message.code === "stalePrompt" || message.code === "notYourTurn" || message.code === "openElsewhere";
-        if (!quiet && !sheets.refuse(text)) {
+        if (!quiet && !(answers && sheets.refuse(text))) {
           notices.set("error", text, { kind: "error", liveMs: 6000 });
         }
       }

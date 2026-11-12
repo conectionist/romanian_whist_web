@@ -233,7 +233,14 @@ describe("names the server refuses", () => {
 
   it("are refused when they read as a low-risk or ducking player and the seat is not one", () => {
     expect(isReservedName("Ducking Dan")).toBe(true);
-    expect(isReservedName("low-risk Lia")).toBe(true);
+    expect(isReservedName("LOWRISK")).toBe(true);
+    // Width and invisible characters are set aside, as the server sets them aside.
+    expect(isReservedName("\uFF24ucking")).toBe(true);
+    expect(isReservedName("Low\u200BRisk")).toBe(true);
+    // Spaces and punctuation are not: the server takes these names.
+    expect(isReservedName("Low Risk Larry")).toBe(false);
+    expect(isReservedName("low-risk Lia")).toBe(false);
+    expect(isReservedName("Duc King")).toBe(false);
     expect(isReservedName("Duck")).toBe(false);
     const made = defaults(seededRandom(1));
     const named = (level: typeof made.bots[0]["level"]) => ({ ...made, bots: [{ ...made.bots[0], name: "Ducking Dan", level }, ...made.bots.slice(1)] });

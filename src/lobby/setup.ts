@@ -231,7 +231,8 @@ const DECEPTIVE = /[\p{Cc}\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
 // The Reckoners take a seat so named for a low-risk or a ducking computer player, so only those two
 // may be called it.
 export function isReservedName(name: string): boolean {
-  const key = name.toLocaleLowerCase().replace(/[^\p{L}]/gu, "");
+  // Compared as the server compares names: case, width and invisible characters aside.
+  const key = name.normalize("NFKC").toLocaleLowerCase().replace(/\p{Default_Ignorable_Code_Point}/gu, "");
   return key.includes("lowrisk") || key.includes("ducking");
 }
 

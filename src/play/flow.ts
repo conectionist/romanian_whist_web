@@ -188,8 +188,9 @@ export class Flow {
     this.ask({ ...this.ui, menu: sheet });
   }
 
+  // Create a table was opened from Play online and goes back to it; every other sheet goes back to what is under it.
   closeMenu(): void {
-    this.ask({ ...this.ui, menu: null });
+    this.ask({ ...this.ui, menu: this.ui.menu === "create-table" ? "online" : null });
   }
 
   // The join sheet, closed without joining: the address is no longer asked about.

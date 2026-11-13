@@ -518,6 +518,20 @@ describe("Play online", () => {
     expect(flow.shown()).toBe("online");
   });
 
+  it("goes back from the table's own sheet to Play online it was opened from, and Esc from there closes it too", () => {
+    const { flow } = setup("sheet-pause", nobody);
+    flow.openMenu("online");
+    flow.chooseCreate(me);
+    expect(flow.shown()).toBe("create-table");
+    flow.escape();
+    expect(flow.shown()).toBe("online");
+    flow.chooseCreate(me);
+    flow.closeMenu();
+    expect(flow.shown()).toBe("online");
+    flow.escape();
+    expect(flow.shown()).toBeNull();
+  });
+
   it("goes on to the table's own sheet with who you are kept, and makes the table with them", () => {
     const { flow, sent, memory } = setup("sheet-pause", nobody);
     flow.openMenu("online");

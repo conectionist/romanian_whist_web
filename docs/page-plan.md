@@ -1264,7 +1264,7 @@ mock-up wins.
 
 - **Work:**
   - **Choosing a layout,** from the window's size in CSS pixels, as the mock-up's `chooseLayout`
-    (line 160) does:
+    (line 160) does, on a touch screen only (see what was settled, below):
     - taller than wide: the "turn your phone" hint, which phase 8 built;
     - at least 1100 by 740: the desktop layout, which is the page as it is;
     - smaller than 640 by 360: a page that says the game needs more room;
@@ -1297,9 +1297,37 @@ mock-up wins.
     sizes and with 2 to 6 players;
   - comparisons with the Android mock-up are linked;
   - the desktop layout's comparisons with the desktop's pictures have not moved.
-- **To settle when the phase is planned:** whether a small window with a mouse gets the scaled
-  layout too, as the window's size alone would choose; and how far the pages and sheets of the
-  Android plan are followed where the page already has a sheet.
+- **Settled when the phase was planned** (the owner, 2026-11-13). Where these differ from the work
+  above, these hold:
+  - **Only a touch screen gets the scaled layout:** a window whose pointer is coarse and which is
+    smaller than 1100 by 740. A mouse keeps the desktop layout at every size, so a laptop's window
+    of 1366 by 650 does not lose it. A touch screen of 1100 by 740 or more keeps the desktop layout
+    too, with phase 8's enlargements.
+  - **Below 640 by 360 a touch screen still gets the scaled table,** drawn smaller, down to a floor
+    of about 0.6 of its size, with a notice that offers full screen. A phone inside a browser's
+    bars is there: the owner's gives the page 754 by 247, which is 0.69. Below the floor is the
+    page that says the game needs more room. The floor is tuned on the owner's phone.
+  - **The Android plan's containers, the page's content.** Each sheet the page has keeps its
+    content and its logic and is placed as the Android plan places it:
+    - a side sheet for the round history and the last trick;
+    - a bottom sheet, its actions pinned at the foot, for the end of a round, settings, rules, the
+      pause menu, leaving a table and the final results;
+    - a page with a bar that holds Back, the title and the one action, for New Game, Play online,
+      Create a table and the lobby;
+    - the main menu with the logo beside its buttons.
+
+    New only where the scaled layout needs it: the scoreboard's side sheet behind the round chip,
+    with the trick's details and three tabs (Scores, History, Last trick); the menu as a list that
+    reaches settings, rules and the way out, since the menu bar is gone; and a sheet opened from
+    another returning to it. The lobby's two columns, New Game's form, Join's four states and
+    sharing, as the mock-up draws them, are not followed.
+  - **How the owner tries a build:** on their own phone, from their own computer, with Docker, at
+    two points in the build (after the scaled table, with a solo game; after the sheets, the pages
+    and full screen, with a solo and an online game) and again after the review's fixes. "Add to
+    Home screen" needs https: tests cover the manifest, and the owner tries it once phase 9 has
+    deployed the page.
+  - **An iPhone** gets the manifest and no full-screen button: its browser has none. Nothing is
+    tested on one.
 
 ### Phase 10 (optional): offline solo — M to L
 

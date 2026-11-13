@@ -68,6 +68,26 @@
   content: none;
 }
 
+/* A control the finger has to hit is 44 across in the window's units, which are 44 pixels or more where the table is
+   drawn at full size. A key that scrolls a control into view leaves it clear of what is pinned. */
+.window[data-layout="scaled"] .sheet[data-placement] .field,
+.window[data-layout="scaled"] .sheet[data-placement] .sheet-btn.small {
+  height: 44px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] .check {
+  height: auto;
+  min-height: 44px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] {
+  scroll-padding-bottom: 76px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="page"] {
+  scroll-padding-top: 76px;
+}
+
 /* A bottom sheet rises from the foot of the window, wide enough for its table and no wider than a phone's
    thumbs reach. */
 .window[data-layout="scaled"] .sheet[data-placement="bottom"] {

@@ -24,7 +24,7 @@ export interface ChromeActions {
 }
 
 function roundButton(name: string, label: string, picture: Parameters<typeof icon>[0]): HTMLButtonElement {
-  return el("button", { class: "panel round-btn", attrs: { type: "button", "aria-label": label, title: label }, data: { button: name } }, icon(picture));
+  return el("button", { class: "panel round-btn", attrs: { type: "button", "aria-label": label, title: label }, data: { roundButton: name } }, icon(picture));
 }
 
 // The line above your hand says what to do, in the voice of the trick panel's prompt. Null when there is
@@ -74,7 +74,7 @@ export class ScaledChrome {
 
     this.chip = el(
       "button",
-      { class: "panel round-chip", attrs: { type: "button" }, data: { button: "scores" } },
+      { class: "panel round-chip", attrs: { type: "button" }, data: { roundButton: "scores" } },
       el("span", { class: "lines" }, this.roundLine, this.trickLine),
       el("span", { class: "trump" }, this.trumpLabel, this.trumpCard, this.trumpNone),
     );

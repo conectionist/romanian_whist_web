@@ -84,7 +84,7 @@
   outline-offset: 2px;
 }
 
-.stage .round-btn[data-button="menu"] {
+.stage .round-btn[data-round-button="menu"] {
   left: 8px;
   top: 8px;
 }

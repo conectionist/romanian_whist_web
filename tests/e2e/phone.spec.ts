@@ -186,7 +186,7 @@ test.describe("the controls under a finger, on the scaled table", () => {
             const rect = document.querySelector(selector)!.getBoundingClientRect();
             return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
           };
-          return { bid: box(".stage .opt"), menu: box('.stage [data-button="menu"]'), history: box('.stage [data-button="history"]') };
+          return { bid: box(".stage .opt"), menu: box('.stage [data-round-button="menu"]'), history: box('.stage [data-round-button="history"]') };
         });
         // Drawn as the mock-up does: 48 units, whatever the scale.
         for (const each of [sizes.bid, sizes.menu, sizes.history]) {
@@ -199,7 +199,7 @@ test.describe("the controls under a finger, on the scaled table", () => {
         // A touch up to 22 pixels from the middle of the menu button lands on it, which at the smaller scale is
         // the button's reach beyond its drawing.
         const lands = (x: number, y: number) =>
-          page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest("[data-button]")?.getAttribute("data-button") ?? null, [x, y]);
+          page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest("[data-round-button]")?.getAttribute("data-round-button") ?? null, [x, y]);
         const middle = { x: sizes.menu.x + sizes.menu.w / 2, y: sizes.menu.y + sizes.menu.h / 2 };
         expect(await lands(middle.x - 21, middle.y)).toBe("menu");
         expect(await lands(middle.x, middle.y + 21)).toBe("menu");
@@ -327,7 +327,7 @@ test.describe("the scaled table's buttons", () => {
   test("Pause raises the pause menu in a solo game, and the round chip, the side panels and the two round buttons open the sheets", async ({ page }) => {
     await page.goto("/?solo=3&seed=7&speed=4&wait=1");
     await stripUp(page);
-    const menu = page.locator('.stage [data-button="menu"]');
+    const menu = page.locator('.stage [data-round-button="menu"]');
     await expect(menu).toHaveAttribute("aria-label", "Pause");
     await menu.tap();
     await expect(open(page, "pause")).toBeVisible();
@@ -335,9 +335,9 @@ test.describe("the scaled table's buttons", () => {
     await expect(open(page, "pause")).toHaveCount(0);
 
     for (const [button, name] of [
-      ['.stage [data-button="history"]', "history"],
-      ['.stage [data-button="last-trick"]', "last-trick"],
-      ['.stage [data-button="scores"]', "history"],
+      ['.stage [data-round-button="history"]', "history"],
+      ['.stage [data-round-button="last-trick"]', "last-trick"],
+      ['.stage [data-round-button="scores"]', "history"],
       [".stage .side-trick", "history"],
       [".stage .side-scores", "history"],
     ] as const) {
@@ -355,7 +355,7 @@ test.describe("the scaled table's buttons", () => {
     await createTable(page, "Alice", { seats: 3, others: ["computer", "computer"], speed: "fastest" });
     await sheet(page, "lobby").locator('[data-action="start"]').click();
     await expect(page.locator(".stage .seat:not([hidden])")).toHaveCount(3);
-    const menu = page.locator('.stage [data-button="menu"]');
+    const menu = page.locator('.stage [data-round-button="menu"]');
     await expect(menu).toHaveAttribute("aria-label", "Menu");
     await menu.tap();
     await expect(open(page, "leave").locator(".sheet-title")).toHaveText("Leave the table?");

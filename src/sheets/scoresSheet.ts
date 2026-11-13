@@ -82,6 +82,8 @@ export class ScoresSheet implements Sheet {
   private readonly lastMeta = el("div", { class: "sheet-meta" });
   private readonly tabs: HTMLButtonElement[];
   private readonly panels: HTMLElement[];
+  // Where the trick's details go, which is before the tabs.
+  private readonly bar: HTMLElement;
   private readonly close = new SheetButton(t("historysheet", "Close"), "primary", "close");
   private selected = 0;
 
@@ -97,9 +99,9 @@ export class ScoresSheet implements Sheet {
         text: tabLabel(tab),
       }),
     );
-    const bar = el("div", { class: "sheet-tabs", attrs: { role: "tablist", "aria-labelledby": "sheet-scores-title" } }, ...this.tabs);
+    this.bar = el("div", { class: "sheet-tabs", attrs: { role: "tablist", "aria-labelledby": "sheet-scores-title" } }, ...this.tabs);
     this.panels = [
-      el("div", { class: "sheet-panel", attrs: { role: "tabpanel", id: "scores-panel-scores", "aria-labelledby": "scores-tab-scores" } }, this.board.element),
+      el("div", { class: "sheet-panel", attrs: { role: "tabpanel", id: "scores-panel-scores", "aria-labelledby": "scores-tab-scores" } }),
       el("div", { class: "sheet-panel", attrs: { role: "tabpanel", id: "scores-panel-history", "aria-labelledby": "scores-tab-history" } }, this.historyMeta, this.table.element),
       el(
         "div",
@@ -113,8 +115,7 @@ export class ScoresSheet implements Sheet {
       { class: "sheet scores", data: { sheet: "scores" }, attrs: { role: "dialog", "aria-modal": "true", "aria-labelledby": "sheet-scores-title" } },
       this.title,
       this.meta,
-      this.trick.element,
-      bar,
+      this.bar,
       ...this.panels,
       actions(this.close),
     );
@@ -150,7 +151,13 @@ export class ScoresSheet implements Sheet {
     return TABS[this.selected];
   }
 
+  // The trick's details and the scores are the table's own panels, which stand in the sheet only while it is up, so
+  // that the page has each of them once.
   update(model: TableModel, fields: ScoresFields): void {
+    if (!this.trick.element.isConnected) {
+      this.element.insertBefore(this.trick.element, this.bar);
+      this.panels[0].replaceChildren(this.board.element);
+    }
     setText(this.title, fields.title);
     setText(this.meta, fields.meta);
     this.trick.update(model);
@@ -159,6 +166,11 @@ export class ScoresSheet implements Sheet {
     this.table.update(fields.history.table);
     setText(this.lastMeta, fields.lastTrick.meta);
     this.cards.update(fields.lastTrick.cards);
+  }
+
+  release(): void {
+    this.trick.element.remove();
+    this.board.element.remove();
   }
 
   focusDefault(): void {

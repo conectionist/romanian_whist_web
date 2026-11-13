@@ -165,6 +165,9 @@ export class Sheets {
 
   // Shows this sheet, or none, filled from the store.
   render(name: SheetName | null, state: StoreState, context: RenderContext): void {
+    if (name !== "scores") {
+      this.scores.release();
+    }
     if (name === null) {
       this.layer.show(null);
       this.roundHolding = false;

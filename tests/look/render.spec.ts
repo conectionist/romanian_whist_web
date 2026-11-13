@@ -320,75 +320,83 @@ async function flightStart(page: Page, picked: boolean): Promise<{ rest: Spot; d
   }, picked);
 }
 
-test.describe("under a finger", () => {
-  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+// What a finger enlarges is the desktop's table, which a touch screen has from 1100 by 740 and a phone held
+// upright has at its width. A touch screen smaller than 1100 by 740 and wider than tall has the scaled table,
+// with sizes of its own, which its own tests look at.
+for (const [width, height] of [
+  [1280, 800],
+  [390, 844],
+]) {
+  test.describe(`under a finger, in a window of ${width} by ${height}`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
 
-  test("a card played from the fan starts its flight where it is drawn, and as large", async ({ page }) => {
-    const start = await flightStart(page, false);
-    expect(Math.abs(start.first.x - start.drawn.x)).toBeLessThan(2);
-    expect(Math.abs(start.first.y - start.drawn.y)).toBeLessThan(2);
-    expect(Math.abs(start.first.width - start.drawn.width)).toBeLessThan(3);
-  });
-
-  test("a picked card, which is raised, starts its flight where it is drawn raised", async ({ page }) => {
-    const start = await flightStart(page, true);
-    // The raise is 30 table units, drawn at the fan's scale: some 12 pixels here, which a flight from the
-    // rest would jump by.
-    expect(start.rest.y - start.drawn.y).toBeGreaterThan(8);
-    expect(Math.abs(start.first.x - start.drawn.x)).toBeLessThan(2);
-    expect(Math.abs(start.first.y - start.drawn.y)).toBeLessThan(2);
-    expect(Math.abs(start.first.width - start.drawn.width)).toBeLessThan(3);
-  });
-
-  test("the sliders are 44 tall under a finger, about the line a mouse sees them on, and a touch is on its own", async ({ page }) => {
-    await page.goto("/look.html?shot=sheet-settings");
-    await page.waitForSelector("body[data-ready]");
-    const sliders = await page.locator(".sheet:not([hidden]) .slider").evaluateAll((rows) =>
-      rows.map((row) => {
-        const input = row.querySelector("input")!.getBoundingClientRect();
-        return { height: input.height, middle: input.y + input.height / 2 - row.getBoundingClientRect().y };
-      }),
-    );
-    expect(sliders.length).toBeGreaterThan(1);
-    for (const slider of sliders) {
-      expect(slider.height).toBeGreaterThanOrEqual(44);
-      expect(slider.middle).toBeCloseTo(11, 1);
-    }
-    // A touch up to 21 pixels above or below a slider's line is on that slider's own input.
-    const inputs = page.locator(".sheet:not([hidden]) .slider input");
-    for (let at = 0; at < sliders.length; at++) {
-      await inputs.nth(at).scrollIntoViewIfNeeded();
-      const line = await inputs.nth(at).evaluate((input) => {
-        const box = input.getBoundingClientRect();
-        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-      });
-      for (const offset of [-21, 0, 21]) {
-        const hit = await inputs.nth(at).evaluate((input, [x, y]) => document.elementFromPoint(x, y) === input, [line.x, line.y + offset]);
-        expect(hit, `slider ${at}, ${offset} from its line`).toBe(true);
-      }
-    }
-  });
-
-  test("the hand's cards are drawn 32 pixels apart or more, and the bid strip 44, and neither is smaller than the mouse's", async ({ page }) => {
-    await page.goto("/look.html?shot=hand-8-cards");
-    await page.waitForSelector("body[data-ready]");
-    const lefts = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard:not([hidden])"), (card) => card.getBoundingClientRect().x).sort((a, b) => a - b));
-    expect(lefts).toHaveLength(8);
-    for (let at = 1; at < lefts.length; at++) {
-      expect(lefts[at] - lefts[at - 1]).toBeGreaterThanOrEqual(30);
-    }
-    // The fan is no wider than the window, and stays on it.
-    expect(lefts[0]).toBeGreaterThanOrEqual(0);
-
-    await page.goto("/look.html?shot=bidding");
-    await page.waitForSelector("body[data-ready]");
-    const pitch = await page.evaluate(() => {
-      const boxes = Array.from(document.querySelectorAll<HTMLElement>(".bidstrip .opt:not([hidden])"), (button) => button.getBoundingClientRect());
-      return boxes.length > 1 ? boxes[1].x - boxes[0].x : 0;
+    test("a card played from the fan starts its flight where it is drawn, and as large", async ({ page }) => {
+      const start = await flightStart(page, false);
+      expect(Math.abs(start.first.x - start.drawn.x)).toBeLessThan(2);
+      expect(Math.abs(start.first.y - start.drawn.y)).toBeLessThan(2);
+      expect(Math.abs(start.first.width - start.drawn.width)).toBeLessThan(3);
     });
-    expect(pitch).toBeGreaterThanOrEqual(43.5);
+
+    test("a picked card, which is raised, starts its flight where it is drawn raised", async ({ page }) => {
+      const start = await flightStart(page, true);
+      // The raise is 30 table units, drawn at the fan's scale: some 12 pixels here, which a flight from the
+      // rest would jump by.
+      expect(start.rest.y - start.drawn.y).toBeGreaterThan(8);
+      expect(Math.abs(start.first.x - start.drawn.x)).toBeLessThan(2);
+      expect(Math.abs(start.first.y - start.drawn.y)).toBeLessThan(2);
+      expect(Math.abs(start.first.width - start.drawn.width)).toBeLessThan(3);
+    });
+
+    test("the sliders are 44 tall under a finger, about the line a mouse sees them on, and a touch is on its own", async ({ page }) => {
+      await page.goto("/look.html?shot=sheet-settings");
+      await page.waitForSelector("body[data-ready]");
+      const sliders = await page.locator(".sheet:not([hidden]) .slider").evaluateAll((rows) =>
+        rows.map((row) => {
+          const input = row.querySelector("input")!.getBoundingClientRect();
+          return { height: input.height, middle: input.y + input.height / 2 - row.getBoundingClientRect().y };
+        }),
+      );
+      expect(sliders.length).toBeGreaterThan(1);
+      for (const slider of sliders) {
+        expect(slider.height).toBeGreaterThanOrEqual(44);
+        expect(slider.middle).toBeCloseTo(11, 1);
+      }
+      // A touch up to 21 pixels above or below a slider's line is on that slider's own input.
+      const inputs = page.locator(".sheet:not([hidden]) .slider input");
+      for (let at = 0; at < sliders.length; at++) {
+        await inputs.nth(at).scrollIntoViewIfNeeded();
+        const line = await inputs.nth(at).evaluate((input) => {
+          const box = input.getBoundingClientRect();
+          return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        });
+        for (const offset of [-21, 0, 21]) {
+          const hit = await inputs.nth(at).evaluate((input, [x, y]) => document.elementFromPoint(x, y) === input, [line.x, line.y + offset]);
+          expect(hit, `slider ${at}, ${offset} from its line`).toBe(true);
+        }
+      }
+    });
+
+    test("the hand's cards are drawn 32 pixels apart or more, and the bid strip 44, and neither is smaller than the mouse's", async ({ page }) => {
+      await page.goto("/look.html?shot=hand-8-cards");
+      await page.waitForSelector("body[data-ready]");
+      const lefts = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard:not([hidden])"), (card) => card.getBoundingClientRect().x).sort((a, b) => a - b));
+      expect(lefts).toHaveLength(8);
+      for (let at = 1; at < lefts.length; at++) {
+        expect(lefts[at] - lefts[at - 1]).toBeGreaterThanOrEqual(30);
+      }
+      // The fan is no wider than the window, and stays on it.
+      expect(lefts[0]).toBeGreaterThanOrEqual(0);
+
+      await page.goto("/look.html?shot=bidding");
+      await page.waitForSelector("body[data-ready]");
+      const pitch = await page.evaluate(() => {
+        const boxes = Array.from(document.querySelectorAll<HTMLElement>(".bidstrip .opt:not([hidden])"), (button) => button.getBoundingClientRect());
+        return boxes.length > 1 ? boxes[1].x - boxes[0].x : 0;
+      });
+      expect(pitch).toBeGreaterThanOrEqual(43.5);
+    });
   });
-});
+}
 
 test.describe("under a mouse", () => {
   test.use({ viewport: { width: 844, height: 390 }, hasTouch: false, isMobile: false });
@@ -478,11 +486,18 @@ for (const [touch, pointer] of [
   test.describe(`the seats under ${pointer}`, () => {
     test.use({ hasTouch: touch, isMobile: touch });
 
-    for (const [width, height] of [
-      [844, 390],
-      [740, 360],
-      [1920, 1080],
-    ]) {
+    // A finger has the desktop's table from 1100 by 740, and in a window taller than wide.
+    for (const [width, height] of touch
+      ? [
+          [1280, 800],
+          [390, 844],
+          [1920, 1080],
+        ]
+      : [
+          [844, 390],
+          [740, 360],
+          [1920, 1080],
+        ]) {
       for (const seatCount of [3, 4, 5, 6]) {
         test(`${seatCount} players, in a window of ${width} by ${height}, have their panels and racks at the table's own places`, async ({ page }) => {
           await page.setViewportSize({ width, height });

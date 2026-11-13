@@ -6,7 +6,7 @@ import type { ServerMessage } from "../net/protocol";
 import { modelOf, type TableModel } from "../play/model";
 import { PACES, storedPace, type Pace } from "../play/motion";
 import { NOTHING_ASKED, sheetFor, type MenuSheet, type UiState } from "../play/sheets";
-import { Store } from "../play/store";
+import { NO_CHANGE, Store } from "../play/store";
 import { MenuBar, menuStateFor } from "../menu/menuBar";
 import { NO_ACTIONS, Sheets } from "../sheets/host";
 import { LanguageDialog } from "../lobby/languageDialog";
@@ -14,6 +14,7 @@ import { MenuPage } from "../lobby/menuPage";
 import { defaults } from "../lobby/setup";
 import { seededRandom } from "../lobby/catalogue";
 import { loadFonts } from "../table/fonts";
+import { LayoutWatch } from "../table/layoutWatch";
 import { TableScene } from "../table/renderer";
 import { TABLE_PICTURES } from "../table/tableTop";
 import { TableView } from "../table/view";
@@ -26,6 +27,7 @@ import "../table/styles/cards.css";
 import "../table/styles/hud.css";
 import "../table/styles/strip.css";
 import "../table/styles/touch.css";
+import "../table/styles/scaled.css";
 import "../sheets/styles/sheet.css";
 import "../lobby/styles/lobby.css";
 
@@ -115,6 +117,22 @@ async function main(): Promise<void> {
     const model = modelOf(store.state);
     return scene.relayout(model !== null && order !== undefined ? inGivenOrder(model, order) : model, change, false);
   };
+
+  // The table the window gets, as the live page chooses it: on a touch screen smaller than the desktop's,
+  // the scaled table, which has the whole window and no menu bar.
+  new LayoutWatch(frame, ({ choice, size }) => {
+    const desktop = choice.kind === "desktop";
+    frame.dataset.layout = choice.kind;
+    frame.style.setProperty("--scale", String(choice.kind === "scaled" ? choice.scale : 1));
+    frame.style.setProperty("--band", bar !== null && desktop ? `${MENU_BAR}px` : "0px");
+    if (bar !== null) {
+      bar.element.hidden = !desktop;
+    }
+    scene.setLayout(choice.kind === "scaled" ? { kind: "scaled", size, scale: choice.scale } : { kind: "desktop" });
+    if (store.state.snapshot !== null) {
+      void draw(NO_CHANGE);
+    }
+  });
 
   // Draws the state a fixture holds, as a sync would, at once, and what it says is open over it.
   const show = async (fixture: Fixture) => {

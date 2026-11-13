@@ -2,7 +2,9 @@
 
 > **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
 > draws the table and plays a solo game against the server (PR #3). Phase 7, the sheets, the menus
-> and online tables, is complete (2026-11-12, PR #7). Phase 8 is not built. Outside the phases, the page's Docker image is built, has had two reviews,
+> and online tables, is complete (2026-11-12, PR #7). Phase 8, Romanian, the keyboard, screen readers
+> and touch, is built and reviewed twice, and waits for the owner's approval (PR #8). Phase 8b, the
+> phone layout, is not built. Outside the phases, the page's Docker image is built, has had two reviews,
 > and waits for the owner's approval (PR #5, [§14](#the-docker-image-outcome)).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
@@ -293,10 +295,12 @@ Paths are in the desktop repository.
 - **`t(context, source, args)` mirrors Qt's `translate()`**, so strings ported from the desktop
   client keep their wording.
 - **One import tool.** `tools/import_ts.py` turns `i18n/romanian_whist_desktop_ro_RO.ts` (211
-  strings, 8 with plural forms) into `en.json` and `ro.json`.
-- **New strings**, for the lobby and the connection notices, are added by hand in both languages.
+  strings, 8 with plural forms) into `src/i18n/ro.desktop.json`. There is no English file: the
+  English is the source string in the code, as in Qt.
+- **New strings**, for the lobby and the connection notices, are written in English in the code and
+  added by hand in Romanian, in `src/i18n/ro.page.json`.
 - **Plurals:** port Qt's own Romanian rule (three forms, one line) instead of using
-  `Intl.PluralRules`. The two disagree on some numbers above 100 (101, for one), and Qt's rule is
+  `Intl.PluralRules`. The two agree on every whole number, which phase 8 checked, and Qt's rule is
   the one the reviewed translation was written against.
 - **Gender agreement:** port `src/table/PersonText.cpp`.
 - **Every string goes through `t()`** from the first phase of the page, even before Romanian
@@ -323,7 +327,8 @@ Paths are in the desktop repository.
   - `touch-action: manipulation` on the table.
 - **Small screens:** the table scales to fit, as the desktop client's does (`TableView.cpp`), and
   phones held sideways work. In the first version, a phone held upright gets a "turn your phone"
-  hint.
+  hint. A phone gets a layout of its own in [phase 8b](#phase-8b-the-phone-layout--l): scaled as
+  the desktop's is, the table is too small to read on one.
 
 ---
 
@@ -610,7 +615,7 @@ Docker's documentation and no test covers.
 The phases are numbered in one sequence with the server's. Phases 0 to 5, 9 and 11 are in the
 server plan's
 [§13](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#13-phases),
-and 6, 7, 8 and 10 are here. Phase 9 has a share here too: the footer, the About page, and deploying the page with its server
+and 6, 7, 8, 8b and 10 are here. Phase 9 has a share here too: the footer, the About page, and deploying the page with its server
 (§12).
 The branch workflow and the code review procedure are that section's. Its step 5, building and
 testing both presets after the fixes, means here the page's build, unit tests and browser tests.
@@ -1068,7 +1073,233 @@ commit of code `2e100c4`).
 - **Done when:**
   - the owner has reviewed the Romanian;
   - a game can be played with the keyboard alone;
-  - a phone held sideways finishes a game.
+  - a phone held sideways finishes a game. The owner moved this one to
+    [phase 8b](#phase-8b-the-phone-layout--l) on 2026-11-13, after trying the page on a phone: see
+    the outcome.
+
+**Outcome** (branch `web/phase-8-romanian-keyboard-touch`, PR #8, parent `ccr-209c0806-o444sp`, the last
+commit of code `6fc0a0c`). It waits for the owner's approval.
+
+- **The branch.**
+  - **The commits,** in the order they were made:
+    - Romanian: the import `5e229af`; the catalogue and Qt's plural rule `684c379`; the language the
+      page is told to run in `d302683`; the page's own strings `6a01f58`; the test that every string
+      has Romanian `9f3bd3e`; the language dialog `5891619` and the flag that reopens it `e563c26`;
+      every look capture in Romanian too `f216f13`; `91ff5b1`; a game in Romanian, end to end, and
+      the README `43acc45`;
+    - the keyboard `13848a3`, screen readers `bdc3d64`, touch `12c9236`, small windows and the
+      upright hint `4fc01fa`, and `9c639b5`;
+    - the first review's fixes: `3da0949`, `97c45c3`, `acc97b6`, `82073c8`, `65d270e`, and the name
+      panels' growth on a phone `093c8e3`;
+    - the second review's fixes: `fd11910`, `4b0956a`, `1b00571`, `427d3ff`, `73cd8dd`, `20c34fa`;
+    - the owner's Romanian: `cac3016` and `6cedec2`;
+    - the name panels' growth taken away again: `6fc0a0c`.
+  - **The PR** is against the parent, never `master`. The server and its submodule (`df37bd8`) are
+    untouched.
+  - **Who built it:** one implementing agent at extra-high effort built the phase, in two stretches
+    with a check between them, and made every fix. Two fresh read-only agents at extra-high effort
+    reviewed it, as the server plan's §13 says.
+- **The owner's choices.**
+  - **Before the build:** the page asks for the language on a first visit and remembers it; the
+    desktop's keys plus a selection moved by the arrows; the Romanian shown on a private review page;
+    the phone tried in emulation and then on the owner's own. A tap on a bid bids at once: only a
+    card takes two taps.
+  - **After the first review:** fix all but 7, 11 and 13, and add the name panels on a phone; the same
+    agent makes the fixes; every fix gets a second review.
+  - **After the second review:** fix all but 11 and 16; no third review.
+  - **How a screen reader says a card,** in Romanian: a rank as a word, "de" and the suit, with no
+    article, in the past tense: "Bogdan a pus damă de inimă roșie", "Atu: Zece de inimă neagră". The
+    suits are inimă neagră, inimă roșie, romb and treflă. A card of the hand "se poate juca" or
+    "nu se poate juca".
+  - **The Romanian review** (2026-11-12 and 13): the owner marked each of the review page's 116
+    entries, beside screenshots of every screen in Romanian. 18 changed, among them
+    "Deconectat" for a person who is away, "%1 nu mai răspunde.", "mută", "Fără timp limită" and
+    "%1 s per mutare". A computer player is a "robot" everywhere, never a "bot". The round sheet's
+    "waiting for" agrees with the people it waits for: "Îl", "O", "Îi" or "Le așteptăm pe …".
+  - **After the phone** (2026-11-13): the name panels' growth is removed, the phone gets a layout of
+    its own in phase 8b, and "a phone held sideways finishes a game" moves there.
+- **Built.**
+  - **The catalogues.** `tools/import_ts.py` writes the desktop's translation into
+    `src/i18n/ro.desktop.json`: 211 entries, 8 of them plural, from the desktop's commit `5757811`,
+    which the file records. The page's own strings are in `src/i18n/ro.page.json`, 139 entries, by
+    hand. `t(context, source, args)` looks a string up as Qt's `translate()` does, with Qt's
+    three-form Romanian plural rule, and a sentence about a person takes the variant for a man, a
+    woman or you (`src/i18n/person.ts`, from the desktop's `PersonText.cpp`).
+  - **The language.** A first visit is asked, with the desktop's language dialog, before anything is
+    drawn. The answer is kept in the browser. The flag at the top right of the main menu opens the
+    dialog again. `?lang=ro` or `?lang=en` sets the language for one visit, without asking or
+    keeping, and follows the address into `/t/CODE`. New Game remembers a setup for each language,
+    because the drawn names are the language's.
+  - **The keyboard.** `0` to `8` bid and `1` to `8` play that card of the hand, as on the desktop.
+    Left and Right move a pick over the legal cards or the offered bids, and Enter takes it. Space
+    lets a held round go, Esc raises the pause menu or closes a sheet, and Alt+N, S, R and X are the
+    menu bar. The keyboard's focus is on the pick or on nothing, so Enter never plays a card nobody
+    picked. Tab reaches every control and the focus is always drawn.
+  - **Screen readers.** Every picture of a card has a name, a rack's face with its owner
+    ("Ana: Queen of hearts"). A card of the hand says whether it is playable and is a pressed button
+    while it is the pick, as a bid is. Each name panel has a name. A polite live region says each
+    round begun with its trump, the question put to you, each bid and card, each trick taken, each
+    round scored and the game's end. It keeps 100 lines, more than a round of six.
+  - **Touch.** The first tap on a card picks it and the second plays it; a tap elsewhere puts the
+    pick down; a mouse plays at once. Where the pointer is coarse, the bid strip and the hand are
+    drawn larger on a small window, so a bid is 44 pixels from the next and a card of the fan 32,
+    the corner panels are drawn no smaller than half, and sliders and small buttons take touches 44
+    pixels tall. A played card's flight starts from where the card is drawn.
+  - **Small windows.** The page works in a window of 740 by 360: the main menu draws smaller, a
+    sheet taller than the window scrolls and opens at its top every time, and the lobby's row of
+    actions wraps. A phone held upright is told to turn.
+  - **The look tool** takes every capture in Romanian as well, and has fixtures of its own for New
+    Game, Play online, Create a table and the lobby.
+- **The comparisons.** Mean absolute difference of each capture from the desktop's picture, 0 to
+  255, as in phase 7. The language dialog is new, at 0.90. The others did not move through the
+  phase: menu 0.57, table-empty 0.74, sheet-pause 1.13, sheet-game-over 1.18, sheet-history 1.19,
+  sheet-last-trick 1.24, sheet-settings 1.25, sheet-round 1.27, bidding 1.47, hand-4-cards 1.52,
+  sheet-rules 1.54, hand-1-card 1.55, table-5-players 1.68, table-3-players 1.69, hand-8-cards 1.73,
+  table-4-players 1.89 and table-6-players 2.00.
+- **Where the build departs from the plan, or found what it did not say:**
+  - **No `en.json` and no `ro.json`** (§10, corrected above): the English is the source string, and
+    the Romanian is two files, the imported one and the page's own.
+  - **Qt's plural rule and `Intl.PluralRules` agree** on every whole number, 101 included. §10 said
+    they did not, and is corrected. The port of Qt's rule stays.
+  - **The page overrides two of the desktop's strings,** "Bot %1" and "Bot speed", to say "robot".
+    The desktop's issue #51 asks for the same there; the page then imports again and drops the two.
+  - **The flag on the main menu** is the page's own: the desktop's menu page has none.
+  - **A card is said as the owner set it,** not as §11's example, "Ana plays the queen of hearts":
+    the past tense, and in Romanian no article.
+  - **A click with no press before it only picks a card.** A screen reader's activation arrives so.
+    It is told the card is pressed, and a second activation plays it.
+  - **Under a finger the table no longer scales as the desktop's does:** the strip, the hand and
+    the corner panels are drawn larger than the table's scale gives. The hand's cards are 32 pixels
+    apart, not 44: eight cards of 44 do not fit a phone.
+  - **English says "wins with 1 point",** where the desktop says "1 points".
+  - **On a phone the other players' names cannot be read.** At 844 by 390 and 740 by 360 they are 6
+    or 7 pixels tall, because the whole table is scaled as the desktop's is. A stop-gap drew those
+    panels at 0.55 and moved them clear of everything else (`093c8e3`, `fd11910`). On the owner's
+    phone it put two players side by side, off the desktop's directions, and the owner had it
+    removed (`6fc0a0c`). Phase 8b gives the phone its own layout.
+  - **A browser's bars take much of a phone's screen.** On a Samsung S24+ held sideways the browser
+    left the page 754 by 247 pixels, below the 740 by 360 this phase built for; full screen is 832
+    by 384. Phase 8b adds a full-screen button and a home-screen app.
+  - **Brave on Android would not open the page over plain http** on the local network. That is its
+    HTTPS upgrade, not the page.
+- **Left out:**
+  - **A phone finishing a game,** which is phase 8b's.
+  - **A third review.** The ten commits after the second review had none, by the owner's choice.
+  - **Pictures to compare New Game, Play online, Create a table and the lobby with:** the desktop
+    has none.
+  - **An unreliable test,** `online.spec.ts`'s "a table whose game ended with a seat left…", fails
+    now and then on the parent too. It gets a PR of its own after this phase.
+- **Tests:** 742 unit tests in 53 files (591 at the start of the phase), 134 look tests (25) and 69
+  end-to-end tests (31).
+  - **End to end,** against `whist_server`: the language question and its reopening; a game in
+    Romanian with Romanian names; a whole game with the keyboard alone, which a lint keeps free of
+    the mouse; what a screen reader is told; a whole game by touch at a phone's size; the language
+    through a table's address; a setup for each language.
+  - **Mutation checks,** each made and reverted, among them: Enter on a card nobody picked; the touch
+    guard on a press; the flight's start under a finger, picked and not; the sliders' gap; a sheet's
+    scroll reset; the pressed state; the pointer's reset; the setup's slots; the language-only query;
+    the lobby's wrap; and a "bot" left anywhere in the Romanian.
+- **Reviews.**
+  - **The first cold review,** of the whole branch at `9c639b5`, found 17 problems, none above
+    severity 3.
+    1. Severity 3: Enter played a card that had the focus but was not the pick, with no focus drawn.
+    2. Severity 3: only the hand's cards had names; the trump, the felt, the racks and the last trick
+       had none.
+    3. Severity 2: the live region never said it was your turn, nor the trump.
+    4. Severity 2: under a finger a played card jumped as its flight started.
+    5. Severity 2: a card's name read badly inside a sentence, in both languages.
+    6. Severity 2: sliders and "Take this seat" were under 44 pixels for a finger.
+    7. Severity 2: one tap on a bid bids.
+    8. Severity 2: the touch test never moved a pick from one card to another.
+    9. Severity 1: a comment and a test said Qt's and Intl's plural rules differ.
+    10. Severity 1: `?lang=` was lost when the address moved to a table.
+    11. Severity 1: "1 point" where the desktop says "1 points".
+    12. Severity 1: the flag's name did not say the language.
+    13. Severity 1: points of Romanian wording.
+    14. Severity 1: two comments against `CLAUDE.md`.
+    15. Severity 1: Space on nothing was reached only by a scripted blur.
+    16. Severity 1: only a touch screen opened a tall sheet at its top.
+    17. Severity 1: departures the outcome had to record.
+
+    Fixed: 1 and 8 (`3da0949`, `65d270e`), 2, 3 and 5 (`97c45c3`), 4, 6 and 16 (`acc97b6`), and 9,
+    10, 12, 14 and 15 (`82073c8`). 7 is the owner's choice and 11 is kept, both recorded above with
+    17. 13 went to the owner's review of the Romanian.
+  - **The second cold review,** of `9c639b5..65d270e`, found 16 problems in those fixes, none above
+    severity 3.
+    1. Severity 3: the grown name panels moved between rounds.
+    2. Severity 2: a resize that only moved a panel up or down did not lay it out again.
+    3. Severity 2: the two settings sliders' touch areas overlapped.
+    4. Severity 2: a sheet opened again where it had been scrolled to.
+    5. Severity 2: under a finger a picked card still jumped as it flew.
+    6. Severity 2: "cincul" for "cinciul".
+    7. Severity 2: a screen reader was not told a card was picked.
+    8. Severity 2: the live region's 40 lines were less than a round.
+    9. Severity 2: a setup saved in the other language was dropped whole.
+    10. Severity 2: a rack's face was named without its owner.
+    11. Severity 1: "jucabilă" and "nejucabilă" read oddly.
+    12. Severity 1: the live region was given a suit's symbol.
+    13. Severity 1: a press let go elsewhere left a later bare click playing at once.
+    14. Severity 1: the whole query went to a table's address, not the language alone.
+    15. Severity 1: five comments against `CLAUDE.md`.
+    16. Severity 1: §10's plural claim.
+
+    Fixed: 1 and 2 (`fd11910`, and gone with `6fc0a0c`), 3 to 5 (`4b0956a`), 6 to 8, 10, 12 and 13
+    (`1b00571`, where the owner's way of saying a card also settled 6 and 11), 9, 14 and 15
+    (`427d3ff`), and 16 here. Checking the fixes also found the lobby's Start button cut off in
+    Romanian, fixed in `73cd8dd`.
+- **Builds and CI.**
+  - **`npm run build` and `npm run build:look`** pass at `6fc0a0c`, and the unit, look and end-to-end
+    tests pass: 742, 134 and 69.
+  - **CI** (Build (Linux) and the Docker image) is green at `6fc0a0c`.
+
+### Phase 8b: the phone layout — L
+
+The owner added this phase on 2026-11-13, after phase 8 showed that the desktop's table, scaled to a
+phone, cannot be read. The Android client's plan had already settled what a small window needs, with
+a mock-up the owner approved: `docs/android-client-plan.md` §5 and
+`docs/android-client-mockup/source/mockup.js` in `romanian_whist_android` (commit `a9ea8a7`). The
+mock-up is HTML and JavaScript, so its layout code can be ported, not only read. Where §2 says the
+desktop client wins, that still holds for the desktop layout. For the scaled layout the Android
+mock-up wins.
+
+- **Work:**
+  - **Choosing a layout,** from the window's size in CSS pixels, as the mock-up's `chooseLayout`
+    (line 160) does:
+    - taller than wide: the "turn your phone" hint, which phase 8 built;
+    - at least 1100 by 740: the desktop layout, which is the page as it is;
+    - smaller than 640 by 360: a page that says the game needs more room;
+    - otherwise: the scaled layout, drawn at 640 by 360 or wider and scaled to the window.
+  - **The scaled table,** from `layoutScaled` (line 448) and `seatRing` (line 373):
+    - each opponent sits in the desktop's direction for that number of players, every plate's
+      nearest edge on one circle as large as the window allows;
+    - the plates are flat, 128 by 54, and come in over the wood so the table takes the whole height;
+      your own is 184 by 38, over the foot of your hand;
+    - the corners hold the controls: a menu button top left in place of the menu bar, a round chip
+      top right that opens the scoreboard, and Round history and Last trick bottom right;
+    - the bid strip is one row of 48 by 48 bids across the table;
+    - side panels for the trick and the scores on phones wider than 16:9.
+  - **Pages and sheets,** from the Android plan's §5.5: a side sheet for the scoreboard, the history
+    and the last trick; bottom sheets for the end of a round, settings, the pause menu and the final
+    results; New Game, Play online and the lobby as pages with their one action always in reach.
+  - **Full screen,** the owner's two choices of 2026-11-13:
+    - a full-screen button on a touch screen, which also holds the phone sideways where the browser
+      allows it;
+    - a web app manifest, so that "Add to Home screen" opens the page with no browser bars. It needs
+      https, so it shows on a deployment and not on a local network.
+
+    The strip beside the camera is left alone.
+  - **Phase 8's enlargements under a finger** (the strip, the hand, the corner panels) go where the
+    scaled layout replaces them. The two taps, the pressed state and the 44-pixel targets stay.
+- **Done when:**
+  - a phone held sideways finishes a game: the owner's, in full screen, in a solo game and at an
+    online table;
+  - the layout's geometry is unit tested against the mock-up's numbers, at the mock-up's window
+    sizes and with 2 to 6 players;
+  - comparisons with the Android mock-up are linked;
+  - the desktop layout's comparisons with the desktop's pictures have not moved.
+- **To settle when the phase is planned:** whether a small window with a mouse gets the scaled
+  layout too, as the window's size alone would choose; and how far the pages and sheets of the
+  Android plan are followed where the page already has a sheet.
 
 ### Phase 10 (optional): offline solo — M to L
 

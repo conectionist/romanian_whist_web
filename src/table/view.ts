@@ -1,9 +1,5 @@
 import { el } from "../dom/el";
-import { bidStripHeight, bidStripOrigin, bidStripWidth, fitBox, fitScale, marginTop, marginX, marginBottom, type Rect, type Size } from "./space";
-import type { Room } from "./geometry/grown";
-
-// The clear space kept between a panel and what is next to it, in pixels of the window.
-const GAP = 4;
+import { fitBox, fitScale, marginTop, marginX, marginBottom, type Size } from "./space";
 
 export interface Fit {
   scale: number;
@@ -46,7 +42,6 @@ export class TableView {
 
   private fit: Fit | null = null;
   private readonly observer: ResizeObserver;
-  private readonly fitted: (() => void)[] = [];
 
   constructor(parent: HTMLElement) {
     this.space = el("div", { class: "space" });
@@ -64,46 +59,6 @@ export class TableView {
     return this.fit?.scale ?? 1;
   }
 
-  // Told when the table is fitted to a view of another size.
-  onFit(handler: () => void): void {
-    this.fitted.push(handler);
-  }
-
-  // The view's size, which what stands in it is worked out for.
-  get size(): Size {
-    return { w: this.root.clientWidth, h: this.root.clientHeight };
-  }
-
-  // Where the seats' panels may stand and what they keep clear of, in table units: the view, the elements
-  // given, where they are drawn, and, for the panels alone, the bid strip's place whether it is up or not
-  // and whatever else is asked.
-  room(keep: readonly Element[], also: readonly Rect[]): Room | null {
-    if (this.fit === null) {
-      return null;
-    }
-    const { scale, x, y } = this.fit;
-    const outer = this.root.getBoundingClientRect();
-    const toTable = (rect: DOMRect): Rect => ({
-      x: (rect.left - outer.left - x) / scale + fitBox.x,
-      y: (rect.top - outer.top - y) / scale + fitBox.y,
-      w: rect.width / scale,
-      h: rect.height / scale,
-    });
-    const grown = this.top.firstElementChild === null ? "none" : getComputedStyle(this.top.firstElementChild).scale;
-    const by = grown === "none" ? 1 : parseFloat(grown);
-    const w = bidStripWidth * by;
-    const h = bidStripHeight * by;
-    const strip: Rect = { x: bidStripOrigin.x + (bidStripWidth - w) / 2, y: bidStripOrigin.y + (bidStripHeight - h) / 2, w, h };
-    const view = toTable(outer);
-    const gap = GAP / scale;
-    return {
-      view: { x: view.x + gap, y: view.y + gap, w: view.w - 2 * gap, h: view.h - 2 * gap },
-      keep: keep.map((element) => toTable(element.getBoundingClientRect())),
-      covered: [strip, ...also],
-      gap,
-    };
-  }
-
   // Fits the table to the view as it is now.
   refit(): void {
     const next = fitFor({ w: this.root.clientWidth, h: this.root.clientHeight });
@@ -115,9 +70,6 @@ export class TableView {
     this.space.style.transform = transform;
     this.top.style.transform = transform;
     this.root.style.setProperty("--s", String(next.scale));
-    for (const handler of this.fitted) {
-      handler();
-    }
   }
 
   dispose(): void {

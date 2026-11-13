@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { panelRect } from "../../src/table/geometry/seats";
-import { measure, panelsOn } from "./panels";
+import { place, rackOrigin } from "../../src/table/geometry/seats";
 
 interface Spot {
   x: number;
@@ -470,84 +469,42 @@ for (const [width, height] of [
   });
 }
 
-// On a phone held sideways the other players' panels are drawn as large as the room allows, up to the 0.55
-// a name needs to be read at, and on nothing. `smallest` is the least name height, in pixels, that each
-// table reaches in the window.
-const PHONES: { width: number; height: number; smallest: Record<string, number> }[] = [
-  { width: 844, height: 390, smallest: { "table-2-players": 15.5, "table-3-players": 15.5, "table-4-players": 15.5, "table-5-players": 13.5, "table-6-players": 13.5, bidding: 13.5, "table-6-players-full-hand": 13.5 } },
-  { width: 740, height: 360, smallest: { "table-2-players": 15.5, "table-3-players": 15.5, "table-4-players": 14.5, "table-5-players": 11.5, "table-6-players": 11.5, bidding: 11.5, "table-6-players-full-hand": 11.5 } },
-];
+// The seats stand where the table has them, at the table's own scale, under a finger as under a mouse: the
+// panels and the racks are at the places the layout gives them in a window of any size.
+for (const [touch, pointer] of [
+  [false, "a mouse"],
+  [true, "a finger"],
+] as const) {
+  test.describe(`the seats under ${pointer}`, () => {
+    test.use({ hasTouch: touch, isMobile: touch });
 
-for (const { width, height, smallest } of PHONES) {
-  test.describe(`the other players' panels in a window of ${width} by ${height} under a finger`, () => {
-    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
-
-    for (const [shot, least] of Object.entries(smallest)) {
-      test(`${shot}: their names are at least ${least} high, and the panels are on nothing`, async ({ page }) => {
-        await page.goto(`/look.html?shot=${shot}`);
-        await page.waitForSelector("body[data-ready]");
-        const table = await measure(page);
-        const others = Object.entries(table.names).filter(([seat]) => seat !== "0");
-        expect(others.length).toBeGreaterThan(0);
-        for (const [seat, high] of others) {
-          expect(high, `seat ${seat}`).toBeGreaterThanOrEqual(least);
-          // The table's own size would be drawn at this scale: the panels are never drawn smaller.
-          expect(table.seats[seat] * table.scale, `seat ${seat}`).toBeGreaterThanOrEqual(table.scale);
-        }
-        expect(panelsOn(table.drawn)).toEqual([]);
-      });
+    for (const [width, height] of [
+      [844, 390],
+      [740, 360],
+      [1920, 1080],
+    ]) {
+      for (const seatCount of [3, 4, 5, 6]) {
+        test(`${seatCount} players, in a window of ${width} by ${height}, have their panels and racks at the table's own places`, async ({ page }) => {
+          await page.setViewportSize({ width, height });
+          await page.goto(`/look.html?shot=table-${seatCount}-players`);
+          await page.waitForSelector("body[data-ready]");
+          for (let seat = 0; seat < seatCount; seat++) {
+            const panel = page.locator(`.seat[data-seat="${seat}"]`);
+            const own = place(seatCount, 0, seat)!;
+            const at = await panel.evaluate((node) => ({ x: parseFloat(node.style.left), y: parseFloat(node.style.top), scale: getComputedStyle(node).scale }));
+            expect(at, `seat ${seat}`).toEqual({ x: own.panel.x, y: own.panel.y, scale: "none" });
+            if (own.angle !== null) {
+              const rack = await page.locator(".rack").nth(seat).evaluate((node) => ({ x: parseFloat(node.style.left), y: parseFloat(node.style.top) }));
+              const origin = rackOrigin(own.angle);
+              expect(rack.x, `rack ${seat}`).toBeCloseTo(origin.x, 2);
+              expect(rack.y, `rack ${seat}`).toBeCloseTo(origin.y, 2);
+            }
+          }
+        });
+      }
     }
-
-    test("a table of fewer seats and a window of another size draw them again, as a fresh page would", async ({ page }) => {
-      await page.goto("/look.html?shot=table-6-players&then=table-3-players");
-      await page.waitForSelector("body[data-ready]");
-      const later = await measure(page);
-      expect(panelsOn(later.drawn)).toEqual([]);
-      await page.goto("/look.html?shot=table-3-players");
-      await page.waitForSelector("body[data-ready]");
-      const fresh = await measure(page);
-      expect(later.seats["1"]).toBeCloseTo(fresh.seats["1"], 3);
-    });
   });
 }
-
-test.describe("the other players' panels when the window changes under a finger", () => {
-  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
-
-  test("are laid out again for the new size, as a page opened at it lays them out", async ({ page }) => {
-    await page.goto("/look.html?shot=table-6-players");
-    await page.waitForSelector("body[data-ready]");
-    const before = await measure(page);
-    await page.setViewportSize({ width: 740, height: 360 });
-    await expect.poll(async () => (await measure(page)).scale).not.toBeCloseTo(before.scale, 3);
-    const after = await measure(page);
-    expect(panelsOn(after.drawn)).toEqual([]);
-    await page.goto("/look.html?shot=table-6-players");
-    await page.waitForSelector("body[data-ready]");
-    const fresh = await measure(page);
-    expect(after.seats["1"]).toBeCloseTo(fresh.seats["1"], 3);
-    expect(after.names["1"]).toBeCloseTo(fresh.names["1"], 1);
-  });
-});
-
-test.describe("the other players' panels under a mouse", () => {
-  test.use({ hasTouch: false, isMobile: false });
-
-  for (const { width, height } of [...PHONES, { width: 1920, height: 1080 }]) {
-    test(`are the table's own size, at the places it has for them, in a window of ${width} by ${height}`, async ({ page }) => {
-      await page.setViewportSize({ width, height });
-      await page.goto("/look.html?shot=table-6-players");
-      await page.waitForSelector("body[data-ready]");
-      const table = await measure(page);
-      for (const seat of [0, 1, 2, 3, 4, 5]) {
-        expect(table.seats[String(seat)]).toBe(1);
-        const at = (await page.locator(`.seat[data-seat="${seat}"]`).evaluate((node) => ({ x: parseFloat((node as HTMLElement).style.left), y: parseFloat((node as HTMLElement).style.top) })));
-        const own = panelRect(6, 0, seat)!;
-        expect(at).toEqual({ x: own.x, y: own.y });
-      }
-    });
-  }
-});
 
 // The words of the Romanian are longer, so no button of a sheet's actions may be cut off by the sheet's edge,
 // nor the sheet made wider than itself, at any window the page works in.

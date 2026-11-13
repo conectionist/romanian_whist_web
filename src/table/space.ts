@@ -66,13 +66,6 @@ export const buttonGap = 14;
 
 export const bidStripOrigin: Point = { x: 428, y: 486 };
 export const bidStripWidth = 680;
-// How tall the strip is, with its question and its note: what a panel keeps clear of while the strip is
-// away, so that none moves for it.
-export const bidStripHeight = 170;
-
-// The smallest the other players' name panels are drawn on a touch screen, as a fraction of their size
-// in the window, so that a name can be read.
-export const seatPanelMinimumScale = 0.55;
 
 // The square a circle of this radius about the centre sits in.
 export function squareAround(radius: number): Rect {

@@ -1,5 +1,4 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { measure, panelsOn } from "../look/panels";
 
 // A phone held sideways: a touch screen of 844 by 390, which Chromium emulates with touch events and
 // the coarse pointer the stylesheet asks about. Every answer here is a tap.
@@ -196,75 +195,6 @@ test.describe("a small window under a mouse", () => {
     expect(await newGame.evaluate((node) => node.scrollTop)).toBe(0);
   });
 });
-
-// The other players' panels are worked out once for a window and a seat count, so they stand still while a
-// game goes through bidding, play, a round scored and the next round's bidding, whatever the corner panels
-// say meanwhile; and in each of those they are on nothing.
-for (const players of [5, 6]) {
-  test.describe(`${players} players in a window of 740 by 360`, () => {
-    test.use({ viewport: { width: 740, height: 360 } });
-
-    test("the other players' panels stand still through a round and into the next", async ({ page }) => {
-      test.setTimeout(90_000);
-      // Where every panel and rack stood in each frame.
-      await page.addInitScript(() => {
-        const stood = new Set<string>();
-        (window as unknown as { stood: Set<string> }).stood = stood;
-        const watch = () => {
-          const seats = Array.from(document.querySelectorAll<HTMLElement>(".seat:not([hidden])"))
-            .filter((seat) => seat.dataset.seat !== "0")
-            .map((seat) => `${seat.dataset.seat}:${seat.style.left},${seat.style.top},${seat.style.scale}`);
-          // A rack with no cards is hidden and keeps its place.
-          const racks = Array.from(document.querySelectorAll<HTMLElement>(".rack"), (rack) => `${rack.style.left},${rack.style.top},${rack.style.transform}`);
-          if (seats.length > 0) {
-            stood.add(JSON.stringify([seats, racks]));
-          }
-          requestAnimationFrame(watch);
-        };
-        requestAnimationFrame(watch);
-      });
-      await page.goto(`/?solo=${players}&seed=3&speed=4&wait=1`);
-      await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
-
-      const measured: string[] = [];
-      const looked = async (when: string) => {
-        measured.push(...panelsOn((await measure(page)).drawn).map((pair) => `${when}: ${pair}`));
-      };
-      const strip = page.locator(".bidstrip:not([hidden]) .opt:not(:disabled):not([hidden])");
-      const cards = page.locator(".hand .hcard.playable");
-      const next = sheet(page, "round").locator('[data-action="continue"]:not(:disabled)');
-      let scored = false;
-      let bidding = 0;
-      let playing = 0;
-      for (const until = Date.now() + 70_000; Date.now() < until; ) {
-        if ((await strip.count()) > 0) {
-          if (scored) {
-            await looked("the next round's bidding");
-            break;
-          }
-          if (bidding++ === 0) {
-            await looked("bidding");
-          }
-          await strip.first().click();
-        } else if ((await cards.count()) > 0) {
-          if (playing++ === 0) {
-            await looked("play");
-          }
-          await cards.first().click();
-        } else if ((await next.count()) > 0) {
-          await looked("the round scored");
-          scored = true;
-          await next.click();
-        }
-        await page.waitForTimeout(30);
-      }
-      expect(scored).toBe(true);
-      expect(measured).toEqual([]);
-      const stood = await page.evaluate(() => Array.from((window as unknown as { stood: Set<string> }).stood));
-      expect(stood).toHaveLength(1);
-    });
-  });
-}
 
 test("a bid is 44 pixels from the next one under a finger, and a corner button is 44 tall", async ({ page }) => {
   await page.goto("/?solo=3&seed=7&speed=4");

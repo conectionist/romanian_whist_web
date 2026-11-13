@@ -170,10 +170,7 @@ export class TrickPanel {
   }
 
   update(model: TableModel): void {
-    this.show(fieldsFor(model));
-  }
-
-  show(fields: Fields): void {
+    const fields = fieldsFor(model);
     setText(this.title, fields.title);
     const now = JSON.stringify(fields.rows) + JSON.stringify(fields.prompt);
     if (now === this.last) {
@@ -189,15 +186,6 @@ export class TrickPanel {
     );
     renderRuns(this.prompt, fields.prompt);
   }
-}
-
-// The panel in the tallest form it takes: a play with the leader, the winner and your prompt. It is not
-// shown; it is measured, for what is to keep clear of the panel wherever it grows to.
-export function tallestTrickPanel(): HTMLElement {
-  const panel = new TrickPanel();
-  const line = (): Line => [{ text: "x" }];
-  panel.show({ title: "x", rows: [line(), line()], prompt: line() });
-  return panel.element;
 }
 
 // What the panel says, as the plain text of each line: for tests.

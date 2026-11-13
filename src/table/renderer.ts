@@ -1,30 +1,25 @@
 import type { Card } from "../net/protocol";
-import { NO_CHANGE, type Change } from "../play/store";
+import type { Change } from "../play/store";
 import type { TableModel } from "../play/model";
 import { animates, type Pace } from "../play/motion";
 import { BidBubble, textFor } from "./bidBubble";
 import { BidStrip } from "./bidStrip";
 import { CornerButtons } from "./buttons";
-import { grownPlaces, type Room } from "./geometry/grown";
 import { type Place, humanSeated, places as placesOf } from "./geometry/seats";
 import { leadMarkPlacement, leadSeat } from "./geometry/trick";
 import { HandView } from "./hand";
 import { LeadMark } from "./leadMark";
 import { RackView, shownFor } from "./rack";
-import { Scoreboard, tallestScoreboard } from "./scoreboard";
+import { Scoreboard } from "./scoreboard";
 import { SeatPanel, countdownFor } from "./seatPanel";
 import { TableTop } from "./tableTop";
 import { TrickView } from "./trick";
-import { TrickPanel, tallestTrickPanel } from "./trickPanel";
-import { touched } from "./pointer";
-import { seatPanelMinimumScale, type Rect } from "./space";
+import { TrickPanel } from "./trickPanel";
 import type { TableView } from "./view";
 
 export interface SceneOptions {
   // How much the table moves now: the viewer's setting.
   pace(): Pace;
-  // Whether the table is touched with a finger, which has the other players' panels drawn larger.
-  coarse?(): boolean;
 }
 
 // Which seats bid in this frame and not the last: the bubbles' business. The last frame must be of
@@ -59,7 +54,6 @@ export class TableScene {
   private readonly buttons = new CornerButtons();
   private last: TableModel | null = null;
   private where: (Place | null)[] = [];
-  private grown: { key: string; places: (Place | null)[] } | null = null;
 
   constructor(
     readonly view: TableView,
@@ -68,54 +62,6 @@ export class TableScene {
     view.space.append(this.top.element, this.trick.element, this.leadMark.element, this.hand.element);
     view.hud.append(this.trickPanel.element, this.scoreboard.element, this.buttons.element);
     view.top.append(this.bidStrip.element);
-    view.onFit(() => this.fitSeats());
-  }
-
-  // Where the seats stand: the table's own, or on a touch screen with the other players' panels no smaller
-  // than the minimum and clear of what is round them. That is worked out once for a window, a seat count and
-  // where you sit, against the corner panels at their tallest, so that no panel moves in a game.
-  private placesFor(seatCount: number, humanSeat: number): (Place | null)[] {
-    const wanted = (this.options.coarse ?? touched)() ? Math.max(1, seatPanelMinimumScale / this.view.scale) : 1;
-    if (wanted <= 1) {
-      return placesOf(seatCount, humanSeat);
-    }
-    const { w, h } = this.view.size;
-    const key = [seatCount, humanSeat, wanted.toFixed(4), w, h].join("|");
-    if (this.grown?.key !== key) {
-      const room = this.roomFor(seatCount, humanSeat);
-      this.grown = { key, places: room === null ? placesOf(seatCount, humanSeat) : grownPlaces(seatCount, humanSeat, wanted, room).places };
-    }
-    return this.grown.places;
-  }
-
-  // What the panels keep clear of, measured with the corner panels as they would be at their tallest.
-  private roomFor(seatCount: number, humanSeat: number): Room | null {
-    const trick = tallestTrickPanel();
-    const score = tallestScoreboard(seatCount);
-    for (const probe of [trick, score]) {
-      probe.style.visibility = "hidden";
-      probe.setAttribute("aria-hidden", "true");
-      this.view.hud.append(probe);
-    }
-    const fan = humanSeated(seatCount, humanSeat) ? [this.hand.fanBounds()] : [];
-    const room = this.view.room([trick, score, this.buttons.element], fan);
-    trick.remove();
-    score.remove();
-    return room;
-  }
-
-  // The table was fitted to a view: the seats are laid out again if they stand differently in it.
-  private fitSeats(): void {
-    const model = this.last;
-    if (model === null || this.where.length === 0) {
-      return;
-    }
-    const was = this.where;
-    const now = this.placesFor(model.seats.length, model.humanSeat);
-    const same = (a: Rect | undefined, b: Rect | undefined) => a?.x === b?.x && a?.y === b?.y && a?.w === b?.w && a?.h === b?.h;
-    if (now.some((place, seat) => !same(place?.panel, was[seat]?.panel) || place?.angle !== was[seat]?.angle)) {
-      void this.relayout(model, NO_CHANGE, false);
-    }
   }
 
   // Draws the ring on your name panel for the last seconds of the prompt that is open, and takes it
@@ -183,10 +129,7 @@ export class TableScene {
 
     const seatCount = model.seats.length;
     this.ensureSeats(seatCount);
-    // The corner panels first: the seats keep clear of them, where they are drawn.
-    this.scoreboard.update(model);
-    this.trickPanel.update(model);
-    const where = this.placesFor(seatCount, model.humanSeat);
+    const where = placesOf(seatCount, model.humanSeat);
     this.where = where;
 
     // A new game starts with nothing of the last one on the table.
@@ -235,6 +178,10 @@ export class TableScene {
 
     // Nobody seated, no hand: a watcher's table has none at the bottom.
     this.hand.update(model.hand, humanSeated(seatCount, model.humanSeat));
+
+    // The corner panels, shown from the first game state on.
+    this.scoreboard.update(model);
+    this.trickPanel.update(model);
 
     // And the strip, while you are asked for a bid.
     this.bidStrip.update(model);
@@ -290,8 +237,6 @@ export class TableScene {
   refit(): void {
     this.top.fit();
     this.scoreboard.measureSizers();
-    // The corner panels were measured before the faces loaded, so what they keep clear of is measured again.
-    this.grown = null;
     this.view.refit();
   }
 }

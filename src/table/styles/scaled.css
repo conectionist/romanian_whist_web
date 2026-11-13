@@ -352,6 +352,7 @@
 
 .seat.mine .pill {
   flex: none;
+  max-width: 70px;
   padding: 0 9px;
   font-size: 13.5px;
   line-height: 18px;
@@ -360,6 +361,12 @@
 .pill[data-state="away"] {
   color: var(--warn);
   border-color: var(--warn);
+}
+
+.seat .pill svg {
+  display: block;
+  width: 14px;
+  height: 14px;
 }
 
 /* A computer player that holds the seat, a badge on the portrait; whose turn it is, three dots over the plate. */

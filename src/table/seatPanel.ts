@@ -37,14 +37,20 @@ export function pillFor(seat: SeatView, active: boolean, biddingOpen: boolean): 
   return { text, state: seat.tricksWon < seat.bet ? "warn" : "bad" };
 }
 
-// What a flat plate says in place of the pill: the taken and the bid and no words, and a short form of
-// the two that have words. The seat's label, which a screen reader is given, keeps the whole pill.
+// What a flat plate says in place of the pill: the taken and the bid with no words, and a word for no bid or
+// for being asked for one, each short enough for the room a plate has. The seat's label, which a screen
+// reader is given, keeps the whole pill.
 export function shortPillFor(seat: SeatView, active: boolean, biddingOpen: boolean): string {
-  if (!seat.hasBet) {
-    return active && biddingOpen ? t("SeatItem", "Bidding…") : t("SeatItem", "No bid");
+  if (seat.hasBet) {
+    return `${seat.tricksWon}/${seat.bet}`;
   }
-  return `${seat.tricksWon}/${seat.bet}`;
+  return active && biddingOpen
+    ? t("SeatItem", "Bidding…", [], { comment: "on a flat plate, which has room for a few letters" })
+    : t("SeatItem", "No bid", [], { comment: "on a flat plate, which has room for a few letters" });
 }
+
+// The smallest a pill's words are made to fit a plate, in pixels. Below it they are cut short.
+export const LEAST_PILL_FONT = 9;
 
 // A prompt's last seconds, as a ring round your name panel: it is full when 15 seconds are left and
 // empties as they go, in the warning colour and then the bad one, and the seconds are written too, so
@@ -158,18 +164,41 @@ export class SeatPanel {
     const pill = pillFor(seat, state.active, state.biddingOpen);
     this.presence = seat.presence;
     this.gender = seat.gender;
-    // A plate has room for one short line: a person who is away takes the pill's place.
+    // A plate has room for one short line: a person who is away takes the pill's place, as a sign.
     const away = compact && seat.presence === "away";
-    setText(this.pill, away ? presenceText(seat.presence, seat.gender) : compact ? shortPillFor(seat, state.active, state.biddingOpen) : pill.text);
+    if (away) {
+      if (this.pill.querySelector("svg") === null) {
+        this.pill.replaceChildren(icon("away"));
+      }
+      setAttr(this.pill, "title", presenceText(seat.presence, seat.gender));
+    } else {
+      setText(this.pill, compact ? shortPillFor(seat, state.active, state.biddingOpen) : pill.text);
+      setAttr(this.pill, "title", null);
+    }
     setAttr(this.pill, "data-state", away ? "away" : pill.state);
     this.badge.hidden = !(compact && seat.presence === "replaced");
     this.badge.title = this.badge.hidden ? "" : presenceText(seat.presence, seat.gender);
+    this.fit();
     this.paintPresence();
 
     setAttr(this.element, "aria-label", seatLabelFor(seat, { active: state.active, human: state.human, pill: pill.text }));
     this.element.classList.toggle("active", state.active);
     this.element.dataset.seat = String(seat.seat);
     this.element.hidden = false;
+  }
+
+  // A plate has room for a few letters, and a translation may be longer than the room: the words of the pill
+  // are made smaller until they fit, down to LEAST_PILL_FONT. A word is measured once its face has loaded.
+  fit(): void {
+    this.pill.style.fontSize = "";
+    if (this.look === "plaque" || this.element.hidden || this.pill.clientWidth === 0) {
+      return;
+    }
+    let size = parseFloat(getComputedStyle(this.pill).fontSize);
+    while (this.pill.scrollWidth > this.pill.clientWidth && size > LEAST_PILL_FONT) {
+      size = Math.max(LEAST_PILL_FONT, size - 0.5);
+      this.pill.style.fontSize = `${size}px`;
+    }
   }
 
   // Draws the panel as a plaque, a plate or your own plate: the look decides its size, and the ring round

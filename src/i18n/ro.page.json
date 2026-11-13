@@ -742,11 +742,6 @@
       "translation": "Nu %1: licitațiile ar face %2."
     },
     {
-      "context": "SeatItem",
-      "source": "No bid",
-      "translation": "Fără licitație"
-    },
-    {
       "context": "scoreboard",
       "source": "Scores",
       "translation": "Punctaje"
@@ -780,6 +775,18 @@
       "context": "toosmall",
       "source": "Make the window bigger.",
       "translation": "Fă fereastra mai mare."
+    },
+    {
+      "context": "SeatItem",
+      "source": "No bid",
+      "comment": "on a flat plate, which has room for a few letters",
+      "translation": "–"
+    },
+    {
+      "context": "SeatItem",
+      "source": "Bidding…",
+      "comment": "on a flat plate, which has room for a few letters",
+      "translation": "…"
     }
   ]
 }

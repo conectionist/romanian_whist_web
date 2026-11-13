@@ -371,8 +371,11 @@ export class TableScene {
     this.top.fit();
     this.scoreboard.measureSizers();
     this.view.refit();
-    // The scaled table's strip and line fit what their faces measure.
+    // The scaled table's strip, line and pills fit what their faces measure.
     if (this.last !== null) {
+      for (const panel of this.panels) {
+        panel.fit();
+      }
       this.fitChrome(this.last, this.scaledFor(this.last.seats.length));
     }
   }

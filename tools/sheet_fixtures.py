@@ -56,6 +56,15 @@ def table_state():
     }
 
 
+def online_table():
+    """The table of a game being played online, which the pause menu cannot hold: what Esc raises there is the
+    offer to leave, and on the scaled table the menu's list."""
+    table = table_state()
+    table['mode'] = 'online'
+    table['code'] = 'K7QM4P'
+    return table
+
+
 def lobby_state():
     """A table in its lobby, as its host sees it: you, two open seats and a computer player, with every
     control the host has."""
@@ -216,6 +225,8 @@ def main():
     write('sheet-settings', fixture('sheet-settings.png', state(), sheet='settings'))
     write('sheet-history', fixture('sheet-history.png', state(history=history()), sheet='history'))
     write('sheet-last-trick', fixture('sheet-last-trick.png', state(lastTrick=last_trick()), sheet='last-trick'))
+    write('sheet-scores', fixture('sheet-scores.png', state(history=history(), lastTrick=last_trick()), sheet='scores'))
+    write('sheet-menu-online', fixture('sheet-menu-online.png', state(table=online_table()), sheet='pause'))
     write('sheet-new-game', fixture('sheet-new-game.png', state(), sheet='new-game'))
     write('sheet-online', fixture('sheet-online.png', state(), sheet='online'))
     write('sheet-create-table', fixture('sheet-create-table.png', state(), sheet='create-table'))

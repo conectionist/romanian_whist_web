@@ -787,6 +787,41 @@
       "source": "Bidding…",
       "comment": "on a flat plate, which has room for a few letters",
       "translation": "…"
+    },
+    {
+      "context": "sheets",
+      "source": "Back",
+      "translation": "Înapoi"
+    },
+    {
+      "context": "menulist",
+      "source": "Online games do not pause: the table plays on while this is open.",
+      "translation": "Jocurile online nu fac pauză: masa merge mai departe cât timp meniul este deschis."
+    },
+    {
+      "context": "menulist",
+      "source": "Round %1 of %2. The game waits until you come back.",
+      "translation": "Runda %1 din %2. Jocul așteaptă până te întorci."
+    },
+    {
+      "context": "scoresheet",
+      "source": "History",
+      "translation": "Istoric"
+    },
+    {
+      "context": "fullscreen",
+      "source": "Full screen",
+      "translation": "Ecran complet"
+    },
+    {
+      "context": "fullscreen",
+      "source": "The table is small here.",
+      "translation": "Masa este mică aici."
+    },
+    {
+      "context": "fullscreen",
+      "source": "Add the page to the home screen for a bigger table.",
+      "translation": "Adaugă pagina pe ecranul de pornire pentru o masă mai mare."
     }
   ]
 }

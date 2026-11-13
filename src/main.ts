@@ -29,6 +29,7 @@ import { addressForLanguage, currentLanguage, keepLanguage, languageFromSearch, 
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
+import { watchFullscreen } from "./table/fullscreen";
 import { LayoutWatch, type WindowLayout } from "./table/layoutWatch";
 import { TableScene } from "./table/renderer";
 import { TooSmall } from "./table/tooSmall";
@@ -45,6 +46,7 @@ import "./table/styles/touch.css";
 import "./table/styles/scaled.css";
 import "./sheets/styles/sheet.css";
 import "./lobby/styles/lobby.css";
+import "./sheets/styles/scaled.css";
 
 // The live page: the connection feeds the queue, which draws the table, and a click goes back
 // through the controller. A page is told what the connection is doing, and whether it is at a table,
@@ -147,6 +149,7 @@ const sheets = new Sheets(
     createTable: (setup) => flow.createTable(setup),
     join: (code, kept) => flow.join(code, kept),
     cancelJoin: () => flow.cancelJoin(),
+    back: () => flow.escape(),
     takeSeat: (seat) => flow.takeSeat(seat),
     seat: (seat, choice) => flow.chooseSeat(seat, choice),
     seatCount: (count) => flow.changeSeatCount(count),
@@ -237,19 +240,21 @@ keyboard.install();
 
 const announcer = new Announcer();
 
-const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage });
+const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage, settings: () => flow.openMenu("settings"), rules: () => flow.openMenu("rules") });
 frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element, rotateHint());
 
 scene.onHistory(() => flow.openMenu("history"));
 scene.onLastTrick(() => flow.openMenu("last-trick"));
 scene.onMenu(() => flow.escape());
-scene.onScores(() => flow.openMenu("history"));
+scene.onScores(() => flow.openMenu("scores"));
 
 // Which table the window gets: the desktop's with its menu bar, or on a small touch screen the scaled table,
 // which has the whole window and controls of its own, or a page that asks for more room.
 const tooSmall = new TooSmall();
 document.body.append(tooSmall.element);
 let coveredByTooSmall = false;
+// Whether the scaled table is drawn, which places the sheets as its own side, bottom and page sheets.
+let scaledNow = false;
 
 function drawLayout({ choice, size }: WindowLayout): void {
   const desktop = choice.kind === "desktop";
@@ -263,8 +268,11 @@ function drawLayout({ choice, size }: WindowLayout): void {
     appElement.inert = coveredByTooSmall;
   }
   tooSmall.show(choice.kind === "tooSmall", size);
+  scaledNow = choice.kind === "scaled";
+  sheets.setScaled(scaledNow);
   scene.setLayout(choice.kind === "scaled" ? { kind: "scaled", size, scale: choice.scale } : { kind: "desktop" });
   void redraw();
+  render();
 }
 
 // The address follows the table: an online table's is /t/<code>, and the page at no table is at the
@@ -334,7 +342,7 @@ function render(): void {
   const noTable = synced && !atTable(state);
   const waiting = state.held === null ? "" : holdNote(state.held.waitingFor, seatingOf(state), secondsLeft());
   const link = state.table === null ? "" : linkFor(state.table.code, window.location.origin);
-  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking() });
+  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking(), scaled: scaledNow });
   menuBar.update(menuStateFor(state, true));
   menuPage.show(noTable);
   // The table under a sheet or the menu page takes neither clicks nor the keyboard, but for a round
@@ -447,6 +455,9 @@ function handle(message: ServerMessage): void {
 status("connecting");
 render();
 new LayoutWatch(frame, drawLayout);
+// Entering or leaving full screen changes the window, which the layout watch sees; what the page offers depends
+// on it too.
+watchFullscreen(() => scene.refreshNotice());
 void scene.relayout(null, { kind: "sync", event: null, fresh: true }, false);
 void loadFonts().then(() => scene.refit());
 connection.start();

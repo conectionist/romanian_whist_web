@@ -7,11 +7,14 @@ import { defaultProfile } from "../lobby/profile";
 import { rulesOf, type Setup } from "../lobby/setup";
 import type { Profile } from "../net/protocol";
 import type { MenuSheet, SheetName } from "../play/sheets";
-import { holdAwaitsYou, isOnline, inLobby, scoredRound } from "../play/sheets";
+import { holdAwaitsYou, isOnline, inLobby, gameOn, scoredRound } from "../play/sheets";
+import { modelOf } from "../play/model";
 import type { StoreState } from "../play/store";
 import { SettingsSheet, type SettingsValues } from "./settingsSheet";
 import { GameOverSheet, failureFields, fieldsFor as gameOverFields, resultFor } from "./gameOverSheet";
 import { HistorySheet, fieldsFor as historyFields } from "./historySheet";
+import { MenuListSheet, fieldsFor as menuFields } from "./menuListSheet";
+import { ScoresSheet, fieldsFor as scoresFields } from "./scoresSheet";
 import { LastTrickSheet, fieldsFor as lastTrickFields } from "./lastTrickSheet";
 import { SheetLayer } from "./layer";
 import { LeaveSheet } from "./leaveSheet";
@@ -34,6 +37,8 @@ export interface SheetActions extends LobbyActions {
   createTable(setup: TableSetup): void;
   join(code: string, profile: Profile): void;
   cancelJoin(): void;
+  // The Back button of a page, on the scaled table: what Esc does.
+  back(): void;
 }
 
 const none = () => undefined;
@@ -51,6 +56,7 @@ export const NO_ACTIONS: SheetActions = {
   createTable: none,
   join: none,
   cancelJoin: none,
+  back: none,
   takeSeat: none,
   seat: none,
   seatCount: none,
@@ -81,6 +87,9 @@ export interface RenderContext {
   waiting: string;
   // Whether the sheet that asked for a table still waits for the server's word on it.
   asking: boolean;
+  // Whether the table is the scaled one, which has no menu bar: its sheets are placed by what they are, and its
+  // pause menu and offer to leave are a list.
+  scaled?: boolean;
 }
 
 // The sheets over the layer. Each is made once, and filled from the store when it is shown.
@@ -98,6 +107,8 @@ export class Sheets {
   private readonly online: OnlineSheet;
   private readonly createTable: CreateTableSheet;
   private readonly lobby: LobbySheet;
+  private readonly scores: ScoresSheet;
+  private readonly menu: MenuListSheet;
   private readonly byName: Record<SheetName, { element: HTMLElement; focusDefault(): void }>;
   // Whether the round sheet up holds the game, which is when it has the keyboard.
   private roundHolding = false;
@@ -127,7 +138,10 @@ export class Sheets {
     });
     this.createTable = new CreateTableSheet({ create: (setup) => actions.createTable(setup), cancel: () => actions.closeMenu() }, random);
     this.lobby = new LobbySheet(actions);
+    this.scores = new ScoresSheet({ close: () => actions.closeMenu() });
+    this.menu = new MenuListSheet({ open: (sheet) => actions.openMenu(sheet), resume: () => actions.resume(), leave: () => actions.mainMenu() });
     this.byName = {
+      scores: this.scores,
       round: this.round,
       history: this.history,
       "last-trick": this.lastTrick,
@@ -141,13 +155,27 @@ export class Sheets {
       "create-table": this.createTable,
       lobby: this.lobby,
     };
-    this.layer = new SheetLayer(Object.values(this.byName));
+    this.layer = new SheetLayer([...Object.values(this.byName), this.menu], () => actions.back());
+  }
+
+  // The sheets as the scaled table places them, or as the desktop's dialogs.
+  setScaled(scaled: boolean): void {
+    this.layer.setScaled(scaled);
   }
 
   // Shows this sheet, or none, filled from the store.
   render(name: SheetName | null, state: StoreState, context: RenderContext): void {
     if (name === null) {
       this.layer.show(null);
+      this.roundHolding = false;
+      return;
+    }
+    // Where the menu bar is gone, a solo game's pause and an online game's offer to leave are one list.
+    if (context.scaled === true && (name === "pause" || (name === "leave" && gameOn(state)))) {
+      const snapshot = state.snapshot;
+      const kind = name === "pause" ? "solo" : "online";
+      this.menu.update(kind, menuFields(kind, snapshot === null ? null : { index: snapshot.round.index + 1, count: snapshot.round.count }));
+      this.layer.show(this.menu);
       this.roundHolding = false;
       return;
     }
@@ -171,6 +199,13 @@ export class Sheets {
       case "last-trick":
         this.lastTrick.update(lastTrickFields(state.lastTrick, seating, currentRound));
         break;
+      case "scores": {
+        const model = modelOf(state);
+        if (model !== null) {
+          this.scores.update(model, scoresFields(model, state.history, state.lastTrick, seating));
+        }
+        break;
+      }
       case "game-over": {
         const result = resultFor(state);
         const failed = state.stopped || result === null || state.snapshot?.status === "stopped";
@@ -231,6 +266,10 @@ export class Sheets {
 
   private opened(name: SheetName, state: StoreState, context: RenderContext): void {
     switch (name) {
+      case "scores":
+        // The scoreboard opens on its scores.
+        this.scores.select(0, false);
+        break;
       case "settings": {
         const solo = state.table === null ? this.memory.setup() : state.table.settings;
         const values: SettingsValues = { botSpeed: solo.botSpeed, waitAfterRound: solo.waitAfterRound, pace: this.memory.pace() };

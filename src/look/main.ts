@@ -30,6 +30,7 @@ import "../table/styles/touch.css";
 import "../table/styles/scaled.css";
 import "../sheets/styles/sheet.css";
 import "../lobby/styles/lobby.css";
+import "../sheets/styles/scaled.css";
 
 // A look fixture: the desktop picture it pairs with, and the sync's fields the picture shows. The
 // page's own, in tests/look/fixtures, may also name a sheet that is open over the table, server
@@ -108,10 +109,13 @@ async function main(): Promise<void> {
 
   // The sheets, as the live page has them, asking for nothing.
   const sheets = new Sheets(NO_ACTIONS, { setup: () => defaults(seededRandom(1)), profile: () => null, pace: storedPace }, seededRandom(1));
-  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined });
+  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined, settings: () => undefined, rules: () => undefined });
   frame.append(menuPage.element, sheets.layer.element);
   let ui: UiState = NOTHING_ASKED;
   let order: readonly string[] | undefined;
+  let scaledNow = false;
+  // What is open over the table, drawn again where the layout changes.
+  const drawSheet = () => sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", asking: false, scaled: scaledNow });
 
   const draw = (change: Parameters<typeof scene.relayout>[1]) => {
     const model = modelOf(store.state);
@@ -129,8 +133,11 @@ async function main(): Promise<void> {
       bar.element.hidden = !desktop;
     }
     scene.setLayout(choice.kind === "scaled" ? { kind: "scaled", size, scale: choice.scale } : { kind: "desktop" });
+    scaledNow = choice.kind === "scaled";
+    sheets.setScaled(scaledNow);
     if (store.state.snapshot !== null) {
       void draw(NO_CHANGE);
+      drawSheet();
     }
   });
 
@@ -145,7 +152,7 @@ async function main(): Promise<void> {
       }
       const asked = fixture.sheet;
       ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null, backAtTable: false, dismissedRound: null };
-      sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", asking: false });
+      drawSheet();
     }
     menuPage.show(fixture.page === "menu");
     bar?.update(menuStateFor(store.state, true));

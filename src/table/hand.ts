@@ -5,6 +5,8 @@ import { CardView } from "./card";
 import { handLabelFor } from "./names";
 import { sizeForHeight } from "./cards";
 import { cardPlacement, scaledAbout } from "./geometry/hand";
+import { cardSize } from "./geometry/scaled";
+import type { ScaledFan } from "./geometry/spots";
 import { touched } from "./pointer";
 import { handCardHeight, type Placement, type Point } from "./space";
 
@@ -61,6 +63,9 @@ export class HandView {
   private onPress: (slot: number, pointer: Pointer) => void = () => undefined;
   private onFocus: (slot: number) => void = () => undefined;
   private count = 0;
+  // The scaled table's fan, which sets the cards' size and places them in the window's units; none on the
+  // desktop's, whose cards are in the table's.
+  private fan: ScaledFan | null = null;
   // The slot picked, which rises as the one under the cursor does.
   private selected: number | null = null;
   private shown: HandModel = { entries: [], backs: 0, positions: [], playable: false };
@@ -77,6 +82,11 @@ export class HandView {
   // Told which slot took the keyboard, if it can be played, so that Tab picks as an arrow does.
   setFocusHandler(onFocus: (slot: number) => void): void {
     this.onFocus = onFocus;
+  }
+
+  // The fan to draw the cards in: the scaled table's, or none for the desktop's.
+  setFan(fan: ScaledFan | null): void {
+    this.fan = fan;
   }
 
   // Raises the picked slot, and puts the keyboard on it when asked, so a screen reader reads it.
@@ -176,7 +186,8 @@ export class HandView {
     const count = slotCount(hand);
     this.count = count;
     this.shown = hand;
-    const size = sizeForHeight(handCardHeight);
+    const fan = this.fan;
+    const size = fan === null ? sizeForHeight(handCardHeight) : cardSize(fan.fan);
     const used = new Set<string>();
 
     for (let slot = 0; slot < count; slot++) {
@@ -189,8 +200,13 @@ export class HandView {
 
       const view = entry.view;
       view.setCard(hand.backs > 0 ? null : hand.entries[slot].card);
-      view.setHeight(handCardHeight);
-      view.placeAt(cardPlacement(count, slot, size));
+      if (fan === null) {
+        view.setHeight(handCardHeight);
+        view.placeAt(cardPlacement(count, slot, size));
+      } else {
+        view.setBox(size);
+        view.placeAt(fan.place(count, slot));
+      }
       view.element.style.zIndex = String(slot);
       view.element.dataset.slot = String(slot);
       view.setDimmed(hand.backs === 0 && !hand.entries[slot].legal);
@@ -230,6 +246,11 @@ export class HandView {
     }
   }
 
+  // How tall a card of the fan is drawn, in table units: what a card that leaves it starts its flight at.
+  handHeight(): number {
+    return this.fan === null ? this.drawnScale().scale * handCardHeight : this.fan.fan.ch / this.fan.scale;
+  }
+
   // The fan's scale and the point it is scaled about, as the stylesheet draws it: 1 under a mouse, and on a
   // touch screen larger, which a card that leaves it has to start from.
   drawnScale(): { scale: number; origin: Point } {
@@ -246,6 +267,11 @@ export class HandView {
     const entry = slot === null ? undefined : this.slots.get(slotKey(this.shown, slot));
     if (entry === undefined || entry.view.element.hidden) {
       return null;
+    }
+    if (this.fan !== null) {
+      // Every card that can be played stands raised, so the flight starts from where it is drawn.
+      const raised = this.raisedBy(entry.view.element, this.fan.place(this.count, entry.slot), 1);
+      return { ...this.fan.toTable(raised), rotation: raised.rotation };
     }
     const { scale, origin } = this.drawnScale();
     const rest = scaledAbout(cardPlacement(this.count, entry.slot, sizeForHeight(handCardHeight)), scale, origin);

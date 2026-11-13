@@ -49,6 +49,11 @@ export const SIDE_MAX = 168;
 // The face of a card is this much taller than it is wide.
 const CARD_ASPECT = 726 / 500;
 
+// The round chip is 172 wide, 8 in from the corner, and as tall as its trump card, the word over it and its
+// padding.
+export const CHIP_HEIGHT = 68;
+export const CORNER_INSET = 8;
+
 export interface Box {
   x: number;
   y: number;
@@ -442,4 +447,14 @@ export function toWindow(layout: Pick<ScaledLayout, "table">, point: Point): Poi
 export function toTable(layout: Pick<ScaledLayout, "table">, point: Point): Point {
   const k = tableScale(layout);
   return { x: centre.x + (point.x - layout.table.cx) / k, y: centre.y + (point.y - layout.table.cy) / k };
+}
+
+// The room the bid strip has: the band across the table, less what the round chip takes of its top where
+// the two meet. The strip is as wide as the band, centred on the table.
+export function stripArea(layout: ScaledLayout, windowWidth: number): { x: number; w: number; top: number; bottom: number; mid: number } {
+  const { band, bid } = layout;
+  const chipLeft = windowWidth - CORNER_INSET - CHIP_WIDTH;
+  const meets = bid.x + bid.w > chipLeft;
+  const top = meets ? Math.max(band.top, CORNER_INSET + CHIP_HEIGHT + PLATE_GAP) : band.top;
+  return { x: bid.x, w: bid.w, top, bottom: band.bottom, mid: (top + band.bottom) / 2 };
 }

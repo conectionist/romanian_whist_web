@@ -29,7 +29,9 @@ import { addressForLanguage, currentLanguage, keepLanguage, languageFromSearch, 
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
+import { LayoutWatch, type WindowLayout } from "./table/layoutWatch";
 import { TableScene } from "./table/renderer";
+import { TooSmall } from "./table/tooSmall";
 import { TableView } from "./table/view";
 import "./table/styles/fonts.css";
 import "./table/styles/theme.css";
@@ -40,6 +42,7 @@ import "./table/styles/cards.css";
 import "./table/styles/hud.css";
 import "./table/styles/strip.css";
 import "./table/styles/touch.css";
+import "./table/styles/scaled.css";
 import "./sheets/styles/sheet.css";
 import "./lobby/styles/lobby.css";
 
@@ -62,7 +65,7 @@ document.getElementById("app")?.append(frame);
 frame.style.setProperty("--band", "46px");
 
 const view = new TableView(frame);
-const scene = new TableScene(view, { pace: currentPace });
+const scene = new TableScene(view, { pace: currentPace, online: () => store.state.table?.mode === "online" });
 const store = new Store();
 
 // Whether the table moves for what is drawn now: the viewer's pace, and not in a background tab.
@@ -239,6 +242,30 @@ frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.el
 
 scene.onHistory(() => flow.openMenu("history"));
 scene.onLastTrick(() => flow.openMenu("last-trick"));
+scene.onMenu(() => flow.escape());
+scene.onScores(() => flow.openMenu("history"));
+
+// Which table the window gets: the desktop's with its menu bar, or on a small touch screen the scaled table,
+// which has the whole window and controls of its own, or a page that asks for more room.
+const tooSmall = new TooSmall();
+document.body.append(tooSmall.element);
+let coveredByTooSmall = false;
+
+function drawLayout({ choice, size }: WindowLayout): void {
+  const desktop = choice.kind === "desktop";
+  frame.style.setProperty("--band", desktop ? "46px" : "0px");
+  frame.dataset.layout = choice.kind;
+  frame.style.setProperty("--scale", String(choice.kind === "scaled" ? choice.scale : 1));
+  menuBar.element.hidden = !desktop;
+  // The page under the notice takes no touch and no key, and is given back as it was.
+  if (coveredByTooSmall !== (choice.kind === "tooSmall")) {
+    coveredByTooSmall = choice.kind === "tooSmall";
+    appElement.inert = coveredByTooSmall;
+  }
+  tooSmall.show(choice.kind === "tooSmall", size);
+  scene.setLayout(choice.kind === "scaled" ? { kind: "scaled", size, scale: choice.scale } : { kind: "desktop" });
+  void redraw();
+}
 
 // The address follows the table: an online table's is /t/<code>, and the page at no table is at the
 // root, unless it was asked to join the table the address names.
@@ -419,6 +446,7 @@ function handle(message: ServerMessage): void {
 
 status("connecting");
 render();
+new LayoutWatch(frame, drawLayout);
 void scene.relayout(null, { kind: "sync", event: null, fresh: true }, false);
 void loadFonts().then(() => scene.refit());
 connection.start();

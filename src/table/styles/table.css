@@ -178,7 +178,7 @@
   top: 512px;
   width: calc(215px / 0.9);
   height: calc(215px / 0.9);
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: translate(-50%, -50%) scale(calc(0.9 * var(--logo-k, 1)));
   border-radius: 50%;
   border: 2px solid var(--logo-border);
   background: radial-gradient(ellipse at 50% 40%, var(--logo-centre) 0%, var(--logo-middle) 70%, var(--logo-edge) 100%);

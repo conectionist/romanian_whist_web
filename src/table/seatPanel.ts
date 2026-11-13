@@ -1,5 +1,6 @@
 import { portraitUrl } from "../assets/assets";
 import { el, setAttr, setSrc, setText, stamp, svg } from "../dom/el";
+import { icon } from "../dom/icons";
 import { t } from "../i18n/t";
 import { presenceText } from "../lobby/lobby";
 import { seatLabelFor } from "./names";
@@ -36,6 +37,15 @@ export function pillFor(seat: SeatView, active: boolean, biddingOpen: boolean): 
   return { text, state: seat.tricksWon < seat.bet ? "warn" : "bad" };
 }
 
+// What a flat plate says in place of the pill: the taken and the bid and no words, and a short form of
+// the two that have words. The seat's label, which a screen reader is given, keeps the whole pill.
+export function shortPillFor(seat: SeatView, active: boolean, biddingOpen: boolean): string {
+  if (!seat.hasBet) {
+    return active && biddingOpen ? t("SeatItem", "Bidding…") : t("SeatItem", "No bid");
+  }
+  return `${seat.tricksWon}/${seat.bet}`;
+}
+
 // A prompt's last seconds, as a ring round your name panel: it is full when 15 seconds are left and
 // empties as they go, in the warning colour and then the bad one, and the seconds are written too, so
 // the colour is never the only cue.
@@ -70,6 +80,17 @@ export function nameLineFor(seat: SeatView, active: boolean): NameLine {
   return { marker: active ? "▸" : "", name: seat.name };
 }
 
+// How a panel is drawn: the desktop's plaque, an opponent's flat plate on the scaled table, or your own
+// one-line plate there.
+export type Look = "plaque" | "plate" | "mine";
+
+// The ring round a panel, in the panel's own units: the panel's size and a rounding 1.5 past its corner.
+const RING: Record<Look, { w: number; h: number }> = {
+  plaque: { w: 259, h: 118 },
+  plate: { w: 128, h: 54 },
+  mine: { w: 184, h: 38 },
+};
+
 // A seat's name panel: its portrait, its name and its Taken/Bid pill.
 export class SeatPanel {
   readonly element: HTMLElement;
@@ -79,6 +100,9 @@ export class SeatPanel {
   private readonly pill: HTMLElement;
   private readonly chip: HTMLElement;
   private readonly ring: SVGRectElement;
+  private readonly ringBox: SVGSVGElement;
+  private readonly badge: HTMLElement;
+  private look: Look = "plaque";
   private presence: SeatView["presence"] = null;
   private gender: SeatView["gender"] = "male";
   private counting = false;
@@ -93,11 +117,18 @@ export class SeatPanel {
     this.ring = svg("rect", { attrs: { x: "-1.5", y: "-1.5", width: "262", height: "121", rx: "10.5", pathLength: "100", "stroke-dasharray": "100" } });
     const ring = svg("svg", { class: "ring", attrs: { viewBox: "0 0 259 118", "aria-hidden": "true" } }, this.ring);
     ring.style.display = "none";
+    this.ringBox = ring;
+    // A flat plate is too small for the presence chip: a computer player that holds the seat is a badge on the
+    // portrait, and three dots show whose turn it is.
+    this.badge = el("span", { class: "badge", attrs: { "aria-hidden": "true" } }, icon("chip"));
+    this.badge.hidden = true;
     this.element = el(
       "div",
       { class: "panel seat", attrs: { role: "group" } },
       el("div", { class: "portrait" }, this.picture),
       el("div", { class: "who" }, el("div", { class: "name" }, this.marker, this.name), this.pill),
+      this.badge,
+      el("span", { class: "turn-dots", attrs: { "aria-hidden": "true" } }, el("i"), el("i"), el("i")),
       this.chip,
       ring,
     );
@@ -105,11 +136,16 @@ export class SeatPanel {
   }
 
   // Draws the seat at its panel. Yours is under the others, and over your hand.
-  update(seat: SeatView, panel: Rect, state: { active: boolean; biddingOpen: boolean; human: boolean }): void {
+  update(seat: SeatView, panel: Rect, state: { active: boolean; biddingOpen: boolean; human: boolean; look?: Look }): void {
     const style = this.element.style;
     style.left = `${panel.x}px`;
     style.top = `${panel.y}px`;
     style.zIndex = String(state.human ? z.humanPanel : z.panels);
+    this.setLook(state.look ?? "plaque");
+    const compact = this.look !== "plaque";
+    // Where the scaled table's plates are crowded they are drawn a little smaller, all alike.
+    const scale = panel.w / RING[this.look].w;
+    style.transform = scale === 1 ? "" : `scale(${scale})`;
 
     const line = nameLineFor(seat, state.active);
     setText(this.marker, line.marker);
@@ -120,17 +156,35 @@ export class SeatPanel {
     setSrc(this.picture, url);
 
     const pill = pillFor(seat, state.active, state.biddingOpen);
-    setText(this.pill, pill.text);
-    setAttr(this.pill, "data-state", pill.state);
-
     this.presence = seat.presence;
     this.gender = seat.gender;
+    // A plate has room for one short line: a person who is away takes the pill's place.
+    const away = compact && seat.presence === "away";
+    setText(this.pill, away ? presenceText(seat.presence, seat.gender) : compact ? shortPillFor(seat, state.active, state.biddingOpen) : pill.text);
+    setAttr(this.pill, "data-state", away ? "away" : pill.state);
+    this.badge.hidden = !(compact && seat.presence === "replaced");
+    this.badge.title = this.badge.hidden ? "" : presenceText(seat.presence, seat.gender);
     this.paintPresence();
 
     setAttr(this.element, "aria-label", seatLabelFor(seat, { active: state.active, human: state.human, pill: pill.text }));
     this.element.classList.toggle("active", state.active);
     this.element.dataset.seat = String(seat.seat);
     this.element.hidden = false;
+  }
+
+  // Draws the panel as a plaque, a plate or your own plate: the look decides its size, and the ring round
+  // it follows.
+  private setLook(look: Look): void {
+    if (look === this.look) {
+      return;
+    }
+    this.look = look;
+    this.element.classList.toggle("plate", look === "plate");
+    this.element.classList.toggle("mine", look === "mine");
+    const box = RING[look];
+    this.ringBox.setAttribute("viewBox", `0 0 ${box.w} ${box.h}`);
+    this.ring.setAttribute("width", String(box.w + 3));
+    this.ring.setAttribute("height", String(box.h + 3));
   }
 
   // Who is here, at an online table: a person who has gone away, or whose seat a computer player holds.
@@ -150,6 +204,7 @@ export class SeatPanel {
     const ring = this.ring.parentElement as unknown as HTMLElement;
     ring.style.display = count === null ? "none" : "block";
     this.counting = count !== null;
+    this.element.classList.toggle("counting", count !== null);
     if (count === null) {
       this.paintPresence();
       return;

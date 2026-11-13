@@ -730,6 +730,56 @@
       "context": "newgame",
       "source": "Bot speed",
       "translation": "Viteza roboților"
+    },
+    {
+      "context": "bidstrip",
+      "source": "Your bid",
+      "translation": "Licitația ta"
+    },
+    {
+      "context": "bidstrip",
+      "source": "Not %1: the bids would add up to %2.",
+      "translation": "Nu %1: licitațiile ar face %2."
+    },
+    {
+      "context": "SeatItem",
+      "source": "No bid",
+      "translation": "Fără licitație"
+    },
+    {
+      "context": "scoreboard",
+      "source": "Scores",
+      "translation": "Punctaje"
+    },
+    {
+      "context": "TableScene",
+      "source": "Pause",
+      "translation": "Pauză"
+    },
+    {
+      "context": "TableScene",
+      "source": "Menu",
+      "translation": "Meniu"
+    },
+    {
+      "context": "toosmall",
+      "source": "This window is too small for the table",
+      "translation": "Fereastra este prea mică pentru masă"
+    },
+    {
+      "context": "toosmall",
+      "source": "The game needs a window of at least %1 × %2 pixels to show every card and name.",
+      "translation": "Jocul are nevoie de o fereastră de cel puțin %1 × %2 de pixeli, ca să arate toate cărțile și numele."
+    },
+    {
+      "context": "toosmall",
+      "source": "This window is %1 × %2.",
+      "translation": "Această fereastră are %1 × %2."
+    },
+    {
+      "context": "toosmall",
+      "source": "Make the window bigger.",
+      "translation": "Fă fereastra mai mare."
     }
   ]
 }

@@ -90,9 +90,10 @@ async function capture(browser, htmlUrl, [width, height], out, report) {
     );
     await page.waitForTimeout(250);
   };
+  // Exactly the window's size, from the window's own corner.
   const shoot = async (name) => {
-    const glass = page.locator("#glass");
-    await glass.screenshot({ path: join(out, `${name}.png`), animations: "disabled" });
+    const box = await page.locator("#glass").boundingBox();
+    await page.screenshot({ path: join(out, `${name}.png`), animations: "disabled", clip: { x: box.x, y: box.y, width, height } });
   };
 
   for (const players of [2, 3, 4, 5, 6]) {

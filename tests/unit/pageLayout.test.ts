@@ -9,6 +9,7 @@ import {
   cornersFor,
   pageLayout,
   playedHeight,
+  type PageLayout,
 } from "../../src/table/geometry/page";
 import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
 
@@ -59,12 +60,73 @@ describe("what the page's corners hold", () => {
   });
 });
 
+// What of the table's parts overlap, or leave the window, as a list of words.
+function crowded(layout: PageLayout, w: number, h: number, count: number): string[] {
+  const found: string[] = [];
+  const menu = { x: CORNER_INSET, y: CORNER_INSET, w: BUTTON, h: BUTTON };
+  const side = layout.side;
+  const panels: [string, Box][] =
+    side === null
+      ? []
+      : [
+          ["the left panel", { x: CORNER_INSET, y: side.y, w: side.w, h: layout.sideRoom.left }],
+          ["the right panel", { x: w - CORNER_INSET - side.w, y: side.y, w: side.w, h: layout.sideRoom.right }],
+        ];
+  // The fan at its widest, which is a hand of eight: its span and the cards' lean.
+  const fan = handSlots(layout.hand, 8);
+  const reach = (layout.hand.ch / 2) * Math.sin((3.5 * layout.hand.rot * Math.PI) / 180);
+  const left = Math.min(...fan.map((slot) => slot.x));
+  const hand: Box = { x: left - reach, y: layout.hand.top, w: Math.max(...fan.map((slot) => slot.x + layout.hand.cw)) - left + 2 * reach, h: h - layout.hand.top };
+  const controls: [string, Box][] = [
+    ["the menu button", menu],
+    ["the round chip", layout.chip],
+    ["the round buttons", layout.buttons],
+    ["the trump", layout.trump],
+  ];
+  const apart = (a: string, one: Box, b: string, other: Box, least = 0) => {
+    if (gap(one, other) < least - 1e-9) {
+      found.push(`${a} and ${b} are ${gap(one, other).toFixed(1)} apart`);
+    }
+  };
+  for (const [name, box] of controls) {
+    if (box.x < CORNER_INSET - 1e-9 || box.x + box.w > w - CORNER_INSET + 1e-9 || box.y < CORNER_INSET - 1e-9 || box.y + box.h > h - CORNER_INSET + 1e-9) {
+      found.push(`${name} leaves the window`);
+    }
+  }
+  for (const [at, seat] of layout.seats.entries()) {
+    const name = at === 0 ? "your plate" : `plate ${at}`;
+    // Your plate stands over the foot of the hand by design, between the two corners at the foot.
+    for (const [other, box] of at === 0 ? [controls[2], controls[3]] : [...controls, ...panels]) {
+      apart(name, seat, other, box);
+    }
+    if (at > 0) {
+      apart(name, seat, "the hand", hand);
+    }
+    if (seat.x < -1e-9 || seat.x + seat.w > w + 1e-9 || seat.y < -1e-9) {
+      found.push(`${name} leaves the window`);
+    }
+  }
+  apart("the hand", hand, "the round buttons", controls[2][1]);
+  apart("the hand", hand, "the trump", controls[3][1]);
+  // The panels stand over the corners at the foot, and under the chip and the menu button.
+  for (const [name, panel] of panels) {
+    for (const [other, box] of controls) {
+      apart(name, panel, other, box, 6);
+    }
+  }
+  // The scores panel is 72 tall and 20 more for each player, with the tension line over two lines as it is in the
+  // narrowest panel, which is the tallest a panel is.
+  if (side !== null && (layout.sideRoom.right < 76 + 20 * count || layout.sideRoom.left < 76 + 20 * count)) {
+    found.push(`the side panels have ${Math.min(layout.sideRoom.left, layout.sideRoom.right).toFixed(0)} to stand in`);
+  }
+  return found;
+}
+
 describe("pageLayout", () => {
   for (const each of windows) {
     for (const count of COUNTS) {
       describe(`at ${each.name} with ${count} players`, () => {
         const layout = pageLayout(each.design, count);
-        const { w, h } = each.design;
 
         it("seats the players in the desktop's directions, on one circle round the table", () => {
           const wanted = directionsFor(count);
@@ -83,72 +145,24 @@ describe("pageLayout", () => {
         });
 
         it("keeps every corner's controls, the seats, the hand and the side panels apart, and inside the window", () => {
-          const menu = { x: CORNER_INSET, y: CORNER_INSET, w: BUTTON, h: BUTTON };
-          const side = layout.side;
-          const panels: Box[] =
-            side === null
-              ? []
-              : [
-                  { x: CORNER_INSET, y: side.y, w: side.w, h: layout.sideRoom.left },
-                  { x: w - CORNER_INSET - side.w, y: side.y, w: side.w, h: layout.sideRoom.right },
-                ];
-          // The fan at its widest, which is a hand of eight: its span, the cards' lean and the plate over its foot.
-          const fan = handSlots(layout.hand, 8);
-          const reach = (layout.hand.ch / 2) * Math.sin((3.5 * layout.hand.rot * Math.PI) / 180);
-          const hand: Box = {
-            x: Math.min(...fan.map((slot) => slot.x)) - reach,
-            y: layout.hand.top,
-            w: Math.max(...fan.map((slot) => slot.x + layout.hand.cw)) - Math.min(...fan.map((slot) => slot.x)) + 2 * reach,
-            h: h - layout.hand.top,
-          };
-          const controls: [string, Box][] = [
-            ["the menu button", menu],
-            ["the round chip", layout.chip],
-            ["the round buttons", layout.buttons],
-            ["the trump", layout.trump],
-          ];
-          for (const [name, box] of controls) {
-            expect(box.x, `${name} left`).toBeGreaterThanOrEqual(CORNER_INSET - 1e-9);
-            expect(box.x + box.w, `${name} right`).toBeLessThanOrEqual(w - CORNER_INSET + 1e-9);
-            expect(box.y, `${name} top`).toBeGreaterThanOrEqual(CORNER_INSET - 1e-9);
-            expect(box.y + box.h, `${name} bottom`).toBeLessThanOrEqual(h - CORNER_INSET + 1e-9);
-          }
-          const seats = layout.seats.map((seat, at) => [at === 0 ? "your plate" : `plate ${at}`, seat] as [string, Box]);
-          const others: [string, Box][] = [...controls, ...panels.map((box, at): [string, Box] => [at === 0 ? "the left panel" : "the right panel", box])];
-          for (const [seatName, seat] of seats.slice(1)) {
-            for (const [name, box] of others) {
-              expect(gap(seat, box), `${seatName} and ${name}`).toBeGreaterThanOrEqual(-1e-9);
-            }
-            expect(gap(seat, hand), `${seatName} and the hand`).toBeGreaterThanOrEqual(-1e-9);
-          }
-          // Your plate stands over the foot of the hand by design, and between the two corners at the foot.
-          for (const [name, box] of [controls[2], controls[3]]) {
-            expect(gap(seats[0][1], box), `your plate and ${name}`).toBeGreaterThanOrEqual(-1e-9);
-          }
-          for (const [name, box] of [controls[2], controls[3]]) {
-            expect(gap(hand, box), `the hand and ${name}`).toBeGreaterThanOrEqual(-1e-9);
-          }
-          // The panels stand over the corners at the foot, the chip and the menu over the panels.
-          for (const panel of panels) {
-            for (const [name, box] of controls) {
-              expect(gap(panel, box), `a side panel and ${name}`).toBeGreaterThanOrEqual(6 - 1e-9);
-            }
-          }
+          expect(crowded(layout, each.design.w, each.design.h, count)).toEqual([]);
           expect(layout.chip.h).toBe(PAGE_CHIP_HEIGHT);
-        });
-
-        it("leaves room under the side panels for what a full panel holds", () => {
-          if (layout.side === null) {
-            expect(layout.sideRoom).toEqual({ left: 0, right: 0 });
-            return;
-          }
-          // The scores panel is 72 tall and 20 more for each player, with the tension line over two lines as it is in the
-          // narrowest panel, which is the tallest a panel is.
-          const most = 76 + 20 * count;
-          expect(layout.sideRoom.right).toBeGreaterThanOrEqual(most);
-          expect(layout.sideRoom.left).toBeGreaterThanOrEqual(most);
         });
       });
     }
   }
+
+  it("has nothing overlapping at any window between the floor and a tall one, for any number of players", () => {
+    // A window is the design's width or its height and more of the other: from 640 by 360 wide, and from 640 by 360 tall.
+    const sizes = [
+      ...Array.from({ length: 40 }, (_, at) => ({ w: 640 + 20 * at, h: 360 })),
+      ...Array.from({ length: 15 }, (_, at) => ({ w: 640, h: 360 + 20 * at })),
+    ];
+    for (const size of sizes) {
+      for (const count of COUNTS) {
+        const layout = pageLayout({ ...size, top: 0, bottom: 0 }, count);
+        expect(crowded(layout, size.w, size.h, count), `${size.w} by ${size.h} with ${count} players`).toEqual([]);
+      }
+    }
+  });
 });

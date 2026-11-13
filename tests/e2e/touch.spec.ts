@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { questionOf, taken } from "./support";
 
 // A phone held sideways: a touch screen of 844 by 390, which Chromium emulates with touch events and
 // the coarse pointer the stylesheet asks about. Every answer here is a tap.
@@ -42,6 +43,7 @@ async function playWithTwoTaps(page: Page, done: Checked): Promise<Checked> {
   const felt = page.locator(".trick .card:not([hidden])");
   const before = await felt.count();
   const several = (await playable(page).count()) > 1;
+  const question = await questionOf(page);
   await card.tap();
   await expect(card).toHaveClass(/selected/);
   expect(await felt.count()).toBe(before);
@@ -53,7 +55,7 @@ async function playWithTwoTaps(page: Page, done: Checked): Promise<Checked> {
     await expect(card).not.toHaveClass(/selected/);
     expect(await felt.count()).toBe(before);
     await other.tap();
-    await expect(playable(page)).toHaveCount(0);
+    await taken(page, question);
     return { ...done, moved: true };
   }
   if (!done.cleared) {
@@ -64,7 +66,7 @@ async function playWithTwoTaps(page: Page, done: Checked): Promise<Checked> {
     await expect(card).toHaveClass(/selected/);
   }
   await card.tap();
-  await expect(playable(page)).toHaveCount(0);
+  await taken(page, question);
   return { ...done, cleared: true };
 }
 

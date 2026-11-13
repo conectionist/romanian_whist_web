@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { decide, waitForTurn } from "./support";
+import { answer, waitForTurn } from "./support";
 
 // Nothing flies, so what is on the table is what the server last said.
 test.beforeEach(async ({ page }) => {
@@ -149,8 +149,7 @@ test.describe("New Game", () => {
     // The game is held for it: a reload finds it paused.
     await game.getByRole("button", { name: "Cancel" }).click();
     await expect(page.locator(".sheet:not([hidden])")).toHaveCount(0);
-    await decide(page);
-    await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable")).toHaveCount(0);
+    await answer(page);
     await waitForTurn(page);
 
     await page.locator('[data-menu="new-game"]').click();

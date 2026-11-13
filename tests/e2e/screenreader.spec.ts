@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { decide, waitForTurn } from "./support";
+import { answer, decide, waitForTurn } from "./support";
 
 // Nothing flies, so what is on the table is what the server last said.
 test.beforeEach(async ({ page }) => {
@@ -12,8 +12,7 @@ const said = (page: Page) => live(page).locator("div").allTextContents();
 // The first round deals one card: a bid and a card, and the round is scored and held.
 async function playFirstRound(page: Page): Promise<void> {
   for (let decisions = 0; decisions < 2; decisions++) {
-    await decide(page);
-    await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable")).toHaveCount(0);
+    await answer(page);
   }
   await expect(page.locator('.sheet[data-sheet="round"]:not([hidden])')).toBeVisible();
 }

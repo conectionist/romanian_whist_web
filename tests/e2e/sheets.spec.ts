@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { decide, waitForTurn } from "./support";
+import { answer, decide, waitForTurn } from "./support";
 
 // Nothing flies, so what is on the table is what the server last said.
 test.beforeEach(async ({ page }) => {
@@ -30,8 +30,7 @@ async function start(page: Page, query: string): Promise<void> {
 // Answers the bid and the card of the first round, which deals one card: the round is then scored.
 async function playFirstRound(page: Page): Promise<void> {
   for (let decisions = 0; decisions < 2; decisions++) {
-    await decide(page);
-    await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable")).toHaveCount(0);
+    await answer(page);
   }
 }
 

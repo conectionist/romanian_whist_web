@@ -7,7 +7,8 @@ import { BidBubble, textFor } from "./bidBubble";
 import { BidStrip, shortNoteFor } from "./bidStrip";
 import { CornerButtons } from "./buttons";
 import { dismissSmallNotice, fullscreenFacts, smallNoticeDismissed, smallNoticeFor } from "./fullscreen";
-import { layoutScaled, stripArea, type ScaledLayout } from "./geometry/scaled";
+import { PAGE_CHIP_HEIGHT, pageLayout, type PageLayout } from "./geometry/page";
+import { stripArea, type ScaledLayout } from "./geometry/scaled";
 import { humanSeated } from "./geometry/seats";
 import { desktopArrangement, scaledArrangement, scaledFan, type Arrangement } from "./geometry/spots";
 import { leadSeat } from "./geometry/trick";
@@ -75,7 +76,7 @@ export class TableScene {
     scores: () => undefined,
   };
   private layout: ViewLayout = { kind: "desktop" };
-  private scaledLayouts = new Map<number, ScaledLayout>();
+  private scaledLayouts = new Map<number, PageLayout>();
   private last: TableModel | null = null;
   private arrangement: Arrangement | null = null;
 
@@ -141,14 +142,14 @@ export class TableScene {
   }
 
   // The scaled table's layout for this many seats, in the window's own units.
-  private scaledFor(seatCount: number): ScaledLayout | null {
+  private scaledFor(seatCount: number): PageLayout | null {
     if (this.layout.kind !== "scaled") {
       return null;
     }
     let layout = this.scaledLayouts.get(seatCount);
     if (layout === undefined) {
       const { size, scale } = this.layout;
-      layout = layoutScaled({ w: size.w / scale, h: size.h / scale, top: 0, bottom: 0 }, seatCount);
+      layout = pageLayout({ w: size.w / scale, h: size.h / scale, top: 0, bottom: 0 }, seatCount);
       this.scaledLayouts.set(seatCount, layout);
     }
     return layout;
@@ -313,12 +314,12 @@ export class TableScene {
 
   // The scaled table's controls and bid strip, placed for the table as it stands. The strip drops its note
   // when it and the note are taller than the band; the line above your hand gives the short reason then.
-  private fitChrome(model: TableModel, layout: ScaledLayout | null): void {
+  private fitChrome(model: TableModel, layout: PageLayout | null): void {
     if (layout === null) {
       this.chrome.hide();
       return;
     }
-    const area = stripArea(layout, this.layout.kind === "scaled" ? this.layout.size.w / this.layout.scale : 0);
+    const area = stripArea(layout, this.layout.kind === "scaled" ? this.layout.size.w / this.layout.scale : 0, PAGE_CHIP_HEIGHT);
     this.bidStrip.place({ x: area.x, y: area.mid, w: area.w });
     this.bidStrip.showNote(true);
     const reason = shortNoteFor(model);

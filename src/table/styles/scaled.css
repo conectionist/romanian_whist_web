@@ -91,7 +91,7 @@
 
 .stage .rail-buttons {
   position: absolute;
-  right: 8px;
+  left: 8px;
   bottom: 8px;
   z-index: 70;
   display: flex;
@@ -121,12 +121,11 @@
 .stage .round-chip {
   position: relative;
   display: flex;
-  height: 68px;
+  height: 52px;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: flex-end;
   width: 172px;
-  padding: 6px 8px 6px 12px;
+  padding: 6px 12px;
   text-align: right;
   color: var(--cream);
   cursor: pointer;
@@ -156,28 +155,61 @@
   color: var(--muted);
 }
 
-.stage .round-chip .trump {
+/* The trump, bottom right under the scores, as the desktop's scoreboard shows it: the word, and the card as large as
+   one played on the felt, or the words that stand in its place. The card's size and the box's width are the layout's. */
+.stage .trump-corner {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 70;
   display: grid;
   justify-items: center;
+  align-content: start;
   gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--f-body);
+  color: var(--cream);
+  cursor: pointer;
 }
 
-.stage .round-chip .lbl {
+.stage .trump-corner::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * min(var(--reach), 4.9px));
+}
+
+.stage .trump-corner:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.stage .trump-corner .lbl {
+  height: 12px;
   margin-right: -0.14em;
   font-size: 9.5px;
   font-weight: 700;
+  line-height: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
-.stage .mini-card {
+.stage .trump-card {
   display: block;
-  flex: none;
-  width: 28px;
-  height: 40.6px;
-  border-radius: 3.5px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.stage .trump-none {
+  display: block;
+  width: 100%;
+  font-family: var(--f-head);
+  font-size: 11.5px;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--cream);
 }
 
 /* The trick's details and the scores, in the gaps beside the table. */

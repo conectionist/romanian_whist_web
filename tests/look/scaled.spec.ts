@@ -238,7 +238,7 @@ async function strays(page: Page): Promise<string[]> {
       const style = getComputedStyle(node);
       return style.overflowX !== "visible" || style.overflowY !== "visible";
     };
-    for (const panel of Array.from(document.querySelectorAll<HTMLElement>(".stage .panel"))) {
+    for (const panel of Array.from(document.querySelectorAll<HTMLElement>(".stage .panel, .stage .trump-corner"))) {
       if (!panel.checkVisibility()) {
         continue;
       }

@@ -6,16 +6,17 @@ import { t } from "../i18n/t";
 import type { TableModel } from "../play/model";
 import { cardNameFor } from "./cardNames";
 import { fullscreenButton, type SmallNotice } from "./fullscreen";
-import { SIDE_RUN, type ScaledLayout } from "./geometry/scaled";
+import type { PageLayout } from "./geometry/page";
+import { SIDE_RUN } from "./geometry/scaled";
 import { DASH } from "./hudText";
 import { roundText } from "./roundText";
 import { rowsFor, tensionFor, trumpFor } from "./scoreboard";
 import { fieldsFor as trickFields } from "./trickPanel";
 import { z } from "./space";
 
-// What the scaled table draws in place of the desktop's menu bar and corner panels: a round button in
-// each corner, the round chip, the trick's details and the scores in the gaps beside the table, and the
-// line above your hand. Each is made once and filled from the model.
+// What the scaled table draws in place of the desktop's menu bar and corner panels: the pause button top left, the
+// round chip top right, the two round buttons bottom left and the trump bottom right, the trick's details and the
+// scores in the gaps beside the table, and the line above your hand. Each is made once and filled from the model.
 
 export interface ChromeActions {
   menu(): void;
@@ -45,6 +46,8 @@ export class ScaledChrome {
   readonly history: HTMLButtonElement;
   readonly lastTrick: HTMLButtonElement;
   readonly chip: HTMLButtonElement;
+  // The trump, bottom right under the scores: the word, and the card or, where there is no trump, the words for it.
+  readonly trump: HTMLButtonElement;
   readonly sideTrick: HTMLButtonElement;
   readonly sideScores: HTMLButtonElement;
   readonly prompt: HTMLElement;
@@ -58,8 +61,8 @@ export class ScaledChrome {
   private readonly roundLine = el("span", { class: "l1" });
   private readonly trickLine = el("span", { class: "l2" });
   private readonly trumpLabel = el("span", { class: "lbl", text: t("scoreboard", "Trump") });
-  private readonly trumpCard = el("img", { class: "mini-card", attrs: { alt: "", draggable: "false" } });
-  private readonly trumpNone = el("span", { class: "l1" });
+  private readonly trumpCard = el("img", { class: "trump-card", attrs: { alt: "", draggable: "false" } });
+  private readonly trumpNone = el("span", { class: "trump-none" });
   private readonly trickTitle = el("div", { class: "st" });
   private readonly trickRows = el("div");
   private readonly scoreTension = el("div", { class: "sr" });
@@ -83,9 +86,10 @@ export class ScaledChrome {
       "button",
       { class: "panel round-chip", attrs: { type: "button" }, data: { roundButton: "scores" } },
       el("span", { class: "lines" }, this.roundLine, this.trickLine),
-      el("span", { class: "trump" }, this.trumpLabel, this.trumpCard, this.trumpNone),
     );
     this.chip.addEventListener("click", () => actions.scores());
+    this.trump = el("button", { class: "trump-corner", attrs: { type: "button" }, data: { roundButton: "trump" } }, this.trumpLabel, this.trumpCard, this.trumpNone);
+    this.trump.addEventListener("click", () => actions.scores());
     this.corner = el("div", { class: "corner-chip" }, this.chip);
     this.rail = el("div", { class: "rail-buttons" }, this.history, this.lastTrick);
 
@@ -107,8 +111,8 @@ export class ScaledChrome {
     this.notice = el("div", { class: "panel scaled-notice", attrs: { role: "status" } }, this.noticeText, this.noticeButton, dismiss);
     this.notice.hidden = true;
 
-    this.elements = [this.menu, this.corner, this.rail, this.sideTrick, this.sideScores, this.prompt, this.notice];
-    for (const node of [this.menu, this.chip, this.history, this.lastTrick, this.sideTrick, this.sideScores, this.prompt]) {
+    this.elements = [this.menu, this.corner, this.rail, this.trump, this.sideTrick, this.sideScores, this.prompt, this.notice];
+    for (const node of [this.menu, this.chip, this.history, this.lastTrick, this.trump, this.sideTrick, this.sideScores, this.prompt]) {
       stamp(node);
     }
     this.hide();
@@ -121,14 +125,14 @@ export class ScaledChrome {
   }
 
   // Fills the controls from the table as it is, and places those that depend on its layout.
-  update(model: TableModel, layout: ScaledLayout, state: { online: boolean; short: string | null; notice?: SmallNotice }): void {
+  update(model: TableModel, layout: PageLayout, state: { online: boolean; short: string | null; notice?: SmallNotice }): void {
     const notice = state.notice ?? null;
     this.notice.hidden = notice === null;
     if (notice !== null) {
       setText(this.noticeText, notice === "fullscreen" ? t("fullscreen", "The table is small here.") : t("fullscreen", "Add the page to the home screen for a bigger table."));
       this.noticeButton.hidden = notice !== "fullscreen";
     }
-    for (const node of [this.menu, this.corner, this.rail]) {
+    for (const node of [this.menu, this.corner, this.rail, this.trump]) {
       node.hidden = false;
     }
     if (state.online !== this.online || this.menu.getAttribute("aria-label") === "") {
@@ -153,11 +157,15 @@ export class ScaledChrome {
       this.trumpCard.hidden = trump.card === null;
       this.trumpNone.hidden = trump.card !== null;
       setSrc(this.trumpCard, trump.card === null ? null : cardUrl(trump.card));
-      this.trumpCard.alt = trump.card === null ? "" : cardNameFor(trump.card);
+      this.trumpCard.alt = "";
+      setText(this.trumpNone, trump.name);
+      setAttr(this.trump, "aria-label", t("announce", "Trump: %1", [trump.card === null ? trump.name : cardNameFor(trump.card)]));
     }
-    setText(this.trumpNone, trump.card === null ? DASH : "");
-    setAttr(this.trumpNone, "title", trump.card === null ? trump.name : null);
-    setAttr(this.trumpNone, "aria-label", trump.card === null ? trump.name : null);
+    // The card is as tall as one played on the felt, in a box that is as wide for the words of a round with no trump.
+    this.trump.style.width = `${layout.trump.w}px`;
+    this.trumpCard.style.width = `${layout.trumpCard.w}px`;
+    this.trumpCard.style.height = `${layout.trumpCard.h}px`;
+    this.trumpNone.style.height = `${layout.trumpCard.h}px`;
 
     this.sideTrick.hidden = side === null;
     this.sideScores.hidden = side === null;

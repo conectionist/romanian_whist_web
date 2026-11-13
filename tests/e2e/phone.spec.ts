@@ -115,7 +115,7 @@ async function boxes(page: Page): Promise<Record<"plates" | "mine" | "controls" 
     return {
       plates: of(".stage .seat.plate:not([hidden])", "plate"),
       mine: of(".stage .seat.mine:not([hidden])", "your plate"),
-      controls: of(".stage .round-btn, .stage .round-chip", "control"),
+      controls: of(".stage .round-btn, .stage .round-chip, .stage .trump-corner", "control"),
       cards: of(".stage .hcard:not([hidden]) .face", "card"),
       strip: of(".stage .bidstrip:not([hidden])", "strip"),
       side: of(".stage .side-panel:not([hidden])", "side panel"),
@@ -128,7 +128,7 @@ for (const [width, height] of WINDOWS) {
     test.use({ viewport: { width, height }, ...touch });
 
     for (const players of [2, 3, 4, 5, 6]) {
-      test(`with ${players} players, no plate overlaps another, a corner control, the bid strip or the hand`, async ({ page }) => {
+      test(`with ${players} players, no plate overlaps another, a corner control, the bid strip or the hand, and no panel a control`, async ({ page }) => {
         await page.goto(`/?solo=${players}&seed=7&speed=4`);
         await stripUp(page);
         expect(await layoutOf(page)).toBe("scaled");
@@ -136,7 +136,8 @@ for (const [width, height] of WINDOWS) {
         const all = await boxes(page);
         expect(all.plates).toHaveLength(players - 1);
         expect(all.mine).toHaveLength(1);
-        expect(all.controls).toHaveLength(4);
+        // The menu button, the chip, the two round buttons and the trump.
+        expect(all.controls).toHaveLength(5);
 
         // Neighbours keep 4 apart in the window's own units.
         for (const [at, one] of all.plates.entries()) {
@@ -168,6 +169,65 @@ for (const [width, height] of WINDOWS) {
     }
   });
 }
+
+// The round buttons are at the foot on the left, where the desktop has them, the trump is at the foot on the right
+// under the scores, and the chip at the top on the right holds the round and the trick and no trump.
+test.describe("the corners of the scaled table", () => {
+  for (const [width, height, sides] of [
+    [754, 247, true],
+    [832, 384, true],
+    [640, 360, false],
+  ] as const) {
+    test.describe(`in a window of ${width} by ${height}`, () => {
+      test.use({ viewport: { width, height }, ...touch });
+
+      for (const players of [3, 6]) {
+        test(`with ${players} players have the round buttons bottom left, the trump bottom right and the chip top right`, async ({ page }) => {
+          await page.goto(`/?solo=${players}&seed=7&speed=4`);
+          await stripUp(page);
+          const scale = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale")));
+          const box = async (selector: string) => (await page.locator(selector).first().boundingBox())!;
+          const history = await box('.stage [data-round-button="history"]');
+          const last = await box('.stage [data-round-button="last-trick"]');
+          const trump = await box(".stage .trump-corner");
+          const chip = await box(".stage .round-chip");
+          const menu = await box('.stage [data-round-button="menu"]');
+          const edge = 8 * scale;
+          // 48 each, 10 apart, 8 from the edges.
+          expect(history.x).toBeCloseTo(edge, 0);
+          expect(history.y + history.height).toBeCloseTo(height - edge, 0);
+          expect(last.y + last.height).toBeCloseTo(height - edge, 0);
+          expect(last.x - (history.x + history.width)).toBeCloseTo(10 * scale, 0);
+          expect(history.width).toBeCloseTo(48 * scale, 0);
+          expect(trump.x + trump.width).toBeCloseTo(width - edge, 0);
+          expect(trump.y + trump.height).toBeCloseTo(height - edge, 0);
+          expect(chip.x + chip.width).toBeCloseTo(width - edge, 0);
+          expect(chip.y).toBeCloseTo(edge, 0);
+          expect(menu.x).toBeCloseTo(edge, 0);
+          expect(menu.y).toBeCloseTo(edge, 0);
+          // The chip holds no trump, and the trump has its word, its card and its name.
+          await expect(page.locator(".stage .round-chip img")).toHaveCount(0);
+          await expect(page.locator(".stage .trump-corner .lbl")).toHaveText("Trump");
+          await expect(page.locator(".stage .trump-corner")).toHaveAttribute("aria-label", /^Trump: (\d+|Jack|Queen|King|Ace) of (spades|hearts|diamonds|clubs)$/);
+          const card = await box(".stage .trump-corner .trump-card");
+          expect(card.width / card.height).toBeCloseTo(500 / 726, 2);
+          expect(card.height / scale).toBeGreaterThan(40);
+          // Under the scores, and the trick's details over the round buttons, where there are side panels.
+          const panels = await page.locator(".stage .side-panel:not([hidden])").count();
+          expect(panels).toBe(sides ? 2 : 0);
+          if (sides) {
+            const scores = await box(".stage .side-scores");
+            const details = await box(".stage .side-trick");
+            expect(scores.y + scores.height).toBeLessThanOrEqual(trump.y - 6 * scale + 0.6);
+            expect(details.y + details.height).toBeLessThanOrEqual(history.y - 6 * scale + 0.6);
+            expect(scores.y).toBeGreaterThanOrEqual(chip.y + chip.height);
+            expect(details.y).toBeGreaterThanOrEqual(menu.y + menu.height);
+          }
+        });
+      }
+    });
+  }
+});
 
 test.describe("the controls under a finger, on the scaled table", () => {
   for (const [width, height] of [
@@ -324,42 +384,44 @@ test.describe("the scaled table's buttons", () => {
 
   const open = (page: Page, name: string) => sheet(page, name);
 
-  test("Pause raises the pause menu in a solo game, and the round chip, the side panels and the two round buttons open the sheets", async ({ page }) => {
+  test("Pause raises the menu list in a solo game, and the round chip, the trump, the side panels and the two round buttons open the sheets", async ({ page }) => {
     await page.goto("/?solo=3&seed=7&speed=4&wait=1");
     await stripUp(page);
     const menu = page.locator('.stage [data-round-button="menu"]');
     await expect(menu).toHaveAttribute("aria-label", "Pause");
     await menu.tap();
-    await expect(open(page, "pause")).toBeVisible();
-    await open(page, "pause").locator('[data-action="resume"]').tap();
-    await expect(open(page, "pause")).toHaveCount(0);
+    await expect(open(page, "menu")).toBeVisible();
+    await expect(open(page, "menu").locator(".sheet-title")).toHaveText("Paused");
+    await open(page, "menu").locator('[data-action="resume"]').tap();
+    await expect(open(page, "menu")).toHaveCount(0);
 
     for (const [button, name] of [
       ['.stage [data-round-button="history"]', "history"],
       ['.stage [data-round-button="last-trick"]', "last-trick"],
-      ['.stage [data-round-button="scores"]', "history"],
-      [".stage .side-trick", "history"],
-      [".stage .side-scores", "history"],
+      ['.stage [data-round-button="scores"]', "scores"],
+      ['.stage [data-round-button="trump"]', "scores"],
+      [".stage .side-trick", "scores"],
+      [".stage .side-scores", "scores"],
     ] as const) {
       await page.locator(button).tap();
       await expect(open(page, name), button).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(open(page, name), button).toHaveCount(0);
     }
-    // Esc raises the pause menu, as it does on the desktop's table.
+    // Esc raises the menu list, as it raises the pause menu on the desktop's table.
     await page.keyboard.press("Escape");
-    await expect(open(page, "pause")).toBeVisible();
+    await expect(open(page, "menu")).toBeVisible();
   });
 
-  test("The button is Menu at an online table, and raises the offer to leave", async ({ page }) => {
+  test("The button is Menu at an online table, and raises the menu list, which does not hold the game", async ({ page }) => {
     await createTable(page, "Alice", { seats: 3, others: ["computer", "computer"], speed: "fastest" });
     await sheet(page, "lobby").locator('[data-action="start"]').click();
     await expect(page.locator(".stage .seat:not([hidden])")).toHaveCount(3);
     const menu = page.locator('.stage [data-round-button="menu"]');
     await expect(menu).toHaveAttribute("aria-label", "Menu");
     await menu.tap();
-    await expect(open(page, "leave").locator(".sheet-title")).toHaveText("Leave the table?");
-    await open(page, "leave").getByRole("button", { name: "Stay" }).tap();
-    await expect(open(page, "leave")).toHaveCount(0);
+    await expect(open(page, "menu").locator(".sheet-title")).toHaveText("Menu");
+    await open(page, "menu").getByRole("button", { name: "Back to the table" }).tap();
+    await expect(open(page, "menu")).toHaveCount(0);
   });
 });

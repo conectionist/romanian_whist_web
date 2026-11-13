@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decide, waitForTurn } from "./support";
+import { answer, waitForTurn } from "./support";
 
 const ORIGIN = "http://127.0.0.1:8090";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -59,8 +59,7 @@ test("a game in Romanian: New Game draws Romanian names, and the table, its prom
 
   // The first round deals one card: a bid, a card, and the round is scored and held for Continue.
   for (let decisions = 0; decisions < 2; decisions++) {
-    await decide(page);
-    await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable")).toHaveCount(0);
+    await answer(page);
   }
   const round = sheet(page, "round");
   await expect(round).toBeVisible();

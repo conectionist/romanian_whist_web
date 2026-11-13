@@ -1,5 +1,5 @@
 import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
-import { decide } from "./support";
+import { answer } from "./support";
 
 // Online tables, played by several browsers at once: each in a context of its own, so each is its own
 // member with its own token, as three people on three machines are.
@@ -104,8 +104,7 @@ export async function playUntil(pages: Page[], done: () => Promise<boolean>, lim
         continue;
       }
       if ((await page.locator(ASK).count()) > 0) {
-        await decide(page);
-        await expect(page.locator(ASK)).toHaveCount(0);
+        await answer(page);
         answered = true;
       }
     }

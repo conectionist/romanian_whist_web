@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { decide, waitForTurn } from "./support";
+import { answer, decide, waitForTurn } from "./support";
 
 async function table(page: Page) {
   return {
@@ -33,9 +33,7 @@ test.describe("with nothing moving", () => {
 
     // 22 decisions, bids and cards alike: the moment the desktop's screenshot of four players shows.
     for (let decisions = 0; decisions < 22; decisions++) {
-      await decide(page);
-      // The answer is taken before the next question is asked.
-      await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable")).toHaveCount(0);
+      await answer(page);
     }
     await waitForTurn(page);
     // Every message of the bots' moves has been drawn: the table is where the desktop's picture is.
@@ -62,8 +60,7 @@ test.describe("with nothing moving", () => {
     await page.goto("/?solo=3&seed=7&speed=4");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
     for (let decisions = 0; decisions < 6; decisions++) {
-      await decide(page);
-      await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable")).toHaveCount(0);
+      await answer(page);
       await waitForTurn(page);
     }
     // A round scored, or a new one dealt, and the table still sits right: three seats, a hand in it.

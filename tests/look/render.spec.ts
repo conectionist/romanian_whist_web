@@ -376,17 +376,18 @@ test.describe("under a mouse", () => {
   });
 });
 
-// The smallest windows the page is asked to work in, and every sheet and page that does not need a
+// The smallest windows a mouse is asked to work in, and every sheet and page that does not need a
 // server: nothing runs off the side, nothing is placed off the top, and every control is within
-// reach, by scrolling the sheet to it if the sheet is taller than the window.
+// reach, by scrolling the sheet to it if the sheet is taller than the window. A finger has the scaled
+// table's sheets in these windows, which sheets.spec.ts measures.
 for (const [width, height] of [
   [844, 390],
   [832, 384],
   [740, 360],
   [754, 247],
 ]) {
-  test.describe(`a window of ${width} by ${height}`, () => {
-    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+  test.describe(`a window of ${width} by ${height} under a mouse`, () => {
+    test.use({ viewport: { width, height }, hasTouch: false, isMobile: false });
 
     for (const name of ["sheet-round", "sheet-history", "sheet-last-trick", "sheet-game-over", "sheet-rules", "sheet-settings", "sheet-pause"]) {
       test(`${name} fits, and every one of its controls can be reached`, async ({ page }) => {
@@ -491,15 +492,15 @@ const ACTION_SHEETS = [
   "sheet-lobby",
 ];
 
-for (const [width, height, touch] of [
-  [1280, 760, false],
-  [844, 390, true],
-  [832, 384, true],
-  [740, 360, true],
-  [754, 247, true],
+for (const [width, height] of [
+  [1280, 760],
+  [844, 390],
+  [832, 384],
+  [740, 360],
+  [754, 247],
 ] as const) {
-  test.describe(`in Romanian, in a window of ${width} by ${height}`, () => {
-    test.use({ viewport: { width, height }, hasTouch: touch, isMobile: touch });
+  test.describe(`in Romanian, in a window of ${width} by ${height} under a mouse`, () => {
+    test.use({ viewport: { width, height }, hasTouch: false, isMobile: false });
 
     for (const name of ACTION_SHEETS) {
       test(`${name} has every button of its actions inside it`, async ({ page }) => {

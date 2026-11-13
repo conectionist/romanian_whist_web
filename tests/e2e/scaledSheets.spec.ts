@@ -255,6 +255,32 @@ test.describe("under a finger at 832 by 384, without a table", () => {
   });
 });
 
+test.describe("a page open when the window changes", () => {
+  test.use({ viewport: PHONE, ...touch });
+
+  test("is the desktop's dialog again with its title, its Deal and no Back where the desktop has them, and a page once more when turned back", async ({ page }) => {
+    await page.goto("/");
+    await page.locator('[data-menu-page="new-game"]').tap();
+    await opens(page, "new-game", "page");
+    const where = () =>
+      sheet(page, "new-game").evaluate((node) => ({
+        title: node.querySelector(":scope > .sheet-title") !== null,
+        bar: node.querySelector(":scope > .page-bar") !== null,
+        dealIn: node.querySelector('[data-action="deal"]')?.parentElement?.className ?? null,
+        back: getComputedStyle(node.querySelector(".page-back")!).display,
+      }));
+    expect(await where()).toEqual({ title: false, bar: true, dealIn: "page-bar", back: "grid" });
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(page.locator(".window")).toHaveAttribute("data-layout", "desktop");
+    expect(await placementOf(page, "new-game")).toBe("dialog");
+    expect(await where()).toEqual({ title: true, bar: false, dealIn: "sheet-actions", back: "none" });
+    await page.setViewportSize(PHONE);
+    await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
+    expect(await placementOf(page, "new-game")).toBe("page");
+    expect(await where()).toEqual({ title: false, bar: true, dealIn: "page-bar", back: "grid" });
+  });
+});
+
 test.describe("a whole solo game under a finger at 832 by 384", () => {
   test.use({ viewport: PHONE, ...touch });
 

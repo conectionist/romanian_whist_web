@@ -158,12 +158,13 @@ for (const [width, height] of [
       // Closed where it was scrolled to, it opens at its top again.
       await sheet(page, "new-game").evaluate((node) => (node.scrollTop = node.scrollHeight));
       expect(await sheet(page, "new-game").evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
-      await sheet(page, "new-game").locator('[data-action="cancel"]').tap();
+      // A page has Back where the desktop's dialog has Cancel.
+      await sheet(page, "new-game").locator(".page-back").tap();
       await expect(sheet(page, "new-game")).toHaveCount(0);
       await page.locator('[data-menu-page="new-game"]').tap();
       await expect(sheet(page, "new-game")).toBeVisible();
       expect(await sheet(page, "new-game").evaluate((node) => node.scrollTop)).toBe(0);
-      await sheet(page, "new-game").locator('[data-action="cancel"]').tap();
+      await sheet(page, "new-game").locator(".page-back").tap();
       await expect(sheet(page, "new-game")).toHaveCount(0);
 
       await page.locator('[data-menu-page="online"]').tap();
@@ -173,14 +174,15 @@ for (const [width, height] of [
       await sheet(page, "create-table").locator('[data-action="create"]').tap();
       const lobby = sheet(page, "lobby");
       await expect(lobby).toBeVisible();
-      // "Take this seat" is drawn 32 tall and is 44 to a finger: a touch 21 above or below its middle lands on it.
+      // "Take this seat" is 44 tall in the page, as every control a finger has to hit: a touch 21 above or below its
+      // middle lands on it.
       const take = lobby.locator('[data-action="take-seat"]:visible').first();
       await take.evaluate((node) => node.scrollIntoView({ block: "center" }));
       const middle = (await take.boundingBox())!;
       const lands = (y: number) =>
         page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest("[data-action]")?.getAttribute("data-action") ?? null, [middle.x + middle.width / 2, y]);
-      expect(middle.height).toBe(32);
-      expect([await lands(middle.y + 16 - 21), await lands(middle.y + 16 + 21)]).toEqual(["take-seat", "take-seat"]);
+      expect(middle.height).toBeGreaterThanOrEqual(44);
+      expect([await lands(middle.y + middle.height / 2 - 21), await lands(middle.y + middle.height / 2 + 21)]).toEqual(["take-seat", "take-seat"]);
       await lobby.locator('[data-action="fill"]').tap();
       await lobby.locator('[data-action="start"]:not(:disabled)').tap();
       await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
@@ -271,7 +273,8 @@ test.describe("a phone held upright", () => {
     await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
     const hint = page.locator(".rotate-hint");
     await expect(hint).toBeVisible();
-    await expect(hint).toHaveText("Turn your phone sideways: the table needs the room.");
+    // And the button for full screen, where the browser has it.
+    await expect(hint).toContainText("Turn your phone sideways: the table needs the room.");
     // It does not stand in the way of a touch, nor over the table.
     expect(await hint.evaluate((node) => getComputedStyle(node).pointerEvents)).toBe("none");
     await page.setViewportSize({ width: 844, height: 390 });
@@ -280,7 +283,7 @@ test.describe("a phone held upright", () => {
     await expect(hint).toBeVisible();
 
     await page.goto("/?lang=ro");
-    await expect(page.locator(".rotate-hint")).toHaveText("Rotește telefonul: masa are nevoie de loc.");
+    await expect(page.locator(".rotate-hint")).toContainText("Rotește telefonul: masa are nevoie de loc.");
   });
 
   test("is asked at a table too, below it", async ({ page }) => {

@@ -44,7 +44,7 @@ export async function answer(page: Page): Promise<void> {
 
 // A tap on a card where a finger would land: the card nearest its middle that is not under another card, since
 // the cards of a fan overlap and the middle of one may be another's.
-export async function tapCard(page: Page, card: Locator): Promise<void> {
+export async function tapCard(page: Page, card: Locator, timeout?: number): Promise<void> {
   const at = await card.evaluate((node) => {
     const box = node.getBoundingClientRect();
     const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
@@ -62,7 +62,7 @@ export async function tapCard(page: Page, card: Locator): Promise<void> {
       }
     }
     return best;
-  });
+  }, undefined, { timeout });
   expect(at, "a part of the card that a finger could land on").not.toBeNull();
   await page.touchscreen.tap(at!.x, at!.y);
 }

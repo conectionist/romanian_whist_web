@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createTable, sheet } from "./online";
 import { tapCard } from "./support";
 
 // The scaled table, which a touch screen smaller than 1100 by 740 has, and the desktop's, which a mouse has at
@@ -315,5 +316,50 @@ test.describe("the layout changing in the middle of a game", () => {
     // Same height, so the same scale, and a window wider by 100: the table moves to the middle of it.
     await page.setViewportSize({ width: 932, height: 384 });
     await expect.poll(async () => (await page.locator(".stage .seat.mine").boundingBox())!.x).toBeCloseTo(before.x + 50, 0);
+  });
+});
+
+test.describe("the scaled table's buttons", () => {
+  test.use({ viewport: { width: 832, height: 384 }, ...touch });
+
+  const open = (page: Page, name: string) => sheet(page, name);
+
+  test("Pause raises the pause menu in a solo game, and the round chip, the side panels and the two round buttons open the sheets", async ({ page }) => {
+    await page.goto("/?solo=3&seed=7&speed=4&wait=1");
+    await stripUp(page);
+    const menu = page.locator('.stage [data-button="menu"]');
+    await expect(menu).toHaveAttribute("aria-label", "Pause");
+    await menu.tap();
+    await expect(open(page, "pause")).toBeVisible();
+    await open(page, "pause").locator('[data-action="resume"]').tap();
+    await expect(open(page, "pause")).toHaveCount(0);
+
+    for (const [button, name] of [
+      ['.stage [data-button="history"]', "history"],
+      ['.stage [data-button="last-trick"]', "last-trick"],
+      ['.stage [data-button="scores"]', "history"],
+      [".stage .side-trick", "history"],
+      [".stage .side-scores", "history"],
+    ] as const) {
+      await page.locator(button).tap();
+      await expect(open(page, name), button).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(open(page, name), button).toHaveCount(0);
+    }
+    // Esc raises the pause menu, as it does on the desktop's table.
+    await page.keyboard.press("Escape");
+    await expect(open(page, "pause")).toBeVisible();
+  });
+
+  test("The button is Menu at an online table, and raises the offer to leave", async ({ page }) => {
+    await createTable(page, "Alice", { seats: 3, others: ["computer", "computer"], speed: "fastest" });
+    await sheet(page, "lobby").locator('[data-action="start"]').click();
+    await expect(page.locator(".stage .seat:not([hidden])")).toHaveCount(3);
+    const menu = page.locator('.stage [data-button="menu"]');
+    await expect(menu).toHaveAttribute("aria-label", "Menu");
+    await menu.tap();
+    await expect(open(page, "leave").locator(".sheet-title")).toHaveText("Leave the table?");
+    await open(page, "leave").getByRole("button", { name: "Stay" }).tap();
+    await expect(open(page, "leave")).toHaveCount(0);
   });
 });

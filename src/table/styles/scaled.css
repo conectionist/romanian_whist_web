@@ -633,3 +633,10 @@
 .view.scaled {
   overflow: clip;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .seat .turn-dots i {
+    animation: none;
+    opacity: 1;
+  }
+}

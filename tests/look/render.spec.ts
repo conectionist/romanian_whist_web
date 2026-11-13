@@ -381,7 +381,9 @@ test.describe("under a mouse", () => {
 // reach, by scrolling the sheet to it if the sheet is taller than the window.
 for (const [width, height] of [
   [844, 390],
+  [832, 384],
   [740, 360],
+  [754, 247],
 ]) {
   test.describe(`a window of ${width} by ${height}`, () => {
     test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
@@ -492,7 +494,9 @@ const ACTION_SHEETS = [
 for (const [width, height, touch] of [
   [1280, 760, false],
   [844, 390, true],
+  [832, 384, true],
   [740, 360, true],
+  [754, 247, true],
 ] as const) {
   test.describe(`in Romanian, in a window of ${width} by ${height}`, () => {
     test.use({ viewport: { width, height }, hasTouch: touch, isMobile: touch });

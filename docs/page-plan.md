@@ -3,8 +3,7 @@
 > **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
 > draws the table and plays a solo game against the server (PR #3). Phase 7, the sheets, the menus
 > and online tables, is complete (2026-11-12, PR #7). Phase 8, Romanian, the keyboard, screen readers
-> and touch, is built and reviewed twice, and waits for the owner's approval (PR #8). Phase 8b, the
-> phone layout, is not built. Outside the phases, the page's Docker image is built, has had two reviews,
+> and touch, is complete (2026-11-13, PR #8). Phase 8b, the phone layout, is not built. Outside the phases, the page's Docker image is built, has had two reviews,
 > and waits for the owner's approval (PR #5, [§14](#the-docker-image-outcome)).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
@@ -1065,7 +1064,7 @@ commit of code `2e100c4`).
   - **CI** (Build (Linux) and the Docker image) is green at `4eec5c5` and `7924e0c`.
   - **The owner approved** the phase on 2026-11-12.
 
-### Phase 8: Romanian, keyboard, touch — M
+### Phase 8: Romanian, keyboard, touch — M ✅ COMPLETE
 
 - **Work:**
   - the imported translations, the new strings in Romanian, gender agreement and plurals;
@@ -1078,7 +1077,7 @@ commit of code `2e100c4`).
     the outcome.
 
 **Outcome** (branch `web/phase-8-romanian-keyboard-touch`, PR #8, parent `ccr-209c0806-o444sp`, the last
-commit of code `6fc0a0c`). It waits for the owner's approval.
+commit of code `6fc0a0c`).
 
 - **The branch.**
   - **The commits,** in the order they were made:
@@ -1250,7 +1249,8 @@ commit of code `6fc0a0c`). It waits for the owner's approval.
 - **Builds and CI.**
   - **`npm run build` and `npm run build:look`** pass at `6fc0a0c`, and the unit, look and end-to-end
     tests pass: 742, 134 and 69.
-  - **CI** (Build (Linux) and the Docker image) is green at `6fc0a0c`.
+  - **CI** (Build (Linux) and the Docker image) is green at `6fc0a0c` and `d9e0718`.
+  - **The owner approved** the phase on 2026-11-13.
 
 ### Phase 8b: the phone layout — L
 

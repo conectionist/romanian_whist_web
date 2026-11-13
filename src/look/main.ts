@@ -2,7 +2,7 @@ import { el } from "../dom/el";
 import { startIn } from "../i18n/document";
 import { languageFromCode } from "../i18n/language";
 import { decode } from "../net/decode";
-import type { ServerMessage } from "../net/protocol";
+import type { Card, ServerMessage } from "../net/protocol";
 import { modelOf, type TableModel } from "../play/model";
 import { PACES, storedPace, type Pace } from "../play/motion";
 import { NOTHING_ASKED, sheetFor, type MenuSheet, type UiState } from "../play/sheets";
@@ -159,6 +159,10 @@ async function main(): Promise<void> {
       const change = store.apply(message, 0);
       await scene.relayout(modelOf(store.state), change, animate);
     },
+    // The ring round your plate for a prompt's last seconds, at this moment of the page's clock.
+    tick: (now: number) => scene.updateCountdown(now),
+    // Your card goes to the felt before the server has said it was played.
+    playOwn: (card: string) => scene.playOwn(card as Card, false),
   };
 
   // So a test can tell the nodes a second state reuses from the ones it makes.

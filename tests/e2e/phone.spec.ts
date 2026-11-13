@@ -227,6 +227,8 @@ test.describe("the layout changing in the middle of a game", () => {
         plates: document.querySelectorAll(".seat.plate, .seat.mine").length,
         bar: getComputedStyle(document.querySelector(".menu-band")!).display,
         stage: getComputedStyle(document.querySelector(".stage")!).display,
+        hud: document.querySelector<HTMLElement>(".hud")!.hidden,
+        viewTop: document.querySelector(".view")!.getBoundingClientRect().top,
         flying: document.getAnimations().length,
       };
     });
@@ -238,12 +240,13 @@ test.describe("the layout changing in the middle of a game", () => {
     await page.addInitScript(() => window.localStorage.setItem("whist.pace", "slow"));
     await page.goto("/?solo=3&seed=7&speed=2");
     await stripUp(page);
-    expect(await mounts(page)).toMatchObject({ layout: "scaled", hand: "stage", strip: "stage", trick: "stage", lead: "trick", panel: "stage", bar: "none" });
+    // The scaled table has the whole window, with none of the desktop's corner panels, buttons or menu bar.
+    expect(await mounts(page)).toMatchObject({ layout: "scaled", hand: "stage", strip: "stage", trick: "stage", lead: "trick", panel: "stage", bar: "none", hud: true, viewTop: 0 });
 
     // To the desktop's table while a bid is asked for.
     await page.setViewportSize({ width: 1280, height: 800 });
     await expect(page.locator(".window")).toHaveAttribute("data-layout", "desktop");
-    expect(await mounts(page)).toMatchObject({ layout: "desktop", hand: "space", strip: "space-top", trick: "space", lead: "space", panel: "space", trickTransform: "", stripLeft: "", plates: 0, stage: "none" });
+    expect(await mounts(page)).toMatchObject({ layout: "desktop", hand: "space", strip: "space-top", trick: "space", lead: "space", panel: "space", trickTransform: "", stripLeft: "", plates: 0, stage: "none", hud: false, viewTop: 46 });
     expect(await page.locator(".menu-band").boundingBox()).toMatchObject({ height: 46 });
     await page.setViewportSize({ width: 832, height: 384 });
     await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
@@ -259,7 +262,8 @@ test.describe("the layout changing in the middle of a game", () => {
     expect(await page.evaluate(() => document.getAnimations().length), "the card is in the air").toBeGreaterThan(0);
     await page.setViewportSize({ width: 1280, height: 800 });
     await expect(page.locator(".window")).toHaveAttribute("data-layout", "desktop");
-    await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
+    // What was in the air landed with the change, and is not left to finish in the other layout's places.
+    expect((await mounts(page)).flying).toBe(0);
     // Wherever the card is, it is in the felt of the table now drawn, under the logo.
     const played = page.locator(`.trick .card[data-card="${name}"]`);
     await expect(played).toBeVisible();
@@ -287,6 +291,21 @@ test.describe("the layout changing in the middle of a game", () => {
     await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
     await expect(page.locator(".rotate-hint")).toBeHidden();
     expect(problems).toEqual([]);
+  });
+
+  test("a tap on a card, or a focus on it, does not carry the table up to show the part below the window", async ({ page }) => {
+    await page.goto("/?solo=4&seed=7&speed=4");
+    await stripUp(page);
+    await page.locator(".bidstrip:not([hidden]) .opt:not(:disabled)").first().tap();
+    const card = page.locator(".hand .hcard.playable").first();
+    await card.waitFor();
+    const scrolled = () => page.evaluate(() => ({ view: document.querySelector(".view")!.scrollTop, stage: document.querySelector(".stage")!.getBoundingClientRect().top }));
+    // The keyboard on a card, which the browser scrolls into view, and then a tap, which Playwright does.
+    await card.evaluate((node) => node.focus());
+    await expect(card).toHaveClass(/selected/);
+    expect(await scrolled()).toEqual({ view: 0, stage: 0 });
+    await tapCard(page, card);
+    expect(await scrolled()).toEqual({ view: 0, stage: 0 });
   });
 
   test("a resize that keeps the scale draws the table for the new window", async ({ page }) => {

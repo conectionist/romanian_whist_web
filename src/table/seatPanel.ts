@@ -49,9 +49,6 @@ export function shortPillFor(seat: SeatView, active: boolean, biddingOpen: boole
     : t("SeatItem", "No bid", [], { comment: "on a flat plate, which has room for a few letters" });
 }
 
-// The smallest a pill's words are made to fit a plate, in pixels. Below it they are cut short.
-export const LEAST_PILL_FONT = 9;
-
 // A prompt's last seconds, as a ring round your name panel: it is full when 15 seconds are left and
 // empties as they go, in the warning colour and then the bad one, and the seconds are written too, so
 // the colour is never the only cue.
@@ -178,27 +175,12 @@ export class SeatPanel {
     setAttr(this.pill, "data-state", away ? "away" : pill.state);
     this.badge.hidden = !(compact && seat.presence === "replaced");
     this.badge.title = this.badge.hidden ? "" : presenceText(seat.presence, seat.gender);
-    this.fit();
     this.paintPresence();
 
     setAttr(this.element, "aria-label", seatLabelFor(seat, { active: state.active, human: state.human, pill: pill.text }));
     this.element.classList.toggle("active", state.active);
     this.element.dataset.seat = String(seat.seat);
     this.element.hidden = false;
-  }
-
-  // A plate has room for a few letters, and a translation may be longer than the room: the words of the pill
-  // are made smaller until they fit, down to LEAST_PILL_FONT. A word is measured once its face has loaded.
-  fit(): void {
-    this.pill.style.fontSize = "";
-    if (this.look === "plaque" || this.element.hidden || this.pill.clientWidth === 0) {
-      return;
-    }
-    let size = parseFloat(getComputedStyle(this.pill).fontSize);
-    while (this.pill.scrollWidth > this.pill.clientWidth && size > LEAST_PILL_FONT) {
-      size = Math.max(LEAST_PILL_FONT, size - 0.5);
-      this.pill.style.fontSize = `${size}px`;
-    }
   }
 
   // Draws the panel as a plaque, a plate or your own plate: the look decides its size, and the ring round

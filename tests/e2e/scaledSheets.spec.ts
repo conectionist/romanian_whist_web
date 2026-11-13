@@ -38,15 +38,23 @@ async function answerByTouch(page: Page): Promise<boolean> {
   const slot = await page.evaluate(() => Math.min(...Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard.playable"), (card) => Number(card.dataset.slot))));
   const card = page.locator(`.hand .hcard.playable[data-slot="${slot}"]`);
   const question = await questionOf(page);
-  // The prompt may close between looking at the hand and tapping it, and then there is nothing to tap.
+  // The prompt may close between looking at the hand and tapping it, and a card drawn as playable a moment after its
+  // answer was taken is not the next question's: a tap on it picks nothing. The card is played by a tap on it once it is
+  // picked.
   try {
-    await tapCard(page, card, 3000);
-    await tapCard(page, card, 3000);
+    for (let tries = 0; tries < 20; tries++) {
+      await tapCard(page, card, 3000);
+      if (await card.evaluate((node) => node.classList.contains("selected"), undefined, { timeout: 3000 })) {
+        await tapCard(page, card, 3000);
+        await taken(page, question);
+        return true;
+      }
+      await page.waitForTimeout(50);
+    }
   } catch {
     return false;
   }
-  await taken(page, question);
-  return true;
+  return false;
 }
 
 // Plays what is asked and goes on at every round's end, until the results are up.

@@ -6,6 +6,7 @@ import { t } from "../i18n/t";
 import { BidBubble, textFor } from "./bidBubble";
 import { BidStrip, shortNoteFor } from "./bidStrip";
 import { CornerButtons } from "./buttons";
+import { dismissSmallNotice, fullscreenFacts, smallNoticeDismissed, smallNoticeFor } from "./fullscreen";
 import { layoutScaled, stripArea, type ScaledLayout } from "./geometry/scaled";
 import { humanSeated } from "./geometry/seats";
 import { desktopArrangement, scaledArrangement, scaledFan, type Arrangement } from "./geometry/spots";
@@ -92,6 +93,10 @@ export class TableScene {
       history: () => this.handlers.history(),
       lastTrick: () => this.handlers.lastTrick(),
       scores: () => this.handlers.scores(),
+      dismissNotice: () => {
+        dismissSmallNotice();
+        this.refreshNotice();
+      },
     });
     view.stage.append(...this.chrome.elements);
   }
@@ -322,7 +327,16 @@ export class TableScene {
       this.bidStrip.showNote(false);
       short = this.bidStrip.leadsNote ? `${t("bidstrip", "Your bid")}. ${reason}` : reason;
     }
-    this.chrome.update(model, layout, { online: this.options.online?.() ?? false, short });
+    const shrunk = this.layout.kind === "scaled" && this.layout.scale < 1;
+    const notice = smallNoticeFor(fullscreenFacts(), shrunk, smallNoticeDismissed());
+    this.chrome.update(model, layout, { online: this.options.online?.() ?? false, short, notice });
+  }
+
+  // The notice about a small table is drawn again: the page entered or left full screen, or it was put away.
+  refreshNotice(): void {
+    if (this.last !== null) {
+      this.fitChrome(this.last, this.scaledFor(this.last.seats.length));
+    }
   }
 
   // The bubbles over the seats that bid in this frame.

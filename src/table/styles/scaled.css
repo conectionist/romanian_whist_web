@@ -276,14 +276,45 @@
   color: var(--warn);
 }
 
-/* The room the full-screen notice takes, between the corner controls. */
+/* The notice that the table is small, with full screen where the browser has it. It stands at the top between the
+   corner controls and over the plate at the top of the table, which is under it; the hand, the bid strip and the chip
+   are not. */
 .stage .scaled-notice {
   position: absolute;
   left: 50%;
   top: 8px;
   z-index: 70;
-  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
   max-width: calc(100% - 2 * (172px + 18px));
+  max-height: 54px;
+  padding: 4px 6px 4px 14px;
+  font-size: 13px;
+  line-height: 1.25;
+  transform: translateX(-50%);
+}
+
+.stage .scaled-notice .notice-btn {
+  flex: none;
+  font-size: 15px;
+  pointer-events: auto;
+}
+
+.stage .scaled-notice .notice-dismiss {
+  min-width: 36px;
+  padding: 0 8px;
+  background: none;
+  border-color: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.rotate-hint .hint-btn {
+  margin-top: 10px;
+  font-size: 17px;
+  pointer-events: auto;
 }
 
 /* The plates. An opponent's is flat, so it takes little of the table's height. */
@@ -639,4 +670,8 @@
     animation: none;
     opacity: 1;
   }
+}
+
+.too-small .sheet-btn {
+  margin-top: 14px;
 }

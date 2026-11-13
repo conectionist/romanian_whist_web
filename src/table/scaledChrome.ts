@@ -1,10 +1,11 @@
 import { cardUrl } from "../assets/assets";
 import { el, setAttr, setSrc, setText, stamp } from "../dom/el";
 import { icon } from "../dom/icons";
-import { renderRuns, textOf, type Line } from "../dom/runs";
+import { renderRuns, renderSuited, textOf, type Line } from "../dom/runs";
 import { t } from "../i18n/t";
 import type { TableModel } from "../play/model";
 import { cardNameFor } from "./cardNames";
+import { fullscreenButton, type SmallNotice } from "./fullscreen";
 import { SIDE_RUN, type ScaledLayout } from "./geometry/scaled";
 import { DASH } from "./hudText";
 import { roundText } from "./roundText";
@@ -21,6 +22,8 @@ export interface ChromeActions {
   history(): void;
   lastTrick(): void;
   scores(): void;
+  // The notice about a small table was put away.
+  dismissNotice(): void;
 }
 
 function roundButton(name: string, label: string, picture: Parameters<typeof icon>[0]): HTMLButtonElement {
@@ -45,7 +48,8 @@ export class ScaledChrome {
   readonly sideTrick: HTMLButtonElement;
   readonly sideScores: HTMLButtonElement;
   readonly prompt: HTMLElement;
-  // The room the full-screen notice takes at the top, between the two corner controls.
+  // The full-screen notice, at the top between the two corner controls. It stands over the plate that is at the top
+  // of the table, and over nothing else: the hand, the bid strip and the chip are below it or beside it.
   readonly notice: HTMLElement;
   readonly elements: HTMLElement[];
 
@@ -63,6 +67,9 @@ export class ScaledChrome {
   private online = false;
   private lastTrump: string | null | undefined;
   private lastKey = "";
+  private promptKey = "";
+  private readonly noticeText = el("span", { class: "scaled-notice-text" });
+  private readonly noticeButton = fullscreenButton("notice-btn");
 
   constructor(actions: ChromeActions) {
     this.menu = roundButton("menu", "", "pause");
@@ -95,7 +102,9 @@ export class ScaledChrome {
 
     this.prompt = el("div", { class: "panel prompt-line", attrs: { role: "status" } });
     this.prompt.hidden = true;
-    this.notice = el("div", { class: "scaled-notice" });
+    const dismiss = el("button", { class: "notice-btn notice-dismiss", attrs: { type: "button", "aria-label": t("historysheet", "Close") }, text: "×" });
+    dismiss.addEventListener("click", () => actions.dismissNotice());
+    this.notice = el("div", { class: "panel scaled-notice", attrs: { role: "status" } }, this.noticeText, this.noticeButton, dismiss);
     this.notice.hidden = true;
 
     this.elements = [this.menu, this.corner, this.rail, this.sideTrick, this.sideScores, this.prompt, this.notice];
@@ -112,7 +121,13 @@ export class ScaledChrome {
   }
 
   // Fills the controls from the table as it is, and places those that depend on its layout.
-  update(model: TableModel, layout: ScaledLayout, state: { online: boolean; short: string | null }): void {
+  update(model: TableModel, layout: ScaledLayout, state: { online: boolean; short: string | null; notice?: SmallNotice }): void {
+    const notice = state.notice ?? null;
+    this.notice.hidden = notice === null;
+    if (notice !== null) {
+      setText(this.noticeText, notice === "fullscreen" ? t("fullscreen", "The table is small here.") : t("fullscreen", "Add the page to the home screen for a bigger table."));
+      this.noticeButton.hidden = notice !== "fullscreen";
+    }
     for (const node of [this.menu, this.corner, this.rail]) {
       node.hidden = false;
     }
@@ -188,13 +203,16 @@ export class ScaledChrome {
       this.prompt.dataset.tone = "turn";
       this.prompt.style.top = `${layout.hand.top - 6}px`;
       this.prompt.style.maxWidth = `${layout.lineW}px`;
-      renderRuns(this.prompt, [{ text: state.short }]);
+      this.promptKey = state.short;
+      renderSuited(this.prompt, state.short);
     } else if (line !== null) {
       this.prompt.dataset.tone = "turn";
       this.prompt.style.top = `${layout.lineBottom}px`;
       this.prompt.style.maxWidth = `${layout.lineW}px`;
-      if (this.prompt.textContent !== textOf(line)) {
-        renderRuns(this.prompt, line);
+      const key = JSON.stringify(line);
+      if (key !== this.promptKey) {
+        this.promptKey = key;
+        renderSuited(this.prompt, textOf(line));
       }
     }
     this.prompt.style.left = `${layout.hand.cx}px`;

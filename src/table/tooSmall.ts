@@ -1,5 +1,6 @@
 import { el, setText } from "../dom/el";
 import { t } from "../i18n/t";
+import { fullscreenButton } from "./fullscreen";
 import { DESIGN, SCALE_FLOOR } from "./layoutChoice";
 import type { Size } from "./space";
 
@@ -21,6 +22,7 @@ export class TooSmall {
         el("p", { text: t("toosmall", "The game needs a window of at least %1 × %2 pixels to show every card and name.", [least.w, least.h]) }),
         this.sizes,
         el("p", { class: "small", text: t("toosmall", "Make the window bigger.") }),
+        fullscreenButton("sheet-btn"),
       ),
     );
     this.element.hidden = true;

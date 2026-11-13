@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { flightStart } from "./flight";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -174,3 +174,138 @@ test.describe("the scaled table's plates", () => {
     }
   });
 });
+
+// Every word of the scaled table's panels is inside its panel, and no panel leaves the window: the line above your
+// hand, the strip's note, the side panels' rows, the chip, a plate's name and the notice, in both languages, at the
+// smallest window and at two more, for a bid of eight cards and of one, and for a card to play.
+const DECK = ["AS", "JS", "8S", "QH", "9H", "7H", "TC", "QD"];
+
+type Json = Record<string, any>;
+
+// The state of a fixture, with the table at the bid for this many cards in everyone's hand.
+function bidding(name: string, cards: number): Json {
+  const state = structuredClone(stateOf(name)) as Json;
+  const snapshot = state.snapshot;
+  snapshot.phase = "betting";
+  snapshot.active = 0;
+  snapshot.bets = { placed: 0, sum: 0 };
+  snapshot.forbiddenBet = null;
+  snapshot.round = { ...snapshot.round, tricks: cards, trick: 0, trump: "QD", type: "normal" };
+  snapshot.table = { cards: [], leadSuit: null, ledBy: 0 };
+  for (const seat of snapshot.seats) {
+    Object.assign(seat, { cards, bet: null, won: 0 });
+    delete seat.hand;
+  }
+  snapshot.seats[0].hand = DECK.slice(0, cards);
+  state.lastTrick = null;
+  state.prompt = { kind: "bet", id: 1, deadline: null, first: true, forbidden: null, max: cards, hand: DECK.slice(0, cards), roundType: "normal" };
+  return state;
+}
+
+// The state of a fixture with you to play a card of your hand.
+function playing(name: string): Json {
+  const state = structuredClone(stateOf(name)) as Json;
+  const hand = state.snapshot.seats[0].hand as string[];
+  state.snapshot.active = 0;
+  state.prompt = { kind: "play", id: 1, deadline: null, blind: false, hand, legal: hand.map((_, at) => at) };
+  return state;
+}
+
+// Where the line above your hand must show for the test to have looked at it: a bid of eight cards at four seats is
+// one the strip has no room for its note beside, in each window, and a card to play always has its line.
+const TABLES = [
+  ["a bid of eight cards at six seats", () => bidding("bidding", 8), false],
+  ["a bid of eight cards at four seats", () => bidding("table-4-players", 8), true],
+  ["a bid of one card at six seats", () => bidding("bidding", 1), false],
+  ["a bid of one card at four seats", () => bidding("table-4-players", 1), false],
+  ["a card to play at four seats", () => playing("hand-8-cards"), true],
+  ["a card to play at six seats", () => playing("table-6-players"), true],
+] as const;
+
+// What of a panel's text is outside the panel, and what panel is outside the window. A box that clips its text, with
+// an ellipsis or without one, has cut a word.
+async function strays(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const found: string[] = [];
+    const slack = 0.75;
+    // A line of text is drawn taller than the line it is set in when the line is tight, so what may stand out above
+    // and below is a quarter of its own height.
+    const inside = (inner: DOMRect | DOMRectReadOnly, outer: DOMRect) => {
+      const tall = inner.height * 0.25 + slack;
+      return inner.left >= outer.left - slack && inner.right <= outer.right + slack && inner.top >= outer.top - tall && inner.bottom <= outer.bottom + tall;
+    };
+    const clips = (node: Element) => {
+      const style = getComputedStyle(node);
+      return style.overflowX !== "visible" || style.overflowY !== "visible";
+    };
+    for (const panel of Array.from(document.querySelectorAll<HTMLElement>(".stage .panel"))) {
+      if (!panel.checkVisibility()) {
+        continue;
+      }
+      const name = `${panel.className.replace("panel", "").trim()} "${(panel.textContent ?? "").trim().slice(0, 40)}"`;
+      const box = panel.getBoundingClientRect();
+      if (box.left < -slack || box.top < -slack || box.right > window.innerWidth + slack || box.bottom > window.innerHeight + slack) {
+        found.push(`${name} is outside the window: ${Math.round(box.left)},${Math.round(box.top)} to ${Math.round(box.right)},${Math.round(box.bottom)}`);
+      }
+      const words = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT);
+      for (let node = words.nextNode(); node !== null; node = words.nextNode()) {
+        const parent = node.parentElement!;
+        // Words said to a screen reader are in a box clipped to nothing.
+        const unseen = (up: Element | null): boolean => up !== null && up !== panel.parentElement && (getComputedStyle(up).clipPath !== "none" || unseen(up.parentElement));
+        if ((node.textContent ?? "").trim() === "" || !parent.checkVisibility() || unseen(parent)) {
+          continue;
+        }
+        // The nearest box between the text and the panel that clips it.
+        let clip: Element | null = null;
+        for (let up: Element | null = parent; up !== null && clip === null; up = up === panel ? null : up.parentElement) {
+          clip = clips(up) ? up : null;
+        }
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const frame = clip === null ? box : clip.getBoundingClientRect();
+        for (const rect of Array.from(range.getClientRects())) {
+          if (rect.width === 0 || inside(rect, frame)) {
+            continue;
+          }
+          found.push(`${name}: "${(node.textContent ?? "").trim().slice(0, 40)}" runs from ${Math.round(rect.left)} to ${Math.round(rect.right)} in a box from ${Math.round(frame.left)} to ${Math.round(frame.right)}`);
+          break;
+        }
+      }
+    }
+    return found;
+  });
+}
+
+for (const [width, height] of [
+  [754, 247],
+  [832, 384],
+  [640, 360],
+] as const) {
+  test.describe(`the scaled table's panels at ${width} by ${height} hold their words`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    for (const language of ["en", "ro"]) {
+      for (const [what, make, lined] of TABLES) {
+        // A browser with no full screen gets the longer notice, which says to add the page to the home screen.
+        for (const fullscreen of [true, false]) {
+          test(`in ${language}, for ${what}${fullscreen ? "" : ", where the browser has no full screen"}`, async ({ page }) => {
+            if (!fullscreen) {
+              await page.addInitScript(() => Object.defineProperty(document, "fullscreenEnabled", { value: false }));
+            }
+            await page.goto(`/look.html?shot=table-4-players&lang=${language}`);
+            await page.waitForSelector("body[data-ready]");
+            await page.evaluate(
+              (text) => (window as unknown as { look: { apply(text: string, animate: boolean): Promise<void> } }).look.apply(text, false),
+              JSON.stringify({ type: "sync", seq: 1, ...make() }),
+            );
+            await page.evaluate(() => document.fonts.ready);
+            if (lined) {
+              await expect(page.locator(".stage .prompt-line")).toBeVisible();
+            }
+            expect(await strays(page)).toEqual([]);
+          });
+        }
+      }
+    }
+  });
+}

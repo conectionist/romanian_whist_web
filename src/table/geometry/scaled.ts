@@ -88,6 +88,31 @@ export interface HandFan {
   liftSel: number;
 }
 
+// What the four corners of the window hold, which the seats, the hand and the side panels keep clear of. Each box is
+// the room a corner's controls take from the corner, in the window's units, with the least space round them: the
+// top ones are measured down from the top bar. `handLeft` and `handRight` are how far from each edge the hand's fan
+// stays, and `sideTop` where the side panels start.
+export interface Corners {
+  topLeft: { w: number; h: number };
+  topRight: { w: number; h: number };
+  bottomLeft: { w: number; h: number };
+  bottomRight: { w: number; h: number };
+  handLeft: number;
+  handRight: number;
+  sideTop: number;
+}
+
+// The mock-up's: the pause button top left, the round chip top right and its two round buttons bottom right.
+export const MOCKUP_CORNERS: Corners = {
+  topLeft: { w: 64, h: 64 },
+  topRight: { w: CHIP_WIDTH + 14, h: 82 },
+  bottomLeft: { w: 0, h: 0 },
+  bottomRight: { w: 124, h: 64 },
+  handLeft: 16,
+  handRight: 126,
+  sideTop: 80,
+};
+
 export interface ScaledLayout {
   table: { cx: number; cy: number; R: number };
   // Yours first, then the others clockwise.
@@ -265,7 +290,7 @@ export function platesClear(seats: readonly Point[], w: number, h: number): bool
 // The table, in the window's own units: at least 640 by 360, with the table across the whole height.
 // The round table leaves the four corners free, and they hold the few controls, so the seats keep out
 // of them.
-export function layoutScaled(window: ScaledWindow, seatCount: number): ScaledLayout {
+export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS): ScaledLayout {
   const { w, h, top, bottom } = window;
   const bw = NATIVE.plate.w;
   const bh = NATIVE.plate.h;
@@ -281,10 +306,11 @@ export function layoutScaled(window: ScaledWindow, seatCount: number): ScaledLay
   // The line above your hand grows upwards from just over a lifted card.
   const lineBottom = handTop - liftSel - 6;
   const avoid: Box[] = [
-    { x: 0, y: 0, w: 64, h: top + 64 },
-    { x: w - CHIP_WIDTH - 14, y: 0, w: CHIP_WIDTH + 14, h: top + 82 },
-    { x: w - 124, y: h - bottom - 64, w: 124, h: bottom + 64 },
-  ];
+    { x: 0, y: 0, w: corners.topLeft.w, h: top + corners.topLeft.h },
+    { x: w - corners.topRight.w, y: 0, w: corners.topRight.w, h: top + corners.topRight.h },
+    { x: w - corners.bottomRight.w, y: h - bottom - corners.bottomRight.h, w: corners.bottomRight.w, h: bottom + corners.bottomRight.h },
+    { x: 0, y: h - bottom - corners.bottomLeft.h, w: corners.bottomLeft.w, h: bottom + corners.bottomLeft.h },
+  ].filter((box) => box.w > 0 && box.h > 0);
   // The hand may cover the wood's near edge, as on the desktop, but never your played card. Where the
   // seats would crowd into each other, as six players do on the smallest windows, the plates shrink a
   // little, all alike, until neighbours keep PLATE_GAP apart.
@@ -322,7 +348,7 @@ export function layoutScaled(window: ScaledWindow, seatCount: number): ScaledLay
     gap = Math.min(gap, seat.x, w - seat.x - pw);
   }
   const sideW = Math.min(gap - 16, SIDE_MAX);
-  const side = sideW >= SIDE_MIN ? { w: sideW, y: top + 80 } : null;
+  const side = sideW >= SIDE_MIN ? { w: sideW, y: top + corners.sideTop } : null;
 
   // The band across the table between the players above it and those beside or below: nothing is
   // played there while you bid or wait for a connection, so the bid buttons and the banner go there,
@@ -348,7 +374,7 @@ export function layoutScaled(window: ScaledWindow, seatCount: number): ScaledLay
   // shows a third of each of eight cards. The outer cards lean by up to 3.5 turns of the fan, and their
   // corners swing out with it.
   const lean = (ch / 2) * Math.sin((3.5 * FAN_TURN * Math.PI) / 180);
-  let handHalf = Math.min(cx - 16, w - 126 - cx);
+  let handHalf = Math.min(cx - corners.handLeft, w - corners.handRight - cx);
   for (const seat of ring.seats) {
     if (seat.y + ph > handTop - liftSel - 2) {
       handHalf = Math.min(handHalf, seat.x > cx ? seat.x - cx - 4 : cx - (seat.x + pw) - 4);
@@ -451,10 +477,10 @@ export function toTable(layout: Pick<ScaledLayout, "table">, point: Point): Poin
 
 // The room the bid strip has: the band across the table, less what the round chip takes of its top where
 // the two meet. The strip is as wide as the band, centred on the table.
-export function stripArea(layout: ScaledLayout, windowWidth: number): { x: number; w: number; top: number; bottom: number; mid: number } {
+export function stripArea(layout: ScaledLayout, windowWidth: number, chipHeight: number = CHIP_HEIGHT): { x: number; w: number; top: number; bottom: number; mid: number } {
   const { band, bid } = layout;
   const chipLeft = windowWidth - CORNER_INSET - CHIP_WIDTH;
   const meets = bid.x + bid.w > chipLeft;
-  const top = meets ? Math.max(band.top, CORNER_INSET + CHIP_HEIGHT + PLATE_GAP) : band.top;
+  const top = meets ? Math.max(band.top, CORNER_INSET + chipHeight + PLATE_GAP) : band.top;
   return { x: bid.x, w: bid.w, top, bottom: band.bottom, mid: (top + band.bottom) / 2 };
 }

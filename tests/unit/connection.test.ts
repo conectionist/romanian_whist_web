@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BACKOFF_MS, Connection, TOKEN_KEY, delayFor, type Status } from "../../src/net/connection";
+import type { Language } from "../../src/i18n/language";
 import type { ServerMessage } from "../../src/net/protocol";
 
 class FakeSocket {
@@ -46,7 +47,7 @@ function memory(initial: Record<string, string> = {}, keeps = false) {
   };
 }
 
-function setup(initial: Record<string, string> = {}, keeps = false) {
+function setup(initial: Record<string, string> = {}, keeps = false, language: Language = "en") {
   FakeSocket.instances = [];
   const storage = memory(initial, keeps);
   const session = memory();
@@ -57,6 +58,7 @@ function setup(initial: Record<string, string> = {}, keeps = false) {
   let reloads = 0;
   const connection = new Connection({
     url: "ws://example/ws",
+    language,
     storage,
     session,
     createSocket: (url) => new FakeSocket(url) as unknown as WebSocket,
@@ -91,6 +93,13 @@ describe("the connection", () => {
     socket().fire("open", {});
     expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en" });
     expect(statuses).toEqual(["connecting", "open"]);
+  });
+
+  it("says hello in the language the page runs in", () => {
+    const { socket } = setup({}, false, "ro");
+    socket().readyState = 1;
+    socket().fire("open", {});
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "ro" });
   });
 
   it("sends the token it keeps, only in hello", () => {

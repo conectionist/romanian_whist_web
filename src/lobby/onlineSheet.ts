@@ -4,7 +4,7 @@ import { t } from "../i18n/t";
 import type { Gender, Profile } from "../net/protocol";
 import type { Sheet } from "../sheets/layer";
 import { SheetButton, actions } from "../sheets/parts";
-import { facesFor } from "./catalogue";
+import { faceName, facesFor } from "./catalogue";
 import { Choose, Refusal, formRow, hint, textField } from "./controls";
 import { genderChoices } from "./newGameSheet";
 import { codeError, faceFor, normalizeCode, profileError } from "./profile";
@@ -130,7 +130,7 @@ export class OnlineSheet implements Sheet {
       ...ids.map((id) => {
         const picture = el("img", { attrs: { alt: "", draggable: "false" } });
         setSrc(picture, portraitUrl(id) ?? null);
-        const button = el("button", { class: "portrait-choice", attrs: { type: "button", role: "radio", "aria-label": id.replace(/-/g, " ") }, data: { face: id } }, picture);
+        const button = el("button", { class: "portrait-choice", attrs: { type: "button", role: "radio", "aria-label": faceName(id) }, data: { face: id } }, picture);
         setAttr(button, "aria-checked", id === this.avatar ? "true" : "false");
         button.addEventListener("click", () => {
           this.avatar = id;
@@ -159,9 +159,9 @@ export class OnlineSheet implements Sheet {
 
   focusDefault(): void {
     if (this.name.value === "") {
-      this.name.focus();
+      this.name.focus({ preventScroll: true });
     } else if (this.fixed === null) {
-      this.code.focus();
+      this.code.focus({ preventScroll: true });
     } else {
       this.join.focus();
     }

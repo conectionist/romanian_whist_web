@@ -1,4 +1,5 @@
 import { el, setText } from "../dom/el";
+import { translateGendered, type Gendered } from "../i18n/person";
 import { t } from "../i18n/t";
 import type { ErrorCode, TableState } from "../net/protocol";
 import type { Status } from "../net/connection";
@@ -66,6 +67,12 @@ export function waitingText(table: TableState | null, receivedAt: number, now: n
   return t("online", "Waiting for %1 to come back: %2 s", [seat.name, left]);
 }
 
+// A person's seat taken over by a computer player, told as Romanian agrees it with the person.
+const REPLACED: Gendered = {
+  male: { source: "%1 was replaced by a computer player.", comment: "about a man" },
+  female: { source: "%1 was replaced by a computer player.", comment: "about a woman" },
+};
+
 // The news in a change of who is here: a person gone away, replaced by a computer player, or back.
 export function presenceNews(before: TableState | null, after: TableState | null): string[] {
   if (before === null || after === null || before.code !== after.code) {
@@ -86,7 +93,7 @@ export function presenceNews(before: TableState | null, after: TableState | null
       return;
     }
     if (seat.presence === "replaced" && was.presence !== "replaced") {
-      news.push(t("online", "%1 was replaced by a computer player.", [seat.name]));
+      news.push(translateGendered("online", REPLACED, seat.gender, [seat.name]));
     } else if (seat.presence === "away" && was.presence === "here") {
       news.push(t("online", "%1 went away.", [seat.name]));
     } else if (seat.presence === "here" && was.presence !== "here") {

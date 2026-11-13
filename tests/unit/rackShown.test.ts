@@ -28,7 +28,7 @@ function seat(overrides: Partial<SeatView>): SeatView {
 
 describe("what a rack shows", () => {
   it("is one back per card left when the hand cannot be seen", () => {
-    expect(shownFor(seat({ cardsLeft: 5 }))).toEqual({ count: 5, faces: [] });
+    expect(shownFor(seat({ cardsLeft: 5 }))).toEqual({ count: 5, faces: [], owner: "Ana" });
   });
 
   it("is faces, in the order given, where the hand can be seen", () => {
@@ -36,7 +36,7 @@ describe("what a rack shows", () => {
       { card: "AS", legal: true },
       { card: "7D", legal: true },
     ];
-    expect(shownFor(seat({ cardsLeft: 2, hand }))).toEqual({ count: 2, faces: ["AS", "7D"] });
+    expect(shownFor(seat({ cardsLeft: 2, hand }))).toEqual({ count: 2, faces: ["AS", "7D"], owner: "Ana" });
   });
 
   it("is nothing for a seat with no cards", () => {
@@ -48,8 +48,9 @@ describe("what a rack shows", () => {
   });
 
   it("tells a change in the cards from none", () => {
-    expect(sameShown({ count: 2, faces: [] }, { count: 2, faces: [] })).toBe(true);
-    expect(sameShown({ count: 2, faces: [] }, { count: 3, faces: [] })).toBe(false);
-    expect(sameShown({ count: 1, faces: ["AS"] }, { count: 1, faces: ["KS"] })).toBe(false);
+    expect(sameShown({ count: 2, faces: [], owner: "Ana" }, { count: 2, faces: [], owner: "Ana" })).toBe(true);
+    expect(sameShown({ count: 2, faces: [], owner: "Ana" }, { count: 3, faces: [], owner: "Ana" })).toBe(false);
+    expect(sameShown({ count: 1, faces: ["AS"], owner: "Ana" }, { count: 1, faces: ["KS"], owner: "Ana" })).toBe(false);
+    expect(sameShown({ count: 1, faces: ["AS"], owner: "Ana" }, { count: 1, faces: ["AS"], owner: "Dan" })).toBe(false);
   });
 });

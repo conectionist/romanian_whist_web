@@ -19,12 +19,12 @@ export function winnerAnnouncement(winners: readonly Standing[]): string {
     const name = winners[0].name;
     return points < 0
       ? t("gameover", "%1 wins with a score of %2.", [name, points])
-      : t("gameover", "%1 wins with %n points.", [name], { n: points });
+      : t("gameover", "%1 wins with %n points.", [name], { n: points, one: "%1 wins with %n point." });
   }
   const names = joinNames(winners.map((winner) => winner.name));
   return points < 0
     ? t("gameover", "%1 tie for first with a score of %2.", [names, points])
-    : t("gameover", "%1 tie for first with %n points.", [names], { n: points });
+    : t("gameover", "%1 tie for first with %n points.", [names], { n: points, one: "%1 tie for first with %n point." });
 }
 
 // The standings for a table reloaded after its game was over, whose sync has no gameOver. The

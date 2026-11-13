@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { setLanguage } from "../../src/i18n/language";
 import type { Presence, TableState } from "../../src/net/protocol";
 import { fewestSeats, fillMessages, lobbyFor, presenceText, seatChoice, seatCountFrom, settingsChange, summaryOf, withSeatCount, youSeatOf } from "../../src/lobby/lobby";
 import { decode } from "../../src/net/decode";
@@ -81,6 +82,26 @@ describe("the lobby's model", () => {
     expect(presenceText("replaced")).toBe("Replaced");
     expect(presenceText("here")).toBe("");
     expect(presenceText(null)).toBe("");
+  });
+});
+
+describe("who is away or replaced, as a man or a woman", () => {
+  afterEach(() => setLanguage("en"));
+
+  it("is the same words in English whoever it is about", () => {
+    expect(presenceText("away", "female")).toBe("Away");
+    expect(presenceText("replaced", "female")).toBe("Replaced");
+    expect(presenceText("away", null)).toBe("Away");
+  });
+
+  it("agrees with the person in Romanian, and is a man's where the person is not known", () => {
+    setLanguage("ro");
+    expect(presenceText("away", "male")).toBe("Deconectat");
+    expect(presenceText("away", "female")).toBe("Deconectată");
+    expect(presenceText("replaced", "male")).toBe("Înlocuit");
+    expect(presenceText("replaced", "female")).toBe("Înlocuită");
+    expect(presenceText("away", null)).toBe("Deconectat");
+    expect(presenceText("here", "female")).toBe("");
   });
 });
 

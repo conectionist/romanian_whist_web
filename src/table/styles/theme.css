@@ -154,3 +154,16 @@ body {
   --sheet-row-rule: rgba(201, 164, 92, 0.1);
   --sheet-win-glow: rgba(242, 211, 140, 0.5);
 }
+
+/* Said to a screen reader and shown to no one. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

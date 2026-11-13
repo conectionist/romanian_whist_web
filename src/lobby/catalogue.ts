@@ -1,13 +1,12 @@
 import avatarList from "../../public/avatars.json";
 import nameList from "../../public/player_names.json";
+import type { Language } from "../i18n/language";
 import { t } from "../i18n/t";
 import type { Gender } from "../net/protocol";
 
 // The names and the faces New Game gives the computer players, src/ui/PlayerNames.cpp and
 // src/paint/Avatars.cpp: drawn at random by the owner's rules, in the dialog, where they can still be
 // changed. The catalogues are the server's, copied to public/.
-
-export type Language = "en" | "ro";
 
 export interface Avatar {
   id: string;
@@ -108,6 +107,38 @@ export function drawName(
     if (!isTaken(placeholder, taken)) {
       return placeholder;
     }
+  }
+}
+
+// What a portrait shows, in words, for the ones a person may choose among; any other is its id.
+export function faceName(id: string): string {
+  switch (id) {
+    case "man-black-hair-beard":
+      return t("lobby", "Man with black hair and a beard");
+    case "man-black-tee":
+      return t("lobby", "Man in a black T-shirt");
+    case "man-dark-hair-beard":
+      return t("lobby", "Man with dark hair and a beard");
+    case "man-hat-mustache":
+      return t("lobby", "Man in a hat, with a mustache");
+    case "man-short-hair":
+      return t("lobby", "Man with short hair");
+    case "man-stubble":
+      return t("lobby", "Man with stubble");
+    case "man-white-hair-hat":
+      return t("lobby", "Man with white hair and a hat");
+    case "woman-long-brown-hair":
+      return t("lobby", "Woman with long brown hair");
+    case "woman-long-dark-hair":
+      return t("lobby", "Woman with long dark hair");
+    case "woman-long-red-hair":
+      return t("lobby", "Woman with long red hair");
+    case "woman-shoulder-hair":
+      return t("lobby", "Woman with shoulder-length hair");
+    case "woman-wavy-black-hair":
+      return t("lobby", "Woman with wavy black hair");
+    default:
+      return id.replace(/-/g, " ");
   }
 }
 

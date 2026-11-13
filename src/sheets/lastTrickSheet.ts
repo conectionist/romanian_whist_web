@@ -2,6 +2,7 @@ import { cardUrl } from "../assets/assets";
 import { el, setSrc, setText } from "../dom/el";
 import { t } from "../i18n/t";
 import type { Card, LastTrick } from "../net/protocol";
+import { cardNameFor } from "../table/cardNames";
 import { sizeForHeight } from "../table/cards";
 import type { Sheet } from "./layer";
 import { SheetButton, actions } from "./parts";
@@ -80,6 +81,7 @@ class Mini {
 
   update(card: MiniCard): void {
     setSrc(this.picture, cardUrl(card.card));
+    this.picture.alt = cardNameFor(card.card);
     setText(this.name, card.name);
     this.element.classList.toggle("win", card.winning);
   }

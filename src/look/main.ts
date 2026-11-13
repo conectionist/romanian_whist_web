@@ -1,4 +1,6 @@
 import { el } from "../dom/el";
+import { startIn } from "../i18n/document";
+import { languageFromCode } from "../i18n/language";
 import { decode } from "../net/decode";
 import type { ServerMessage } from "../net/protocol";
 import { modelOf, type TableModel } from "../play/model";
@@ -7,6 +9,7 @@ import { NOTHING_ASKED, sheetFor, type MenuSheet, type UiState } from "../play/s
 import { Store } from "../play/store";
 import { MenuBar, menuStateFor } from "../menu/menuBar";
 import { NO_ACTIONS, Sheets } from "../sheets/host";
+import { LanguageDialog } from "../lobby/languageDialog";
 import { MenuPage } from "../lobby/menuPage";
 import { defaults } from "../lobby/setup";
 import { seededRandom } from "../lobby/catalogue";
@@ -22,6 +25,7 @@ import "../table/styles/rack.css";
 import "../table/styles/cards.css";
 import "../table/styles/hud.css";
 import "../table/styles/strip.css";
+import "../table/styles/touch.css";
 import "../sheets/styles/sheet.css";
 import "../lobby/styles/lobby.css";
 
@@ -32,8 +36,9 @@ interface Fixture {
   shot: { file: string; width: number; height: number; view: "window" | "table"; raised?: string; handOrder?: string[] };
   state: Record<string, unknown> | null;
   sheet?: "pause" | MenuSheet;
-  // The page that is shown when there is no table: the main menu.
-  page?: "menu";
+  // The page that is shown when there is no table: the main menu, or the language dialog, which has
+  // nothing under it.
+  page?: "menu" | "language";
   messages?: unknown[];
 }
 
@@ -70,8 +75,19 @@ async function decoded(url: string): Promise<void> {
 
 async function main(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
+  // English unless the capture asks for Romanian, so the desktop's pictures are compared like for like.
+  startIn(languageFromCode(params.get("lang")) ?? "en", document);
   const first = fixtureNamed(params.get("shot") ?? "table-empty");
   const then = params.get("then");
+
+  if (first.page === "language") {
+    const dialog = new LanguageDialog({ choose: () => undefined });
+    document.body.append(dialog.element);
+    dialog.focus();
+    await loadFonts();
+    document.body.dataset.ready = "1";
+    return;
+  }
 
   const frame = el("div", { class: "window" });
   document.getElementById("app")?.append(frame);
@@ -90,7 +106,7 @@ async function main(): Promise<void> {
 
   // The sheets, as the live page has them, asking for nothing.
   const sheets = new Sheets(NO_ACTIONS, { setup: () => defaults(seededRandom(1)), profile: () => null, pace: storedPace }, seededRandom(1));
-  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined });
+  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined });
   frame.append(menuPage.element, sheets.layer.element);
   let ui: UiState = NOTHING_ASKED;
   let order: readonly string[] | undefined;

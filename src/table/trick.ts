@@ -71,8 +71,10 @@ export interface TrickMotion {
   pace: Pace;
   // After a sync there is no last frame to move from.
   fresh: boolean;
-  // Where a card of yours rests in the fan, which it leaves for the felt.
+  // Where a card of yours is drawn in the fan, which it leaves for the felt.
   fromHand(card: Card): Placement | null;
+  // How much larger than the table's own size the fan is drawn, which a card leaving it starts at.
+  handScale(): number;
 }
 
 interface Flight {
@@ -229,7 +231,7 @@ export class TrickView {
     if (from === null || !motion.animate) {
       return Promise.resolve();
     }
-    return this.launch(card, view, from, handCardHeight / playedCardHeight(seatCount), 1, to, flightDuration(motion.pace), true);
+    return this.launch(card, view, from, (motion.handScale() * handCardHeight) / playedCardHeight(seatCount), 1, to, flightDuration(motion.pace), true);
   }
 
   // Forgets a card of yours that went early and was not taken.
@@ -288,7 +290,7 @@ export class TrickView {
         view.placeAt(to);
         const fromYourHand = place.human ? motion.fromHand(played.card) : null;
         if (fromYourHand !== null) {
-          ended.push(this.launch(played.card, view, fromYourHand, handCardHeight / height, 1, to, flightDuration(motion.pace), true));
+          ended.push(this.launch(played.card, view, fromYourHand, (motion.handScale() * handCardHeight) / height, 1, to, flightDuration(motion.pace), true));
         } else {
           const panel = centreOf(place);
           ended.push(

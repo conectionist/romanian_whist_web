@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { seededRandom } from "../../src/lobby/catalogue";
+import { afterEach, describe, expect, it } from "vitest";
+import { setLanguage } from "../../src/i18n/language";
+import { nameCatalogue, seededRandom, suits } from "../../src/lobby/catalogue";
 import {
   MAX_NAME_LENGTH,
   defaults,
@@ -61,10 +62,32 @@ describe("the defaults", () => {
   });
 });
 
+describe("the defaults in Romanian", () => {
+  afterEach(() => setLanguage("en"));
+
+  it("name you Jucător, and draw the opponents' names from the Romanian ones", () => {
+    setLanguage("ro");
+    const romanian = defaults(seededRandom(11));
+    expect(romanian.human.name).toBe("Jucător");
+    for (const bot of romanian.bots) {
+      const entry = nameCatalogue().find((each) => each.name === bot.name && suits(each, bot.gender, "ro"));
+      expect(entry, bot.name).toBeDefined();
+    }
+  });
+});
+
 describe("the levels", () => {
+  afterEach(() => setLanguage("en"));
+
   it("are named as the desktop names them", () => {
     expect(levelName("reckoner-alpha")).toBe("Reckoner (Alpha)");
     expect(levelName("first-card")).toBe("First card");
+  });
+
+  it("are named as the desktop names them in Romanian", () => {
+    setLanguage("ro");
+    expect(levelName("reckoner-alpha")).toBe("Socotitor (Alfa)");
+    expect(levelName("first-card")).toBe("Prima carte");
   });
 });
 
@@ -191,7 +214,11 @@ describe("the settings a game is dealt from", () => {
 describe("what is remembered between games", () => {
   function memory() {
     const kept = new Map<string, string>();
-    return { getItem: (key: string) => kept.get(key) ?? null, setItem: (key: string, value: string) => void kept.set(key, value) };
+    return {
+      getItem: (key: string) => kept.get(key) ?? null,
+      setItem: (key: string, value: string) => void kept.set(key, value),
+      removeItem: (key: string) => void kept.delete(key),
+    };
   }
 
   it("is read back as it was kept", () => {
@@ -203,11 +230,43 @@ describe("what is remembered between games", () => {
   it("is nothing when nothing was kept, or what was kept cannot be read", () => {
     expect(loadSetup(memory())).toBeNull();
     const storage = memory();
-    storage.setItem("whist.setup", "{not json");
+    storage.setItem("whist.setup.en", "{not json");
     expect(loadSetup(storage)).toBeNull();
-    storage.setItem("whist.setup", JSON.stringify({ ...setup(), bots: [{ name: "x", gender: "male", level: "nobody" }] }));
+    storage.setItem("whist.setup.en", JSON.stringify({ ...setup(), bots: [{ name: "x", gender: "male", level: "nobody" }] }));
     expect(loadSetup(storage)).toBeNull();
     expect(loadSetup(null)).toBeNull();
+  });
+
+  it("is kept for each language, and read back only in its own, which the other's does not overwrite", () => {
+    const storage = memory();
+    saveSetup(setup({ seed: 12 }), storage, "en");
+    expect(loadSetup(storage, "ro")).toBeNull();
+    saveSetup(setup({ seed: 34 }), storage, "ro");
+    expect(loadSetup(storage, "en")).toEqual(setup({ seed: 12 }));
+    expect(loadSetup(storage, "ro")).toEqual(setup({ seed: 34 }));
+  });
+
+  it("is moved from the one slot every language used to share into the slot of the language it names", () => {
+    const storage = memory();
+    storage.setItem("whist.setup", JSON.stringify({ language: "en", setup: setup({ seed: 12 }) }));
+    expect(loadSetup(storage, "ro")).toBeNull();
+    expect(loadSetup(storage, "en")).toEqual(setup({ seed: 12 }));
+    expect(storage.getItem("whist.setup")).toBeNull();
+    expect(storage.getItem("whist.setup.en")).not.toBeNull();
+    // A setup the new slot already has is not replaced by the old one.
+    storage.setItem("whist.setup", JSON.stringify({ language: "en", setup: setup({ seed: 99 }) }));
+    expect(loadSetup(storage, "en")).toEqual(setup({ seed: 12 }));
+    expect(storage.getItem("whist.setup")).toBeNull();
+  });
+
+  it("drops what the old slot kept without saying a language, or cannot be read", () => {
+    const storage = memory();
+    storage.setItem("whist.setup", JSON.stringify(setup()));
+    expect(loadSetup(storage, "en")).toBeNull();
+    expect(storage.getItem("whist.setup")).toBeNull();
+    storage.setItem("whist.setup", "{not json");
+    expect(loadSetup(storage, "en")).toBeNull();
+    expect(storage.getItem("whist.setup")).toBeNull();
   });
 
   it("is lost quietly when storage refuses", () => {
@@ -216,6 +275,9 @@ describe("what is remembered between games", () => {
         throw new Error("blocked");
       },
       setItem: () => {
+        throw new Error("blocked");
+      },
+      removeItem: () => {
         throw new Error("blocked");
       },
     };

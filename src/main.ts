@@ -7,18 +7,25 @@ import { Controller } from "./play/controller";
 import { modelOf } from "./play/model";
 import { currentPace, storePace, storedPace } from "./play/motion";
 import { Flow, type Memory } from "./play/flow";
-import { atTable } from "./play/sheets";
+import { announcementFor } from "./play/announce";
+import { Keyboard } from "./play/keyboard";
+import { atTable, type SheetName } from "./play/sheets";
 import { PlaybackQueue } from "./play/queue";
 import { NO_CHANGE, Store } from "./play/store";
+import { Announcer } from "./dom/announcer";
 import { el } from "./dom/el";
 import { holdNote } from "./sheets/roundSheet";
+import { rotateHint } from "./table/rotateHint";
 import { seatingOf } from "./sheets/seating";
 import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
 import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
 import { Notices, connectionText, errorText, presenceNews, waitingText } from "./lobby/notices";
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
+import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
+import { startIn } from "./i18n/document";
+import { addressForLanguage, currentLanguage, keepLanguage, languageFromSearch, storeLanguage, storedLanguage } from "./i18n/language";
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
@@ -32,6 +39,7 @@ import "./table/styles/rack.css";
 import "./table/styles/cards.css";
 import "./table/styles/hud.css";
 import "./table/styles/strip.css";
+import "./table/styles/touch.css";
 import "./sheets/styles/sheet.css";
 import "./lobby/styles/lobby.css";
 
@@ -39,6 +47,10 @@ import "./lobby/styles/lobby.css";
 // through the controller. A page is told what the connection is doing, and whether it is at a table,
 // in the body's data-status, which the browser tests read.
 const body = document.body;
+
+// The language is fixed before anything below makes a string: what the address asks for, else what
+// the browser kept from the last visit, else what the person says, the first time.
+startIn(languageFromSearch(window.location.search) ?? storedLanguage() ?? (await askLanguage()), document);
 
 function status(value: string): void {
   body.dataset.status = value;
@@ -62,6 +74,7 @@ const redraw = (): Promise<void> => scene.relayout(controller.adjust(modelOf(sto
 
 const connection: Connection = new Connection({
   url: socketUrl(window.location),
+  language: currentLanguage(),
   onStatus: (value: Status) => {
     status(value === "open" ? "connected" : value);
     lastStatus = value;
@@ -82,7 +95,6 @@ const controller: Controller = new Controller({
   redraw: () => void redraw(),
 });
 
-scene.hand.setHandler((slot) => controller.onPlay(slot));
 scene.bidStrip.setHandler((bet) => controller.onBid(bet));
 
 // What the page keeps in the browser between visits: the last New Game and who you are online.
@@ -152,8 +164,78 @@ const menuBar = new MenuBar({
   exit: () => flow.exit(),
 });
 
-const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online") });
-frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element);
+// The language dialog again, from the main menu page. A new choice is kept and the page loaded anew in
+// it, since every string was made in the old one; the same choice only closes it.
+function changeLanguage(): void {
+  const app = document.getElementById("app") as HTMLElement;
+  const leave = () => {
+    dialog.close();
+    app.inert = false;
+    menuPage.language.focus();
+  };
+  const dialog = new LanguageDialog(
+    {
+      choose: (chosen) => {
+        storeLanguage(chosen);
+        if (chosen === currentLanguage()) {
+          leave();
+          return;
+        }
+        window.location.replace(addressForLanguage(window.location.href, chosen, storedLanguage() === chosen));
+      },
+      cancel: leave,
+    },
+    currentLanguage(),
+  );
+  app.inert = true;
+  document.body.append(dialog.element);
+  dialog.focus();
+}
+
+// The sheet that is up, which the keyboard reads. The table takes the keys unless a sheet holds it or
+// the language dialog is over the page.
+let shownSheet: SheetName | null = null;
+const appElement = document.getElementById("app") as HTMLElement;
+
+const keyboard = new Keyboard({
+  model: () => controller.adjust(modelOf(store.state)),
+  live: () => !view.root.inert && !appElement.inert,
+  menuLive: () => !appElement.inert,
+  sheet: () => shownSheet,
+  play: (slot) => controller.onPlay(slot),
+  bid: (bet) => controller.onBid(bet),
+  continueRound: () => flow.continueRound(),
+  shortcut: (which) => menuBar.press(which),
+  draw: (selected, focus) => {
+    scene.hand.select(selected?.kind === "card" ? selected.value : null, focus && selected?.kind === "card");
+    scene.bidStrip.select(selected?.kind === "bid" ? selected.value : null, focus && selected?.kind === "bid");
+  },
+  focusedChoice: () => {
+    const node = document.activeElement;
+    if (node instanceof HTMLElement && node.matches(".hand .hcard")) {
+      return { kind: "card", value: Number(node.dataset.slot) };
+    }
+    if (node instanceof HTMLElement && node.matches(".bidstrip .opt")) {
+      return { kind: "bid", value: Number(node.dataset.bid) };
+    }
+    return null;
+  },
+  release: () => {
+    const node = document.activeElement;
+    if (node instanceof HTMLElement && node.matches(".hand .hcard, .bidstrip .opt")) {
+      node.blur();
+    }
+  },
+});
+scene.hand.setHandler((slot, pointer) => keyboard.press(slot, pointer));
+scene.hand.setFocusHandler((slot) => keyboard.focused("card", slot));
+scene.bidStrip.setFocusHandler((bet) => keyboard.focused("bid", bet));
+keyboard.install();
+
+const announcer = new Announcer();
+
+const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage });
+frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element, rotateHint());
 
 scene.onHistory(() => flow.openMenu("history"));
 scene.onLastTrick(() => flow.openMenu("last-trick"));
@@ -173,7 +255,7 @@ function followAddress(): void {
   const move = addressMove(window.location.pathname, code, entered, flow.ui.joinCode !== null);
   switch (move.kind) {
     case "push":
-      window.history.pushState(null, "", move.path);
+      window.history.pushState(null, "", move.path + keepLanguage(window.location.search));
       entered = move.entered;
       break;
     case "mark":
@@ -200,7 +282,7 @@ window.addEventListener("popstate", () => {
   const table = store.state.table;
   if (table !== null && table.mode === "online") {
     if (window.location.pathname !== pathFor(table.code)) {
-      window.history.pushState(null, "", pathFor(table.code));
+      window.history.pushState(null, "", pathFor(table.code) + keepLanguage(window.location.search));
       entered = { code: table.code, pushed: true };
       flow.exit();
     }
@@ -232,6 +314,8 @@ function render(): void {
   // sheet the game only rests on.
   const resting = shown === "round" && state.held === null;
   view.root.inert = (shown !== null && !resting) || noTable;
+  shownSheet = shown;
+  keyboard.refresh();
   followAddress();
   notices.set("waiting", waitingText(state.table, state.tableAt, performance.now()), { kind: "wait" });
   notices.set("connection", connectionText(lastStatus, wasConnected), {
@@ -280,6 +364,10 @@ const queue = new PlaybackQueue(
       const answers = flow.asking();
       controller.onApply(message, change);
       flow.onApply(message);
+      const said = announcementFor(message, modelOf(store.state));
+      if (said !== null) {
+        announcer.say(said);
+      }
       if (message.type === "error") {
         // A refusal is said once, in words: in the sheet that asked, and else in the strip under the
         // bar. A late answer to a prompt is not worth saying.

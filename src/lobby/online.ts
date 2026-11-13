@@ -1,8 +1,9 @@
+import { currentLanguage } from "../i18n/language";
 import { t } from "../i18n/t";
 import type { Gender, Level, Profile, Settings, SettingsSeat } from "../net/protocol";
 import { assignFaces, avatarCatalogue, drawName, nameCatalogue, type Random } from "./catalogue";
 import type { Options } from "./options";
-import { LANGUAGE, MAX_SEATS, MIN_SEATS, defaultLevel, nameError, type Opponent } from "./setup";
+import { MAX_SEATS, MIN_SEATS, defaultLevel, nameError, type Opponent } from "./setup";
 
 // Create a table: New Game's settings with the replacement player and the turn timer, and without a
 // fixed deal, since a seed is the whole deal and an online table refuses one.
@@ -30,16 +31,16 @@ export function timerLabel(ms: number): string {
   }
   const seconds = ms / 1000;
   if (seconds < 60) {
-    return t("lobby", "%1 seconds", [seconds]);
+    return t("lobby", "%n seconds", [], { n: seconds, one: "%n second" });
   }
   const minutes = seconds / 60;
-  return minutes === 1 ? t("lobby", "1 minute") : t("lobby", "%1 minutes", [minutes]);
+  return t("lobby", "%n minutes", [], { n: minutes, one: "%n minute" });
 }
 
 function computerAt(index: number, taken: string[], random: Random): OtherSeat {
   const gender: Gender = random() < 0.5 ? "female" : "male";
   const level = defaultLevel(index);
-  const name = drawName({ gender, strategy: level }, LANGUAGE, nameCatalogue(), taken, index + 2, random);
+  const name = drawName({ gender, strategy: level }, currentLanguage(), nameCatalogue(), taken, index + 2, random);
   taken.push(name);
   return { kind: "computer", name, gender, level };
 }

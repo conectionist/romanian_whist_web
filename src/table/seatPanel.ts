@@ -2,6 +2,7 @@ import { portraitUrl } from "../assets/assets";
 import { el, setAttr, setSrc, setText, stamp, svg } from "../dom/el";
 import { t } from "../i18n/t";
 import { presenceText } from "../lobby/lobby";
+import { seatLabelFor } from "./names";
 import type { SeatView } from "../play/model";
 import type { Rect } from "./space";
 import { z } from "./space";
@@ -79,6 +80,7 @@ export class SeatPanel {
   private readonly chip: HTMLElement;
   private readonly ring: SVGRectElement;
   private presence: SeatView["presence"] = null;
+  private gender: SeatView["gender"] = "male";
   private counting = false;
 
   constructor() {
@@ -93,7 +95,7 @@ export class SeatPanel {
     ring.style.display = "none";
     this.element = el(
       "div",
-      { class: "panel seat" },
+      { class: "panel seat", attrs: { role: "group" } },
       el("div", { class: "portrait" }, this.picture),
       el("div", { class: "who" }, el("div", { class: "name" }, this.marker, this.name), this.pill),
       this.chip,
@@ -122,8 +124,10 @@ export class SeatPanel {
     setAttr(this.pill, "data-state", pill.state);
 
     this.presence = seat.presence;
+    this.gender = seat.gender;
     this.paintPresence();
 
+    setAttr(this.element, "aria-label", seatLabelFor(seat, { active: state.active, human: state.human, pill: pill.text }));
     this.element.classList.toggle("active", state.active);
     this.element.dataset.seat = String(seat.seat);
     this.element.hidden = false;
@@ -135,7 +139,7 @@ export class SeatPanel {
     if (this.counting) {
       return;
     }
-    const presence = presenceText(this.presence);
+    const presence = presenceText(this.presence, this.gender);
     this.chip.hidden = presence === "";
     setText(this.chip, presence);
     setAttr(this.chip, "data-state", this.presence);

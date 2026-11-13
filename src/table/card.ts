@@ -1,6 +1,7 @@
 import { cardBackUrl, cardUrl } from "../assets/assets";
 import { el, setSrc, stamp } from "../dom/el";
 import type { Card } from "../net/protocol";
+import { cardNameFor } from "./cardNames";
 import { sizeForHeight } from "./cards";
 import type { Placement } from "./space";
 
@@ -32,6 +33,8 @@ export class CardView {
     }
     this.card = card;
     setSrc(this.picture, card === null ? cardBackUrl : cardUrl(card));
+    // A card is named where it lies; a back has nothing to say.
+    this.picture.alt = card === null ? "" : cardNameFor(card);
     if (card === null) {
       delete this.element.dataset.card;
     } else {

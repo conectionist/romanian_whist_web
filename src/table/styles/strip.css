@@ -40,12 +40,23 @@
   cursor: pointer;
 }
 
-/* An offered bid under the cursor: a ring and a glow in place of the shadow. */
-.opt:not(:disabled):hover {
+/* An offered bid under the cursor, or picked with the keys or a finger: a ring and a glow in place of
+   the shadow. */
+.opt:not(:disabled):hover,
+.opt.selected {
   border-color: var(--gold-bright);
   box-shadow:
     0 0 0 2px var(--gold-bright),
     0 0 16px var(--bid-glow);
+}
+
+.opt:focus-visible:not(.selected) {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
+.opt.selected:focus-visible {
+  outline: none;
 }
 
 /* The one bid you may not make: flat, dark and struck through. */

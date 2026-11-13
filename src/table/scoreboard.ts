@@ -4,6 +4,7 @@ import { renderRuns, textOf, type Line } from "../dom/runs";
 import { t } from "../i18n/t";
 import type { Card } from "../net/protocol";
 import type { TableModel } from "../play/model";
+import { cardNameFor } from "./cardNames";
 import { DASH } from "./hudText";
 import { isCalledOut, roundText, roundTypeText } from "./roundText";
 
@@ -366,6 +367,7 @@ export class Scoreboard {
       this.trumpCard.hidden = shown.trump.card === null;
       this.trumpNone.hidden = shown.trump.card !== null;
       setSrc(this.trumpCard, shown.trump.card === null ? null : cardUrl(shown.trump.card));
+      this.trumpCard.alt = shown.trump.card === null ? "" : cardNameFor(shown.trump.card);
     }
     setText(this.trumpNone, shown.trump.name);
   }

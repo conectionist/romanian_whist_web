@@ -164,6 +164,32 @@ select.field option {
   margin: auto;
 }
 
+/* The plaque and the two buttons are 462 tall, and a landscape phone leaves the page 344: drawn smaller
+   in steps until they, and the margin to the bar, fit. */
+@media (max-height: 523px) {
+  .menu-column {
+    zoom: 0.85;
+  }
+}
+
+@media (max-height: 453px) {
+  .menu-column {
+    zoom: 0.7;
+  }
+}
+
+@media (max-height: 384px) {
+  .menu-column {
+    zoom: 0.62;
+  }
+}
+
+@media (max-height: 347px) {
+  .menu-column {
+    zoom: 0.52;
+  }
+}
+
 /* The plaque is drawn at 0.9 of its 270 by 142 frame, and at twice that here. */
 .menu-logo {
   position: relative;
@@ -178,7 +204,7 @@ select.field option {
   width: 270px;
   height: 142px;
   border-radius: 14px;
-  transform: translate(-50%, -50%) scale(1.8);
+  transform: translate(-50%, -50%) scale(var(--plaque-scale, 1.8));
 }
 
 .medal.plaque::before {
@@ -188,7 +214,7 @@ select.field option {
 /* At twice the size the desktop's lettering sits a pixel lower against its ornaments, which half a
    pixel of the unscaled plaque is. */
 .medal.plaque .medal-letters {
-  transform: translateY(0.55px);
+  transform: translateY(var(--letters-drop, 0.55px));
 }
 
 .medal.plaque .club {
@@ -219,6 +245,133 @@ select.field option {
 /* Both as wide as the wider, and not stretched to the window. */
 .menu-btn {
   justify-content: center;
+}
+
+/* The flag that opens the language dialog again, in the page's top right corner. */
+.menu-lang {
+  top: 18px;
+  right: 22px;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 40px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.menu-lang svg {
+  display: block;
+  width: 36px;
+  height: 24px;
+}
+
+/* A flag lit as the desktop's buttons are: under the mouse, held down, or holding the keyboard. */
+.menu-lang:hover,
+.menu-lang:focus-visible,
+.lang-choice:hover .flag-box,
+.lang-choice:active .flag-box,
+.lang-choice:focus .flag-box {
+  box-shadow:
+    inset 0 0 0 3px var(--panel-inner-shadow),
+    inset 0 0 0 4px var(--panel-inner-line-hover),
+    0 0 18px var(--button-glow),
+    0 12px 26px var(--panel-shadow);
+}
+
+.menu-lang:focus-visible {
+  outline: none;
+}
+
+/* The language dialog, src/ui/LanguageDialog.cpp: the room covers the page and the desktop's 560 by
+   420 sits in it, smaller where the window is. Its measures are the desktop's: the plaque at 1.4, 32
+   down; buttons 160 by 112, 248 down and 32 apart; each name 12 under its button. */
+.lang-page {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 42%, var(--room-centre) 0%, var(--room-middle) 58%, var(--room-edge) 100%);
+}
+
+.lang-dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 560px;
+  height: 420px;
+  transform: translate(-50%, -50%) scale(var(--lang-fit, 1));
+}
+
+/* The desktop lays its picture of the plaque on whole pixels, which puts it a fraction of a pixel right
+   and down of the arithmetic. A translation moves it by less than a pixel, where a position would be
+   rounded to one; the lettering and ornaments settle by their own fraction. */
+.lang-logo {
+  --plaque-scale: 1.26;
+  --letters-drop: 0.8px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 560px;
+  height: 242.92px;
+  translate: 0.25px 0.6px;
+}
+
+.lang-logo .medal-stack {
+  translate: 0 -0.5px;
+}
+
+.lang-choice {
+  position: absolute;
+  top: 248px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 160px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.lang-choice[data-language="ro"] {
+  left: 104px;
+}
+
+.lang-choice[data-language="en"] {
+  left: 296px;
+}
+
+.lang-choice:focus {
+  outline: none;
+}
+
+.flag-box.panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 160px;
+  height: 112px;
+}
+
+.flag-box svg {
+  display: block;
+  width: 120px;
+  height: 80px;
+}
+
+.lang-name {
+  font-family: var(--f-head);
+  font-size: 21px;
+  line-height: calc(21px * var(--lh-head));
+}
+
+.lang-choice:hover .lang-name,
+.lang-choice:active .lang-name,
+.lang-choice:focus .lang-name {
+  color: var(--gold-bright);
 }
 
 /* Notices: panels in a strip under the menu bar, over the sheets, new to the page. */
@@ -268,9 +421,15 @@ select.field option {
   cursor: pointer;
 }
 
-.notice-btn:hover {
+.notice-btn:hover,
+.notice-btn:focus-visible {
   border-color: var(--gold-bright);
   color: var(--gold-bright);
+}
+
+.notice-btn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
 }
 
 /* Who is here, on a name panel: a chip over its top edge. */
@@ -473,13 +632,21 @@ select.field option {
   color: var(--gold-bright);
 }
 
+/* The row wraps where its words are long, as the Romanian's are, and Start stays at the right. */
 .lobby-actions {
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  row-gap: 12px;
+}
+
+.lobby-actions .sheet-btn.primary {
+  margin-left: auto;
 }
 
 .lobby-fill {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-left: auto;

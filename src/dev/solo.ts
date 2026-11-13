@@ -1,10 +1,12 @@
+import { t } from "../i18n/t";
 import type { ClientMessage, Settings, SettingsSeat } from "../net/protocol";
 
 // A solo game started from the address: /?solo=4, with &seed=42, &speed=4, &forehead=all or &wait=1 as
 // well. The end-to-end tests start theirs this way, without going through New Game.
 
 // The players the desktop's screenshot tool plays with: "Player", a man, and Ana, Bogdan, Cristina,
-// Dan and Elena, Low risk and Ducking by turns, wearing the faces the look fixtures give them.
+// Dan and Elena, Low risk and Ducking by turns, wearing the faces the look fixtures give them. The
+// person is named in the page's language when the game is made.
 const PLAYERS: readonly SettingsSeat[] = [
   { kind: "human", name: "Player", gender: "male", avatar: "man-white-hair-hat" },
   { kind: "computer", level: "low-risk", name: "Ana", gender: "female", avatar: "woman-shoulder-hair" },
@@ -60,7 +62,7 @@ export function soloRequestFrom(search: string): SoloRequest | null {
 
 export function soloSettings(request: SoloRequest): Settings {
   const settings: Settings = {
-    seats: PLAYERS.slice(0, request.players).map((seat) => ({ ...seat })),
+    seats: PLAYERS.slice(0, request.players).map((seat) => (seat.kind === "human" ? { ...seat, name: t("newgame", "Player") } : { ...seat })),
     structure: "1-8-1",
     foreheadAndHidden: true,
     allOneCardForehead: request.foreheadAll === true,

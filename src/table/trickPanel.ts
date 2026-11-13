@@ -43,8 +43,9 @@ export interface Fields {
   prompt: Line;
 }
 
-// What the trick panel tells you when it is your turn to play.
-export function yourTurn(blind: boolean, entries: readonly HandEntry[], leadSuit: Suit | null): string {
+// What the trick panel tells you when it is your turn to play. The suit is its symbol where it is shown,
+// and its name where it is said.
+export function yourTurn(blind: boolean, entries: readonly HandEntry[], leadSuit: Suit | null, suitWord: (suit: Suit) => string = suitSymbol): string {
   // A blind round has nothing to explain: there is one card, it is face down, and it is forced.
   if (blind) {
     return t("trickpanel", "Your turn.");
@@ -58,7 +59,7 @@ export function yourTurn(blind: boolean, entries: readonly HandEntry[], leadSuit
   if (!entries.some((entry) => !entry.legal)) {
     return t("trickpanel", "Your turn. Any card.");
   }
-  const lead = suitSymbol(leadSuit);
+  const lead = suitWord(leadSuit);
   // Restricted to the lead suit, or, void in it, to the trumps. The legal cards say which.
   if (entries.some((entry) => entry.legal && suitOf(entry.card) === leadSuit)) {
     return t("trickpanel", "Your turn. You must follow %1.", [lead]);

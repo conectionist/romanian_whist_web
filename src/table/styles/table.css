@@ -213,7 +213,13 @@
   overflow: visible;
 }
 
+/* The gradient is painted only inside the element's box, and the swash of a W overflows the box
+   above it when "Whist" is the only line: the box reaches up by --lift, where the gradient is its top
+   colour, and its own place is kept. */
 .medal-letters {
+  --lift: 14px;
+  margin-top: calc(-1 * var(--lift));
+  padding-top: var(--lift);
   font-family: var(--f-logo);
   font-weight: 700;
   font-size: 37px;
@@ -221,7 +227,10 @@
   letter-spacing: 0.37px;
   text-align: center;
   white-space: nowrap;
-  background: linear-gradient(180deg, var(--logo-text-top) 0%, var(--logo-text-middle) 48%, var(--logo-text-bottom) 100%);
+  background:
+    linear-gradient(var(--logo-text-top), var(--logo-text-top)) 0 calc(-1 * var(--lift)) / 100% var(--lift) no-repeat,
+    linear-gradient(180deg, var(--logo-text-top) 0%, var(--logo-text-middle) 48%, var(--logo-text-bottom) 100%) 0 0 / 100% 100% no-repeat;
+  background-origin: content-box;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

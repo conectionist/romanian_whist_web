@@ -92,10 +92,12 @@ test.describe("with the cards flying", () => {
     }
 
     // Clicked in the page, so what is counted is what the click itself left running: a flight that
-    // a redraw in the same click cut short would not be there.
+    // a redraw in the same click cut short would not be there. A mouse press is a pointer down and a
+    // click; a click alone is a key's, which only picks a card.
     const flying = await page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll<HTMLElement>(".hand .hcard.playable"));
       cards.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot));
+      cards[0].dispatchEvent(new PointerEvent("pointerdown", { pointerType: "mouse", bubbles: true }));
       cards[0].click();
       return document
         .getAnimations()
@@ -155,7 +157,9 @@ test.describe("with the cards flying", () => {
     // Clicked in the page, so what is counted is what the click itself left behind. The card is not
     // known yet, so none flies; the back is still in the fan.
     const clicked = await page.evaluate(() => {
-      (document.querySelector(".hand .hcard.playable") as HTMLElement).click();
+      const back = document.querySelector(".hand .hcard.playable") as HTMLElement;
+      back.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "mouse", bubbles: true }));
+      back.click();
       return {
         backs: document.querySelectorAll(".hand .hcard:not([hidden])").length,
         flying: document.getAnimations().filter((animation) => (animation.effect as KeyframeEffect | null)?.target?.closest(".trick")).length,

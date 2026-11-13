@@ -52,9 +52,9 @@ export class SheetButton {
 
   // The sheet puts the keyboard on its default button when it opens. The button is lit only when it
   // is under the pointer or reached by Tab, as the desktop's are, so a focus the page moved there
-  // itself shows no ring.
+  // itself shows no ring. A sheet taller than the window opens at its top, not scrolled to the button.
   focus(): void {
-    this.element.focus({ focusVisible: false } as FocusOptions);
+    this.element.focus({ focusVisible: false, preventScroll: true } as FocusOptions);
   }
 }
 

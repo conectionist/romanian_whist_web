@@ -1,0 +1,735 @@
+{
+  "language": "ro",
+  "entries": [
+    {
+      "context": "NewGameDialog",
+      "source": "Cancel",
+      "translation": "Anulează"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Gender",
+      "translation": "Gen"
+    },
+    {
+      "context": "newgame",
+      "source": "Only a low-risk or a ducking computer player may have \"LowRisk\" or \"Ducking\" in its name.",
+      "translation": "Numai un robot Risc mic sau Eschivă poate avea „LowRisk” sau „Ducking” în nume."
+    },
+    {
+      "context": "newgame",
+      "source": "A name cannot hold control characters.",
+      "translation": "Un nume nu poate conține caractere de control."
+    },
+    {
+      "context": "lobby",
+      "source": "Play online",
+      "translation": "Joacă online"
+    },
+    {
+      "context": "lobby",
+      "source": "Your name",
+      "translation": "Numele tău"
+    },
+    {
+      "context": "lobby",
+      "source": "Gender",
+      "translation": "Gen"
+    },
+    {
+      "context": "lobby",
+      "source": "Portrait",
+      "translation": "Portret"
+    },
+    {
+      "context": "lobby",
+      "source": "Table code",
+      "translation": "Codul mesei"
+    },
+    {
+      "context": "lobby",
+      "source": "Join",
+      "translation": "Alătură-te"
+    },
+    {
+      "context": "lobby",
+      "source": "from a link or a friend",
+      "translation": "dintr-un link sau de la un prieten"
+    },
+    {
+      "context": "lobby",
+      "source": "Join table %1",
+      "translation": "Alătură-te mesei %1"
+    },
+    {
+      "context": "lobby",
+      "source": "Make a table and share its link, or join one by its code.",
+      "translation": "Creează o masă și trimite linkul ei sau alătură-te uneia cu ajutorul codului."
+    },
+    {
+      "context": "lobby",
+      "source": "Say who you are, and sit down.",
+      "translation": "Spune cine ești și așează-te la masă."
+    },
+    {
+      "context": "lobby",
+      "source": "Choose a name.",
+      "translation": "Alege un nume."
+    },
+    {
+      "context": "lobby",
+      "source": "A table's code is six letters and digits.",
+      "translation": "Codul unei mese are șase litere și cifre."
+    },
+    {
+      "context": "lobby",
+      "source": "Man with black hair and a beard",
+      "translation": "Bărbat cu păr negru și barbă"
+    },
+    {
+      "context": "lobby",
+      "source": "Man in a black T-shirt",
+      "translation": "Bărbat în tricou negru"
+    },
+    {
+      "context": "lobby",
+      "source": "Man with dark hair and a beard",
+      "translation": "Bărbat cu păr închis la culoare și barbă"
+    },
+    {
+      "context": "lobby",
+      "source": "Man in a hat, with a mustache",
+      "translation": "Bărbat cu pălărie și mustață"
+    },
+    {
+      "context": "lobby",
+      "source": "Man with short hair",
+      "translation": "Bărbat cu părul scurt"
+    },
+    {
+      "context": "lobby",
+      "source": "Man with stubble",
+      "translation": "Bărbat nebărbierit"
+    },
+    {
+      "context": "lobby",
+      "source": "Man with white hair and a hat",
+      "translation": "Bărbat cu păr alb și pălărie"
+    },
+    {
+      "context": "lobby",
+      "source": "Woman with long brown hair",
+      "translation": "Femeie cu păr lung șaten"
+    },
+    {
+      "context": "lobby",
+      "source": "Woman with long dark hair",
+      "translation": "Femeie cu păr lung închis la culoare"
+    },
+    {
+      "context": "lobby",
+      "source": "Woman with long red hair",
+      "translation": "Femeie cu păr lung roșcat"
+    },
+    {
+      "context": "lobby",
+      "source": "Woman with shoulder-length hair",
+      "translation": "Femeie cu părul până la umeri"
+    },
+    {
+      "context": "lobby",
+      "source": "Woman with wavy black hair",
+      "translation": "Femeie cu păr negru ondulat"
+    },
+    {
+      "context": "lobby",
+      "source": "Create a table",
+      "translation": "Creează o masă"
+    },
+    {
+      "context": "lobby",
+      "source": "Create",
+      "translation": "Creează"
+    },
+    {
+      "context": "lobby",
+      "source": "You take the first seat. People you share the link with take the open ones.",
+      "translation": "Tu iei primul loc. Cei cărora le dai linkul iau locurile libere."
+    },
+    {
+      "context": "lobby",
+      "source": "Seats at the table",
+      "translation": "Locuri la masă"
+    },
+    {
+      "context": "lobby",
+      "source": "Seats",
+      "translation": "Locuri"
+    },
+    {
+      "context": "lobby",
+      "source": "Seat %1",
+      "translation": "Locul %1"
+    },
+    {
+      "context": "lobby",
+      "source": "Open, for a person",
+      "translation": "Liber, pentru o persoană"
+    },
+    {
+      "context": "lobby",
+      "source": "Computer: %1",
+      "translation": "Robot: %1"
+    },
+    {
+      "context": "lobby",
+      "source": "Stands in for a person who goes away",
+      "translation": "Ia locul unei persoane care pleacă"
+    },
+    {
+      "context": "lobby",
+      "source": "Stands in",
+      "translation": "Înlocuitor"
+    },
+    {
+      "context": "lobby",
+      "source": "A person's turn may take",
+      "translation": "Mutarea unei persoane poate dura"
+    },
+    {
+      "context": "lobby",
+      "source": "A turn may take",
+      "translation": "O mutare poate dura"
+    },
+    {
+      "context": "lobby",
+      "source": "No timer",
+      "translation": "Fără timp limită"
+    },
+    {
+      "context": "lobby",
+      "source": "%n seconds",
+      "forms": [
+        "%n secundă",
+        "%n secunde",
+        "%n de secunde"
+      ]
+    },
+    {
+      "context": "lobby",
+      "source": "%n minutes",
+      "forms": [
+        "%n minut",
+        "%n minute",
+        "%n de minute"
+      ]
+    },
+    {
+      "context": "lobby",
+      "source": "no turn timer",
+      "translation": "fără limită de timp"
+    },
+    {
+      "context": "lobby",
+      "source": "%1 s a turn",
+      "translation": "%1 s per mutare"
+    },
+    {
+      "context": "lobby",
+      "source": "Table %1",
+      "translation": "Masa %1"
+    },
+    {
+      "context": "lobby",
+      "source": "Game settings",
+      "translation": "Setările jocului"
+    },
+    {
+      "context": "lobby",
+      "source": "Fill every seat, then start the game.",
+      "translation": "Ocupă toate locurile, apoi începe jocul."
+    },
+    {
+      "context": "lobby",
+      "source": "Waiting for the host to start the game.",
+      "translation": "Așteptăm ca gazda să înceapă jocul."
+    },
+    {
+      "context": "lobby",
+      "source": "One seat is still open: ask someone to join, or fill it with a computer player.",
+      "translation": "Mai este un loc liber: cheamă pe cineva să se alăture sau ocupă-l cu un robot."
+    },
+    {
+      "context": "lobby",
+      "source": "%1 seats are still open: ask people to join, or fill them with computer players.",
+      "translation": "Mai sunt %1 locuri libere: cheamă oameni să se alăture sau ocupă-le cu roboți."
+    },
+    {
+      "context": "lobby",
+      "source": "Open seat",
+      "translation": "Loc liber"
+    },
+    {
+      "context": "lobby",
+      "source": "Take this seat",
+      "translation": "Ia acest loc"
+    },
+    {
+      "context": "lobby",
+      "source": "Host",
+      "translation": "Gazdă"
+    },
+    {
+      "context": "lobby",
+      "source": "You",
+      "translation": "Tu"
+    },
+    {
+      "context": "lobby",
+      "source": "Level",
+      "translation": "Nivel"
+    },
+    {
+      "context": "lobby",
+      "source": "Link to this table",
+      "translation": "Linkul acestei mese"
+    },
+    {
+      "context": "lobby",
+      "source": "Copy link",
+      "translation": "Copiază linkul"
+    },
+    {
+      "context": "lobby",
+      "source": "Copied",
+      "translation": "Copiat"
+    },
+    {
+      "context": "lobby",
+      "source": "Press Ctrl+C",
+      "translation": "Apasă Ctrl+C"
+    },
+    {
+      "context": "lobby",
+      "source": "Leave table",
+      "translation": "Părăsește masa"
+    },
+    {
+      "context": "lobby",
+      "source": "Fill open seats",
+      "translation": "Completează locurile libere"
+    },
+    {
+      "context": "lobby",
+      "source": "Start game",
+      "translation": "Începe jocul"
+    },
+    {
+      "context": "online",
+      "source": "Away",
+      "comment": "about a man",
+      "translation": "Deconectat"
+    },
+    {
+      "context": "online",
+      "source": "Away",
+      "comment": "about a woman",
+      "translation": "Deconectată"
+    },
+    {
+      "context": "online",
+      "source": "Replaced",
+      "comment": "about a man",
+      "translation": "Înlocuit"
+    },
+    {
+      "context": "online",
+      "source": "Replaced",
+      "comment": "about a woman",
+      "translation": "Înlocuită"
+    },
+    {
+      "context": "online",
+      "source": "%1 left the table.",
+      "translation": "%1 a părăsit masa."
+    },
+    {
+      "context": "online",
+      "source": "%1 was replaced by a computer player.",
+      "comment": "about a man",
+      "translation": "%1 a fost înlocuit de un robot."
+    },
+    {
+      "context": "online",
+      "source": "%1 was replaced by a computer player.",
+      "comment": "about a woman",
+      "translation": "%1 a fost înlocuită de un robot."
+    },
+    {
+      "context": "online",
+      "source": "%1 went away.",
+      "translation": "%1 nu mai răspunde."
+    },
+    {
+      "context": "online",
+      "source": "%1 is back.",
+      "translation": "%1 s-a întors."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1 to come back: %2 s",
+      "translation": "Așteptăm ca %1 să revină: %2 s"
+    },
+    {
+      "context": "online",
+      "source": "%1 s",
+      "translation": "%1 s"
+    },
+    {
+      "context": "online",
+      "source": "Leave table",
+      "translation": "Părăsește masa"
+    },
+    {
+      "context": "online",
+      "source": "Back to the table",
+      "translation": "Înapoi la masă"
+    },
+    {
+      "context": "online",
+      "source": "Stay",
+      "translation": "Rămâi"
+    },
+    {
+      "context": "online",
+      "source": "Leave the table?",
+      "translation": "Părăsești masa?"
+    },
+    {
+      "context": "online",
+      "source": "The game goes on without you: a computer player takes your seat.",
+      "translation": "Jocul continuă fără tine: un robot îți ia locul."
+    },
+    {
+      "context": "online",
+      "source": "Your seat is open for someone else.",
+      "translation": "Locul tău rămâne liber pentru altcineva."
+    },
+    {
+      "context": "errors",
+      "source": "The server does not accept that name. Try another.",
+      "translation": "Serverul nu acceptă acest nume. Încearcă altul."
+    },
+    {
+      "context": "errors",
+      "source": "The server could not read that. Check what you typed.",
+      "translation": "Serverul nu a înțeles. Verifică ce ai scris."
+    },
+    {
+      "context": "errors",
+      "source": "This page is out of date. Reload it.",
+      "translation": "Pagina este veche. Reîncarcă-o."
+    },
+    {
+      "context": "errors",
+      "source": "There is no table with that code.",
+      "translation": "Nu există nicio masă cu acest cod."
+    },
+    {
+      "context": "errors",
+      "source": "That table is full.",
+      "translation": "Această masă este plină."
+    },
+    {
+      "context": "errors",
+      "source": "Someone at the table already has that name.",
+      "translation": "Cineva de la masă are deja acest nume."
+    },
+    {
+      "context": "errors",
+      "source": "Only the host can do that.",
+      "translation": "Numai gazda poate face asta."
+    },
+    {
+      "context": "errors",
+      "source": "That was too late: the game has moved on.",
+      "translation": "Prea târziu: jocul a mers mai departe."
+    },
+    {
+      "context": "errors",
+      "source": "That is not allowed now.",
+      "translation": "Asta nu este permis acum."
+    },
+    {
+      "context": "errors",
+      "source": "That was too many messages. Wait a moment.",
+      "translation": "Prea multe mesaje. Așteaptă puțin."
+    },
+    {
+      "context": "errors",
+      "source": "The server is restarting and takes no new games just now.",
+      "translation": "Serverul repornește și nu primește jocuri noi acum."
+    },
+    {
+      "context": "errors",
+      "source": "This game is open in another window.",
+      "translation": "Acest joc este deschis în altă fereastră."
+    },
+    {
+      "context": "errors",
+      "source": "The connection was lost. Trying again…",
+      "translation": "Conexiunea s-a pierdut. Se încearcă din nou…"
+    },
+    {
+      "context": "errors",
+      "source": "Play here",
+      "translation": "Joacă aici"
+    },
+    {
+      "context": "errors",
+      "source": "The table you left for it is gone.",
+      "translation": "Masa pe care ai lăsat-o pentru jocul nou nu mai există."
+    },
+    {
+      "context": "trickpanel",
+      "source": "Computer playing for %1",
+      "translation": "Un robot joacă pentru %1"
+    },
+    {
+      "context": "pagesheets",
+      "source": "The server could not go on with this game.",
+      "translation": "Serverul nu a putut continua jocul."
+    },
+    {
+      "context": "cardname",
+      "source": "spades",
+      "translation": "inimă neagră"
+    },
+    {
+      "context": "cardname",
+      "source": "hearts",
+      "translation": "inimă roșie"
+    },
+    {
+      "context": "cardname",
+      "source": "diamonds",
+      "translation": "romb"
+    },
+    {
+      "context": "cardname",
+      "source": "clubs",
+      "translation": "treflă"
+    },
+    {
+      "context": "cardname",
+      "source": "%1 of %2",
+      "translation": "%1 de %2"
+    },
+    {
+      "context": "cardname",
+      "source": "Your card, face down",
+      "translation": "Cartea ta, cu fața în jos"
+    },
+    {
+      "context": "seat",
+      "source": "%1 (you)",
+      "translation": "%1 (tu)"
+    },
+    {
+      "context": "seat",
+      "source": "to move",
+      "translation": "mută"
+    },
+    {
+      "context": "announce",
+      "source": "%1 bid %2",
+      "translation": "%1 a licitat %2"
+    },
+    {
+      "context": "announce",
+      "source": "You played %1",
+      "translation": "Ai pus %1"
+    },
+    {
+      "context": "announce",
+      "source": "%1 played %2",
+      "translation": "%1 a pus %2"
+    },
+    {
+      "context": "announce",
+      "source": "Round %1 is scored.",
+      "translation": "Punctajele rundei %1 sunt gata."
+    },
+    {
+      "context": "announce",
+      "source": "%1: %2, total %3.",
+      "translation": "%1: %2, total %3."
+    },
+    {
+      "context": "hint",
+      "source": "Turn your phone sideways: the table needs the room.",
+      "translation": "Rotește telefonul: masa are nevoie de loc."
+    },
+    {
+      "context": "cardname",
+      "source": "%1, playable",
+      "translation": "%1, se poate juca"
+    },
+    {
+      "context": "cardname",
+      "source": "%1, not playable",
+      "translation": "%1, nu se poate juca"
+    },
+    {
+      "context": "announce",
+      "source": "Trump: %1",
+      "translation": "Atu: %1"
+    },
+    {
+      "context": "cardname",
+      "source": "2",
+      "comment": "a rank, in a card's name",
+      "translation": "doi"
+    },
+    {
+      "context": "cardname",
+      "source": "3",
+      "comment": "a rank, in a card's name",
+      "translation": "trei"
+    },
+    {
+      "context": "cardname",
+      "source": "4",
+      "comment": "a rank, in a card's name",
+      "translation": "patru"
+    },
+    {
+      "context": "cardname",
+      "source": "5",
+      "comment": "a rank, in a card's name",
+      "translation": "cinci"
+    },
+    {
+      "context": "cardname",
+      "source": "6",
+      "comment": "a rank, in a card's name",
+      "translation": "șase"
+    },
+    {
+      "context": "cardname",
+      "source": "7",
+      "comment": "a rank, in a card's name",
+      "translation": "șapte"
+    },
+    {
+      "context": "cardname",
+      "source": "8",
+      "comment": "a rank, in a card's name",
+      "translation": "opt"
+    },
+    {
+      "context": "cardname",
+      "source": "9",
+      "comment": "a rank, in a card's name",
+      "translation": "nouă"
+    },
+    {
+      "context": "cardname",
+      "source": "10",
+      "comment": "a rank, in a card's name",
+      "translation": "zece"
+    },
+    {
+      "context": "cardname",
+      "source": "jack",
+      "comment": "a rank, in a card's name",
+      "translation": "valet"
+    },
+    {
+      "context": "cardname",
+      "source": "queen",
+      "comment": "a rank, in a card's name",
+      "translation": "damă"
+    },
+    {
+      "context": "cardname",
+      "source": "king",
+      "comment": "a rank, in a card's name",
+      "translation": "popă"
+    },
+    {
+      "context": "cardname",
+      "source": "ace",
+      "comment": "a rank, in a card's name",
+      "translation": "as"
+    },
+    {
+      "context": "cardname",
+      "source": "the %1 of %2",
+      "translation": "%1 de %2"
+    },
+    {
+      "context": "cardname",
+      "source": "%1: %2",
+      "translation": "%1: %2"
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1.",
+      "comment": "about a man",
+      "translation": "Îl așteptăm pe %1."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1: %2 s",
+      "comment": "about a man",
+      "translation": "Îl așteptăm pe %1: %2 s"
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1.",
+      "comment": "about a woman",
+      "translation": "O așteptăm pe %1."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1: %2 s",
+      "comment": "about a woman",
+      "translation": "O așteptăm pe %1: %2 s"
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1.",
+      "comment": "about several, a man among them",
+      "translation": "Îi așteptăm pe %1."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1: %2 s",
+      "comment": "about several, a man among them",
+      "translation": "Îi așteptăm pe %1: %2 s"
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1.",
+      "comment": "about several women",
+      "translation": "Le așteptăm pe %1."
+    },
+    {
+      "context": "online",
+      "source": "Waiting for %1: %2 s",
+      "comment": "about several women",
+      "translation": "Le așteptăm pe %1: %2 s"
+    },
+    {
+      "context": "NewGameDialog",
+      "source": "Bot %1",
+      "translation": "Robot %1"
+    },
+    {
+      "context": "newgame",
+      "source": "Bot speed",
+      "translation": "Viteza roboților"
+    }
+  ]
+}

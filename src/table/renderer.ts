@@ -108,6 +108,7 @@ export class TableScene {
       pace: this.options.pace(),
       fresh,
       fromHand: (card: Card) => (model.humanSeat >= 0 ? this.hand.restingPlacement(card) : null),
+      handScale: () => this.hand.drawnScale().scale,
     };
   }
 

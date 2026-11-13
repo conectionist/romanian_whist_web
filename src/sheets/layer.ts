@@ -72,7 +72,11 @@ export class SheetLayer {
     this.place();
     if (sheet === null) {
       this.giveBack();
-    } else if (takesKeyboard) {
+      return true;
+    }
+    // A scroller keeps its offset while it is not displayed, and a sheet opens at its top.
+    sheet.element.scrollTop = 0;
+    if (takesKeyboard) {
       sheet.focusDefault();
     }
     return true;

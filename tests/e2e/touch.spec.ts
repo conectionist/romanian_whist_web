@@ -50,6 +50,8 @@ async function playWithTwoTaps(page: Page, done: Checked): Promise<Checked> {
   const before = await felt.count();
   const several = (await playable(page).count()) > 1;
   const question = await questionOf(page);
+  // The hand is drawn again when a question arrives, and a tap while it moves lands on a neighbour of the card.
+  await page.waitForFunction(() => document.getAnimations().length === 0, undefined, { timeout: 3000 }).catch(() => undefined);
   await tapCard(page, card);
   await expect(card).toHaveClass(/selected/);
   expect(await felt.count()).toBe(before);

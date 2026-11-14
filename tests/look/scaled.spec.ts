@@ -311,3 +311,65 @@ for (const [width, height] of [
     }
   });
 }
+
+// The trump is in a panel of its own, under the trick's details and with the same edges, its word and its card, or the
+// words for a round with no trump, in the middle of it.
+for (const [width, height] of [
+  [754, 247],
+  [832, 384],
+  [640, 360],
+] as const) {
+  test.describe(`the trump's panel at ${width} by ${height}`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    for (const language of ["en", "ro"]) {
+      for (const [shot, trump] of [
+        ["table-4-players", true],
+        ["hand-8-cards", false],
+      ] as const) {
+        test(`in ${language} holds ${trump ? "the word and the card" : "the words for no trump"} in its middle, and has the trick's details' edges`, async ({ page }) => {
+          await page.goto(`/look.html?shot=${shot}&lang=${language}`);
+          await page.waitForSelector("body[data-ready]");
+          const panel = page.locator(".stage .trump-corner");
+          await expect(panel).toBeVisible();
+          const at = (await panel.boundingBox())!;
+          const middle = at.x + at.width / 2;
+          // It has a panel's border and background.
+          expect(await panel.evaluate((node) => [getComputedStyle(node).borderTopWidth, getComputedStyle(node).backgroundImage !== "none"])).toEqual(["1px", true]);
+          const spacing = parseFloat(await panel.locator(".lbl").evaluate((node) => getComputedStyle(node).letterSpacing)) * (at.width / (await panel.evaluate((node) => (node as HTMLElement).offsetWidth)));
+          const label = (await panel.locator(".lbl").boundingBox())!;
+          expect(Math.abs(label.x + (label.width - spacing) / 2 - middle), "the word").toBeLessThanOrEqual(0.5);
+          if (trump) {
+            const card = (await panel.locator(".trump-card").boundingBox())!;
+            expect(Math.abs(card.x + card.width / 2 - middle), "the card").toBeLessThanOrEqual(0.5);
+            await expect(panel.locator(".trump-none")).toBeHidden();
+          } else {
+            await expect(panel.locator(".trump-card")).toBeHidden();
+            const none = panel.locator(".trump-none");
+            await expect(none).toHaveText(language === "en" ? "None this round" : "Niciunul în această rundă");
+            // Every line of the words is as far from one edge of the panel as the other.
+            const lines = await none.evaluate((node) => {
+              const range = document.createRange();
+              range.selectNodeContents(node);
+              return Array.from(range.getClientRects(), (rect) => [rect.left, rect.right]);
+            });
+            expect(lines.length).toBeGreaterThan(0);
+            for (const [left, right] of lines) {
+              expect(Math.abs((left + right) / 2 - middle), "a line of the words").toBeLessThanOrEqual(1.2);
+            }
+            // The panel is as tall as with a card: the words in the middle of that height.
+            const words = (await none.boundingBox())!;
+            expect(words.height).toBeGreaterThan(30);
+          }
+          // Where the trick's details show, the panel is under them with their edges.
+          const details = page.locator(".stage .side-trick:not([hidden])");
+          if ((await details.count()) > 0) {
+            const over = (await details.boundingBox())!;
+            expect(Math.abs(at.x - over.x)).toBeLessThanOrEqual(0.5);
+            expect(Math.abs(at.width - over.width)).toBeLessThanOrEqual(0.5);
+          }
+        });
+      }
+    }
+  });
+}

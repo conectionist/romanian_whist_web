@@ -5,6 +5,8 @@ import {
   BUTTON_GAP,
   COLUMN_GAP,
   PAGE_CHIP_HEIGHT,
+  PANEL_X,
+  PANEL_Y,
   TRICK_MOST,
   TRUMP_LABEL,
   TRUMP_WIDTH,
@@ -49,16 +51,17 @@ describe("the corners of the port", () => {
 });
 
 describe("what the page's corners hold", () => {
-  it("is the menu button top left, the chip top right, the round buttons bottom left, and the trump under the menu button", () => {
+  it("is the menu button top left, the chip top right, the round buttons bottom left, and the trump's panel under the menu button", () => {
     const corners = cornersFor(65);
     expect(corners.topRight.w).toBe(CHIP_WIDTH + CORNER_INSET + 6);
     expect(corners.bottomLeft).toEqual({ w: CORNER_INSET + 2 * BUTTON + BUTTON_GAP + 6, h: CORNER_INSET + BUTTON + 6 });
     // Bottom right holds nothing now.
     expect(corners.bottomRight).toEqual({ w: 0, h: 0 });
-    // Where there are no side panels the trump stands under the menu button, as wide as its words or its card, and as
+    // Where there are no side panels the trump's panel stands under the menu button, as wide as its words or its card, and as
     // tall as the button and the gap under it, its word and its card.
-    expect(corners.topLeft).toEqual({ w: CORNER_INSET + TRUMP_WIDTH + 6, h: CORNER_INSET + BUTTON + CORNER_INSET + TRUMP_LABEL + 65 + 6 });
-    expect(cornersFor(140).topLeft.w).toBeCloseTo(CORNER_INSET + 140 * (500 / 726) + 6, 9);
+    // The trump is in a panel: its word and its card with the panel's padding round them.
+    expect(corners.topLeft).toEqual({ w: CORNER_INSET + TRUMP_WIDTH + 2 * PANEL_X + 6, h: CORNER_INSET + BUTTON + CORNER_INSET + TRUMP_LABEL + 65 + PANEL_Y + 6 });
+    expect(cornersFor(140).topLeft.w).toBeCloseTo(CORNER_INSET + 140 * (500 / 726) + 2 * PANEL_X + 6, 9);
     // The hand stays clear of the round buttons, the wider of the corners at the foot; nothing is at the right.
     expect(corners.handLeft).toBeGreaterThan(corners.bottomLeft.w);
     expect(corners.handRight).toBe(16);
@@ -165,10 +168,11 @@ describe("pageLayout", () => {
           expect(layout.angles).toEqual([Math.PI / 2, ...wanted]);
         });
 
-        it("draws the trump as tall as a card played on the felt, and no taller", () => {
+        it("draws the trump as tall as a card played on the felt, or, where the column has no room for more under the trick's details, as tall as it has", () => {
           const played = playedHeight(layout, count);
           expect(layout.trumpCard.h).toBeLessThanOrEqual(played + 1e-9);
-          expect(played - layout.trumpCard.h).toBeLessThan(0.5);
+          const room = layout.side === null ? Infinity : layout.column.h - TRICK_MOST - COLUMN_GAP - TRUMP_LABEL - PANEL_Y;
+          expect(played - layout.trumpCard.h < 0.5 || Math.abs(layout.trumpCard.h - room) < 1e-9, `${layout.trumpCard.h} of ${played}, room ${room}`).toBe(true);
           expect(layout.trumpCard.w).toBeCloseTo((layout.trumpCard.h * 500) / 726, 9);
         });
 

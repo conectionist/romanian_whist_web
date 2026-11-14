@@ -224,6 +224,17 @@ test.describe("the corners of the scaled table", () => {
           const card = await box(".stage .trump-corner .trump-card");
           expect(card.width / card.height).toBeCloseTo(500 / 726, 2);
           expect(card.height / scale).toBeGreaterThan(40);
+          // The word and the card are in the middle of the panel, which has the border and the background of the others.
+          const label = await box(".stage .trump-corner .lbl");
+          expect(card.x + card.width / 2).toBeCloseTo(trump.x + trump.width / 2, 0);
+          expect(Math.abs(card.x + card.width / 2 - (trump.x + trump.width / 2))).toBeLessThanOrEqual(0.5);
+          // The word's letters are spaced, and the space after the last is not seen: its middle is the middle of the letters.
+          const spacing = (await page.locator(".stage .trump-corner .lbl").evaluate((node) => parseFloat(getComputedStyle(node).letterSpacing))) * scale;
+          expect(Math.abs(label.x + (label.width - spacing) / 2 - (trump.x + trump.width / 2))).toBeLessThanOrEqual(0.5);
+          expect(await page.locator(".stage .trump-corner").evaluate((node, other) => {
+            const look = (n: Element) => { const style = getComputedStyle(n); return [style.borderTopWidth, style.borderTopColor, style.borderTopLeftRadius, style.backgroundImage]; };
+            return JSON.stringify(look(node)) === JSON.stringify(look(document.querySelector(other)!));
+          }, ".stage .round-chip"), "the border and the background of a panel").toBe(true);
           expect(trump.y + trump.height).toBeLessThanOrEqual(history.y - 6 * scale + 0.6);
           const panels = await page.locator(".stage .side-panel:not([hidden])").count();
           expect(panels).toBe(sides ? 2 : 0);
@@ -231,16 +242,20 @@ test.describe("the corners of the scaled table", () => {
             const scores = await box(".stage .side-scores");
             const details = await box(".stage .side-trick");
             // The trump under the trick's details, on their left edge, and the chip over the scores, on both edges.
-            expect(trump.x).toBeCloseTo(details.x, 0);
-            expect(trump.y).toBeGreaterThanOrEqual(details.y + details.height + 8 * scale - 0.6);
+            expect(Math.abs(trump.x - details.x)).toBeLessThanOrEqual(0.5);
+            expect(Math.abs(trump.width - details.width)).toBeLessThanOrEqual(0.5);
+            // The usual gap between panels, 8, as the chip has to the scores.
+            expect(Math.abs(trump.y - (details.y + details.height + 8 * scale))).toBeLessThanOrEqual(0.6);
             expect(details.y).toBeGreaterThanOrEqual(menu.y + menu.height);
             expect(chip.x).toBeCloseTo(scores.x, 0);
             expect(chip.width).toBeCloseTo(scores.width, 0);
             expect(scores.y).toBeGreaterThanOrEqual(chip.y + chip.height);
             expect(scores.y + scores.height).toBeLessThanOrEqual(height - edge + 0.6);
           } else {
-            // Alone, under the menu button, which it has the left edge of.
+            // Alone, under the menu button, which it has the left edge of, as wide as its card and its word need with the
+            // panel's padding.
             expect(trump.y).toBeCloseTo(menu.y + menu.height + edge, 0);
+            expect(trump.width).toBeLessThanOrEqual((Math.max(58, card.width / scale) + 22) * scale + 0.6);
             // The chip is as wide as its words.
             expect(chip.width).toBeLessThanOrEqual(172 * scale + 0.6);
             const words = await page.locator(".stage .round-chip .l1").evaluate((node) => node.getBoundingClientRect().width);

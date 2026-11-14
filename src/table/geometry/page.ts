@@ -1,4 +1,4 @@
-import { CHIP_WIDTH, CORNER_INSET, layoutScaled, playedPlace, tableScale, type Box, type Corners, type ScaledLayout, type ScaledWindow } from "./scaled";
+import { CHIP_WIDTH, CORNER_INSET, FAN_TURN, layoutScaled, playedPlace, tableScale, type Box, type Corners, type ScaledLayout, type ScaledWindow } from "./scaled";
 
 // The scaled table as the page draws it. The mock-up keeps its bottom right corner for the two round buttons and
 // holds the trump in the round chip. The page has the buttons bottom left, where the desktop has them, and the trump
@@ -14,23 +14,27 @@ export const BUTTON_GAP = 10;
 // there is one, and as wide as its words, and no wider than CHIP_WIDTH, where there is not.
 export const PAGE_CHIP_HEIGHT = 52;
 
-// The word over the trump, with the gap under it, and the width its box has for the words that stand in the place of
-// a card in a round with no trump.
+// The trump is in a panel like the trick's details: its word over its card, both in the middle, in the padding and border
+// of a panel. The word with the gap under it is TRUMP_LABEL tall, and the room inside the panel for the card is as wide
+// as TRUMP_WIDTH or the card, for the words that stand in the place of a card in a round with no trump. The panel's
+// border and padding are PANEL_X at each side and PANEL_Y over and under.
 export const TRUMP_LABEL = 14;
-export const TRUMP_WIDTH = 72;
+export const TRUMP_WIDTH = 58;
+export const PANEL_X = 11;
+export const PANEL_Y = 19;
 
 // The gap between the trick's details and the trump under them.
 export const COLUMN_GAP = 8;
 
 // The tallest the trick's details are: a title and two lines of what led and what wins, each on several lines in the
 // narrowest panel.
-export const TRICK_MOST = 120;
+export const TRICK_MOST = 100;
 
 // The least room kept round a corner's controls, and the gap the hand keeps from them.
 const ROOM = 6;
 const HAND_GAP = 2;
 
-// The column at the left begins under the menu button; the side panels begin under the chip, which stands lower.
+// The column at the left begins under the menu button, and the side panels under the chip, which stands lower.
 const MENU_BOTTOM = CORNER_INSET + BUTTON;
 const COLUMN_TOP = MENU_BOTTOM + CORNER_INSET;
 const SIDE_TOP = CORNER_INSET + PAGE_CHIP_HEIGHT + 8;
@@ -41,7 +45,7 @@ const CARD_WIDTH = 500 / 726;
 export interface PageLayout extends ScaledLayout {
   // The two round buttons together, bottom left.
   buttons: Box;
-  // The trump with its word, which is as wide as `w` and as tall as `h`, and the card in it.
+  // The trump's panel, which is as wide as `w` and as tall as `h`, and the card in it.
   trump: { w: number; h: number };
   trumpCard: { w: number; h: number };
   // The column at the left, from under the menu button down to the round buttons: the trick's details where there is
@@ -58,7 +62,7 @@ export interface PageLayout extends ScaledLayout {
 export function cornersFor(trump: number): Corners {
   const buttons = { w: CORNER_INSET + 2 * BUTTON + BUTTON_GAP + ROOM, h: CORNER_INSET + BUTTON + ROOM };
   // Where there are no side panels the trump stands under the menu button.
-  const held = { w: CORNER_INSET + Math.max(TRUMP_WIDTH, trump * CARD_WIDTH) + ROOM, h: COLUMN_TOP + TRUMP_LABEL + trump + ROOM };
+  const held = { w: CORNER_INSET + Math.max(TRUMP_WIDTH, trump * CARD_WIDTH) + 2 * PANEL_X + ROOM, h: COLUMN_TOP + TRUMP_LABEL + trump + PANEL_Y + ROOM };
   return {
     topLeft: { w: Math.max(CORNER_INSET + BUTTON + CORNER_INSET, held.w), h: held.h },
     topRight: { w: CHIP_WIDTH + CORNER_INSET + ROOM, h: CORNER_INSET + PAGE_CHIP_HEIGHT + ROOM },
@@ -93,10 +97,22 @@ export function pageLayout(window: ScaledWindow, seatCount: number): PageLayout 
   const { w, h, bottom } = window;
   const foot = h - bottom - CORNER_INSET;
   const buttons = { x: CORNER_INSET, y: foot - BUTTON, w: 2 * BUTTON + BUTTON_GAP, h: BUTTON };
-  const trump = { w: Math.max(TRUMP_WIDTH, low * CARD_WIDTH), h: TRUMP_LABEL + low };
   const side = layout.side;
   const top = side === null ? COLUMN_TOP : side.y;
-  const column = { x: CORNER_INSET, y: top, w: side === null ? trump.w : side.w, h: buttons.y - ROOM - top };
+  // The column goes down to the round buttons, or, where it is wide enough to be over the left of the fan of the hand, to
+  // the top of the hand. The width of the trump's panel is the trick's details' where there are some, so it does not
+  // depend on the card.
+  const lean = (layout.hand.ch / 2) * Math.sin((3.5 * FAN_TURN * Math.PI) / 180);
+  const handLeft = layout.hand.cx - layout.hand.maxSpan / 2 - lean;
+  const reach = (width: number) => (CORNER_INSET + width + ROOM > handLeft ? Math.min(buttons.y, layout.hand.top) : buttons.y) - ROOM - top;
+  // The card is as tall as a played card, or as tall as the column leaves room for under the trick's details at their
+  // tallest, which is less on a window as short as the design and with few players, whose played cards are large.
+  const room = side === null ? Infinity : reach(side.w) - TRICK_MOST - COLUMN_GAP - TRUMP_LABEL - PANEL_Y;
+  const card = Math.min(low, Math.max(24, room));
+  // As wide as the trick's details above it, or, with none, as wide as its card and its word need.
+  const trump = { w: side === null ? Math.max(TRUMP_WIDTH, card * CARD_WIDTH) + 2 * PANEL_X : side.w, h: TRUMP_LABEL + card + PANEL_Y };
+  const width = side === null ? trump.w : side.w;
+  const column = { x: CORNER_INSET, y: top, w: width, h: reach(width) };
   // With side panels the chip is as wide as the scores under it; without them it is as wide as its words, which
   // CHIP_WIDTH is the most of.
   const chip = side === null ? { x: w - CORNER_INSET - CHIP_WIDTH, y: CORNER_INSET, w: CHIP_WIDTH, h: PAGE_CHIP_HEIGHT } : { x: w - CORNER_INSET - side.w, y: CORNER_INSET, w: side.w, h: PAGE_CHIP_HEIGHT };
@@ -104,7 +120,7 @@ export function pageLayout(window: ScaledWindow, seatCount: number): PageLayout 
     ...layout,
     buttons,
     trump,
-    trumpCard: { w: low * CARD_WIDTH, h: low },
+    trumpCard: { w: card * CARD_WIDTH, h: card },
     column,
     chip,
     sideRoom: side === null ? { left: 0, right: 0 } : { left: column.h, right: foot - side.y },

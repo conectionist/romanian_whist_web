@@ -47,7 +47,8 @@ export class ScaledChrome {
   readonly history: HTMLButtonElement;
   readonly lastTrick: HTMLButtonElement;
   readonly chip: HTMLButtonElement;
-  // The trump, under the trick's details: the word, and the card or, where there is no trump, the words for it.
+  // The trump, in a panel under the trick's details: the word, and the card or, where there is no trump, the words for it,
+  // in the middle.
   readonly trump: HTMLButtonElement;
   // The column at the left, which holds the trick's details and the trump one under the other.
   readonly column: HTMLElement;
@@ -91,7 +92,7 @@ export class ScaledChrome {
       el("span", { class: "lines" }, this.roundLine, this.trickLine),
     );
     this.chip.addEventListener("click", () => actions.scores());
-    this.trump = el("button", { class: "trump-corner", attrs: { type: "button" }, data: { roundButton: "trump" } }, this.trumpLabel, this.trumpCard, this.trumpNone);
+    this.trump = el("button", { class: "panel trump-corner", attrs: { type: "button" }, data: { roundButton: "trump" } }, this.trumpLabel, this.trumpCard, this.trumpNone);
     this.trump.addEventListener("click", () => actions.scores());
     this.corner = el("div", { class: "corner-chip" }, this.chip);
     this.rail = el("div", { class: "rail-buttons" }, this.history, this.lastTrick);
@@ -165,13 +166,12 @@ export class ScaledChrome {
       setText(this.trumpNone, trump.name);
       setAttr(this.trump, "aria-label", t("announce", "Trump: %1", [trump.card === null ? trump.name : cardNameFor(trump.card)]));
     }
-    // The card is as tall as one played on the felt, in a box that is as wide for the words of a round with no trump. The
-    // column goes from under the menu button, as wide as the trick's details where they show.
+    // The trump's panel is as wide as the column, which is as wide as the trick's details where they show; its card is
+    // as tall as one played on the felt, in a room as wide for the words of a round with no trump.
     this.column.style.top = `${layout.column.y}px`;
     this.column.style.width = `${layout.column.w}px`;
     // The chip is as wide as the scores under it, or as its words are.
     this.chip.style.width = side === null ? "" : `${layout.chip.w}px`;
-    this.trump.style.width = `${layout.trump.w}px`;
     this.trumpCard.style.width = `${layout.trumpCard.w}px`;
     this.trumpCard.style.height = `${layout.trumpCard.h}px`;
     this.trumpNone.style.height = `${layout.trumpCard.h}px`;

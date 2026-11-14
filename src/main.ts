@@ -175,10 +175,10 @@ const menuBar = new MenuBar({
 // The language dialog again, from the main menu page. A new choice is kept and the page loaded anew in
 // it, since every string was made in the old one; the same choice only closes it.
 function changeLanguage(): void {
-  const app = document.getElementById("app") as HTMLElement;
   const leave = () => {
     dialog.close();
-    app.inert = false;
+    covered.dialog = false;
+    coverPage();
     menuPage.language.focus();
   };
   const dialog = new LanguageDialog(
@@ -195,7 +195,8 @@ function changeLanguage(): void {
     },
     currentLanguage(),
   );
-  app.inert = true;
+  covered.dialog = true;
+  coverPage();
   document.body.append(dialog.element);
   dialog.focus();
 }
@@ -204,6 +205,14 @@ function changeLanguage(): void {
 // the language dialog is over the page.
 let shownSheet: SheetName | null = null;
 const appElement = document.getElementById("app") as HTMLElement;
+
+// What covers the page: the language dialog, and the page for a window too small for the table. The page takes no touch
+// and no key while either is there, and is given back when both have gone.
+const covered = { dialog: false, tooSmall: false };
+
+function coverPage(): void {
+  appElement.inert = covered.dialog || covered.tooSmall;
+}
 
 const keyboard = new Keyboard({
   model: () => controller.adjust(modelOf(store.state)),
@@ -254,7 +263,6 @@ scene.onScores(() => flow.openMenu("scores"));
 // which has the whole window and controls of its own, or a page that asks for more room.
 const tooSmall = new TooSmall();
 document.body.append(tooSmall.element);
-let coveredByTooSmall = false;
 // Whether the scaled table is drawn, which places the sheets as its own side, bottom and page sheets.
 let scaledNow = false;
 
@@ -265,10 +273,8 @@ function drawLayout({ choice, size }: WindowLayout): void {
   frame.style.setProperty("--scale", String(choice.kind === "scaled" ? choice.scale : 1));
   menuBar.element.hidden = !desktop;
   // The page under the notice takes no touch and no key, and is given back as it was.
-  if (coveredByTooSmall !== (choice.kind === "tooSmall")) {
-    coveredByTooSmall = choice.kind === "tooSmall";
-    appElement.inert = coveredByTooSmall;
-  }
+  covered.tooSmall = choice.kind === "tooSmall";
+  coverPage();
   tooSmall.show(choice.kind === "tooSmall", size);
   scaledNow = choice.kind === "scaled";
   sheets.setScaled(scaledNow);
@@ -362,9 +368,9 @@ function render(): void {
 }
 
 // Esc closes the sheet the menu bar or a corner button opened, and otherwise raises the pause menu,
-// or drops it again. A key held down acts once.
+// or drops it again. A key held down acts once, and none acts on a page that is covered.
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !event.repeat) {
+  if (event.key === "Escape" && !event.repeat && !appElement.inert) {
     flow.escape();
   }
 });

@@ -420,10 +420,14 @@ test.describe("the notice for a table drawn small, at 754 by 247", () => {
     for (const height of [230, 247, 280, 330]) {
       await page.setViewportSize({ width: 754, height });
       await expect(notice).toBeVisible();
-      const scale = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale")));
-      const at = (await notice.boundingBox())!;
-      expect(at.y, `at ${height}`).toBeCloseTo(8 * scale, 0);
-      expect(at.y + at.height, `at ${height}`).toBeLessThan(height / 3);
+      // The table is drawn again for the new window a moment after it changes.
+      await expect
+        .poll(async () => {
+          const scale = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale")));
+          const at = await notice.boundingBox();
+          return at === null ? null : [Math.abs(at.y - 8 * scale) < 0.5, at.y + at.height < height / 3];
+        }, { message: `at ${height}` })
+        .toEqual([true, true]);
       // It is positioned from the top of the stage, which is the top of the window, and not from the foot or by the page's scroll.
       expect(await notice.evaluate((node) => [getComputedStyle(node).position, node.style.bottom, getComputedStyle(node).top])).toEqual(["absolute", "", "8px"]);
       expect(await page.evaluate(() => [getComputedStyle(document.querySelector(".window")!).position, window.scrollY, document.scrollingElement?.scrollTop])).toEqual(["fixed", 0, 0]);

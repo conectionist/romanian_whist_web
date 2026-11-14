@@ -37,10 +37,14 @@ for (const each of read.flatMap((found) => found.literals)) {
 
 const placeholders = (text: string) => [...new Set(text.match(/%[1-9n]/g) ?? [])].sort();
 
-// Sentences the page fills in by name rather than by position, because the bid total is cut out of
-// them in bold: a translation may leave the trick count and the difference out, as the desktop's does.
+// Sentences a translation may leave a placeholder out of: the page fills in the bid total by name, cut out of the
+// scoreboard's sentences in bold, as the desktop's translation leaves the trick count and the difference out; and the
+// refusal of a bid may name only the bid, without the sum the bids would make.
 function mayLeaveOut(literal: Literal): boolean {
-  return literal.context === "scoreboard" && literal.source.startsWith("Bids total %1 for %2");
+  return (
+    (literal.context === "scoreboard" && literal.source.startsWith("Bids total %1 for %2")) ||
+    (literal.context === "bidstrip" && literal.source.startsWith("Not %1: the bids would add up to %2"))
+  );
 }
 
 function texts(entry: Entry): string[] {

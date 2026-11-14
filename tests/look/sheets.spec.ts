@@ -297,7 +297,7 @@ test.describe("the notice for a table drawn small, at 754 by 247", () => {
     await page.screenshot({ path: join(OUT, "754x247", "notice-home-screen.png"), animations: "disabled" });
     await page.goto("/look.html?shot=table-4-players&lang=ro");
     await page.waitForSelector(READY);
-    await expect(page.locator(".scaled-notice")).toContainText("Adaugă pagina pe ecranul de pornire");
+    await expect(page.locator(".scaled-notice")).toContainText("adaugă pagina pe ecranul principal");
     await page.screenshot({ path: join(OUT, "754x247-ro", "notice-home-screen.png"), animations: "disabled" });
   });
 

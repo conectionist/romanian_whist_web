@@ -266,3 +266,18 @@ describe("the web app manifest", () => {
     expect(page).not.toContain("webmanifest");
   });
 });
+
+describe("the Romanian the owner chose", () => {
+  const entries = (JSON.parse(readFileSync(join(ROOT, "src/i18n/ro.page.json"), "utf8")) as { entries: { context: string; source: string; translation?: string }[] }).entries;
+  const said = (context: string, source: string) => entries.find((each) => each.context === context && each.source === source)?.translation;
+
+  it("is in the page's catalogue, word for word", () => {
+    expect(said("fullscreen", "Full screen")).toBe("Pe tot ecranul");
+    expect(said("fullscreen", "The table is small here.")).toBe("Masa e cam mică așa.");
+    expect(said("fullscreen", "Add the page to the home screen for a bigger table.")).toBe("Pentru o masă mai mare, adaugă pagina pe ecranul principal.");
+    expect(said("menulist", "Online games do not pause: the table plays on while this is open.")).toBe(
+      "Un joc online nu poate fi pus pe pauză: ceilalți joacă mai departe cât timp meniul este deschis.",
+    );
+    expect(said("bidstrip", "Not %1: the bids would add up to %2.")).toBe("N-ai voie să zici %1.");
+  });
+});

@@ -183,13 +183,13 @@ const DECK = ["AS", "JS", "8S", "QH", "9H", "7H", "TC", "QD"];
 type Json = Record<string, any>;
 
 // The state of a fixture, with the table at the bid for this many cards in everyone's hand.
-function bidding(name: string, cards: number): Json {
+function bidding(name: string, cards: number, refused: number | null = null): Json {
   const state = structuredClone(stateOf(name)) as Json;
   const snapshot = state.snapshot;
   snapshot.phase = "betting";
   snapshot.active = 0;
   snapshot.bets = { placed: 0, sum: 0 };
-  snapshot.forbiddenBet = null;
+  snapshot.forbiddenBet = refused;
   snapshot.round = { ...snapshot.round, tricks: cards, trick: 0, trump: "QD", type: "normal" };
   snapshot.table = { cards: [], leadSuit: null, ledBy: 0 };
   for (const seat of snapshot.seats) {
@@ -198,7 +198,7 @@ function bidding(name: string, cards: number): Json {
   }
   snapshot.seats[0].hand = DECK.slice(0, cards);
   state.lastTrick = null;
-  state.prompt = { kind: "bet", id: 1, deadline: null, first: true, forbidden: null, max: cards, hand: DECK.slice(0, cards), roundType: "normal" };
+  state.prompt = { kind: "bet", id: 1, deadline: null, first: refused === null, forbidden: refused, max: cards, hand: DECK.slice(0, cards), roundType: "normal" };
   return state;
 }
 
@@ -216,6 +216,8 @@ function playing(name: string): Json {
 const TABLES = [
   ["a bid of eight cards at six seats", () => bidding("bidding", 8), false],
   ["a bid of eight cards at four seats", () => bidding("table-4-players", 8), true],
+  ["the last bid of eight cards, one of which is refused, at four seats", () => bidding("table-4-players", 8, 2), true],
+  ["the last bid of eight cards, one of which is refused, at six seats", () => bidding("bidding", 8, 2), false],
   ["a bid of one card at six seats", () => bidding("bidding", 1), false],
   ["a bid of one card at four seats", () => bidding("table-4-players", 1), false],
   ["a card to play at four seats", () => playing("hand-8-cards"), true],

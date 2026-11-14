@@ -739,7 +739,7 @@
     {
       "context": "bidstrip",
       "source": "Not %1: the bids would add up to %2.",
-      "translation": "Nu %1: licitațiile ar face %2."
+      "translation": "N-ai voie să zici %1."
     },
     {
       "context": "scoreboard",
@@ -796,7 +796,7 @@
     {
       "context": "menulist",
       "source": "Online games do not pause: the table plays on while this is open.",
-      "translation": "Jocurile online nu fac pauză: masa merge mai departe cât timp meniul este deschis."
+      "translation": "Un joc online nu poate fi pus pe pauză: ceilalți joacă mai departe cât timp meniul este deschis."
     },
     {
       "context": "menulist",
@@ -811,17 +811,17 @@
     {
       "context": "fullscreen",
       "source": "Full screen",
-      "translation": "Ecran complet"
+      "translation": "Pe tot ecranul"
     },
     {
       "context": "fullscreen",
       "source": "The table is small here.",
-      "translation": "Masa este mică aici."
+      "translation": "Masa e cam mică așa."
     },
     {
       "context": "fullscreen",
       "source": "Add the page to the home screen for a bigger table.",
-      "translation": "Adaugă pagina pe ecranul de pornire pentru o masă mai mare."
+      "translation": "Pentru o masă mai mare, adaugă pagina pe ecranul principal."
     }
   ]
 }

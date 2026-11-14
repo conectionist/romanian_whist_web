@@ -350,7 +350,7 @@ function render(): void {
   const noTable = synced && !atTable(state);
   const waiting = state.held === null ? "" : holdNote(state.held.waitingFor, seatingOf(state), secondsLeft());
   const link = state.table === null ? "" : linkFor(state.table.code, window.location.origin);
-  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking(), scaled: scaledNow, leaving: flow.leaveAsked() });
+  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking(), scaled: scaledNow, leaving: flow.leaveAsked(), returnedFrom: flow.returnedFrom() });
   menuBar.update(menuStateFor(state, true));
   menuPage.show(noTable);
   // The table under a sheet or the menu page takes neither clicks nor the keyboard, but for a round

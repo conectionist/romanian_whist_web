@@ -348,6 +348,23 @@
   border-bottom: 1px solid var(--hud-rule);
 }
 
+/* The tablist is the two tabs, and the button for the history stands between them. */
+.sheet-tablist {
+  display: contents;
+}
+
+.sheet-tab[data-tab="scores"] {
+  order: 1;
+}
+
+.sheet-tab[data-tab="history"] {
+  order: 2;
+}
+
+.sheet-tab[data-tab="last-trick"] {
+  order: 3;
+}
+
 .sheet-tab {
   flex: 1 1 0;
   min-height: 44px;

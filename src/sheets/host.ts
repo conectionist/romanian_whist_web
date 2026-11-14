@@ -95,6 +95,8 @@ export interface RenderContext {
   scaled?: boolean;
   // Whether the offer to leave is asked for itself and not as the list.
   leaving?: boolean;
+  // The sheet that was closed to come back to this one.
+  returnedFrom?: MenuSheet | null;
 }
 
 // The sheets over the layer. Each is made once, and filled from the store when it is shown.
@@ -250,6 +252,9 @@ export class Sheets {
     // is open, and the table's word on them would take a control out of a hand that is moving it.
     // A round sheet the game only rests on goes by itself, so it leaves the keyboard where it is; the
     // hold that often follows it a moment later gives the keyboard to its Continue.
+    if (name === "scores") {
+      this.scores.returning(context.returnedFrom === "history");
+    }
     const holding = name === "round" && state.held !== null;
     const shownNow = this.layer.show(this.byName[name], name !== "round" || holding);
     if (name === "round") {

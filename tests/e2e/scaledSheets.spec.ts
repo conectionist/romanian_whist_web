@@ -188,38 +188,50 @@ test.describe("under a finger at 832 by 384, without a table", () => {
     await expect(bids(page).first()).toBeVisible();
   });
 
-  test("the scoreboard's sheet is a side sheet with three tabs, and the round chip, the trump and the panels open it", async ({ page }) => {
+  test("the scoreboard's sheet is a side sheet with two tabs and a button for the history, and the round chip, the trump and the panels open it", async ({ page }) => {
     await page.goto("/?solo=3&seed=7&speed=4&wait=1");
     await bids(page).first().waitFor();
     await page.locator('.stage [data-round-button="scores"]').tap();
     await opens(page, "scores", "side");
     const tabs = sheet(page, "scores").locator('[role="tab"]');
-    await expect(tabs).toHaveText(["Scores", "History", "Last trick"]);
+    const history = sheet(page, "scores").locator('.sheet-tab[data-tab="history"]');
+    await expect(tabs).toHaveText(["Scores", "Last trick"]);
+    await expect(history).toHaveText("History");
     await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
-    // The history is a page of the whole window, and Back from it is the scoreboard again.
-    await tabs.nth(2).tap();
+    // The history is a page of the whole window, and Back from it is the scoreboard again, with the keyboard on the button that
+    // opened it.
     await tabs.nth(1).tap();
+    await history.tap();
     await opens(page, "history", "page");
     await expect(sheet(page, "history").locator(".sheet-table .th").first()).toBeVisible();
     await sheet(page, "history").locator(".page-back").tap();
     await opens(page, "scores", "side");
-    // Esc from the page does as Back does, and Esc from the scoreboard closes it.
-    await tabs.nth(1).tap();
+    await expect(history).toBeFocused();
+    // Esc from the page does as Back does, and puts the keyboard there too, and Esc from the scoreboard closes it.
+    await history.tap();
     await opens(page, "history", "page");
     await page.keyboard.press("Escape");
     await opens(page, "scores", "side");
-    // The arrows move to the history tab and wait there, as they do between the other two, and Enter opens the page.
-    await tabs.nth(2).tap();
-    await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
-    await tabs.nth(2).focus();
-    await page.keyboard.press("ArrowLeft");
+    await expect(history).toBeFocused();
+    // The arrows move between the two tabs only, and Enter on the button opens the page.
+    await tabs.first().tap();
+    await tabs.first().focus();
+    await page.keyboard.press("ArrowRight");
     await expect(tabs.nth(1)).toBeFocused();
-    await expect(sheet(page, "scores")).toBeVisible();
-    await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+    await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+    await page.keyboard.press("ArrowRight");
+    await expect(tabs.nth(1)).toBeFocused();
+    await history.focus();
     await page.keyboard.press("Enter");
     await opens(page, "history", "page");
     await page.keyboard.press("Escape");
     await opens(page, "scores", "side");
+    await page.keyboard.press("Escape");
+    await noSheet(page);
+    // Opened any other way, the keyboard starts on Close.
+    await page.locator('.stage [data-round-button="scores"]').tap();
+    await opens(page, "scores", "side");
+    await expect(sheet(page, "scores").locator('[data-action="close"]')).toBeFocused();
     await page.keyboard.press("Escape");
     await noSheet(page);
     for (const opener of ['.stage [data-round-button="trump"]', ".stage .side-scores", ".stage .side-trick"]) {

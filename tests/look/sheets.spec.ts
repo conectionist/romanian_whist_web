@@ -160,21 +160,31 @@ for (const [width, height] of SIZES) {
     });
 
     for (const [language, suffix] of LANGUAGES) {
-      test(`the scoreboard's three tabs in ${language}: the scores and the last trick are panels that fit the side sheet, and the history opens a page`, async ({ page }) => {
+      test(`the scoreboard's two tabs in ${language}: the scores and the last trick are panels that fit the side sheet, and the history is a button between them that opens a page`, async ({ page }) => {
         await open(page, "sheet-scores", language);
         const folder = join(OUT, `${width}x${height}${suffix}`);
         mkdirSync(folder, { recursive: true });
         const sheet = page.locator(".sheet:not([hidden])");
         const tabs = sheet.locator('[role="tab"]');
-        await expect(tabs).toHaveCount(3);
+        await expect(tabs).toHaveCount(2);
         await expect(sheet.locator('[role="tablist"]')).toHaveCount(1);
+        await expect(sheet.locator('[role="tablist"] > *')).toHaveCount(2);
         await expect(sheet.locator('[role="tabpanel"]:not([hidden])')).toHaveCount(1);
-        // The history is not a panel: its tab controls none, and the table is not in the sheet.
-        expect(await tabs.nth(1).getAttribute("aria-controls")).toBeNull();
+        // The history is not a tab, and not a panel: it is a button that is in no tablist, and the table is not in the sheet.
+        const history = sheet.locator('.sheet-tab[data-tab="history"]');
+        await expect(history).toHaveCount(1);
+        expect(await history.evaluate((node) => [node.tagName, node.getAttribute("role"), node.getAttribute("aria-controls"), node.closest('[role="tablist"]') === null])).toEqual(["BUTTON", null, null, true]);
+        await expect(history).toHaveText(language === "en" ? "History" : "Istoric");
         await expect(sheet.locator(".sheet-table")).toHaveCount(0);
+        // It looks as the tabs do, between them: the same height, in a row with them.
+        const [first, between, second] = await Promise.all([tabs.first().boundingBox(), history.boundingBox(), tabs.last().boundingBox()]);
+        expect(between!.x).toBeGreaterThanOrEqual(first!.x + first!.width - 0.5);
+        expect(second!.x).toBeGreaterThanOrEqual(between!.x + between!.width - 0.5);
+        expect(Math.abs(between!.height - first!.height)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(between!.y - first!.y)).toBeLessThanOrEqual(0.5);
         for (const [index, shot] of [
           [0, "sheet-scores"],
-          [2, "sheet-scores-last-trick"],
+          [1, "sheet-scores-last-trick"],
         ] as const) {
           await tabs.nth(index).tap();
           await expect(tabs.nth(index)).toHaveAttribute("aria-selected", "true");

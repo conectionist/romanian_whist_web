@@ -11,14 +11,13 @@ import { LastTrickCards, fieldsFor as lastTrickFields, type MiniCard } from "./l
 import { SheetButton, actions } from "./parts";
 import type { Seating } from "./seating";
 
-// The scoreboard on a table that has no room for it: the round, the trick's details, and three tabs, the scores
-// with the trump, the rounds so far, and the last trick. What each shows is what the desktop's corner panels and
-// the last-trick sheet show, from the same fields. The rounds so far need the whole window, so that tab opens the
+// The scoreboard on a table that has no room for it: the round, the trick's details, and two tabs, the scores with the
+// trump and the last trick, with a button between them for the rounds so far, which need the whole window: it opens the
 // history page, and Back from it comes here again.
 
-export type Tab = "scores" | "history" | "last-trick";
+export type Tab = "scores" | "last-trick";
 
-export const TABS: readonly Tab[] = ["scores", "history", "last-trick"];
+export const TABS: readonly Tab[] = ["scores", "last-trick"];
 
 export interface ScoresFields {
   title: string;
@@ -35,7 +34,7 @@ export function fieldsFor(model: TableModel, trick: LastTrick | null, seating: S
   };
 }
 
-export function tabLabel(tab: Tab): string {
+export function tabLabel(tab: Tab | "history"): string {
   switch (tab) {
     case "scores":
       return t("scoreboard", "Scores");
@@ -80,8 +79,11 @@ export class ScoresSheet implements Sheet {
   private readonly panels: HTMLElement[];
   // Where the trick's details go, which is before the tabs.
   private readonly bar: HTMLElement;
+  private readonly historyButton: HTMLButtonElement;
   private readonly close = new SheetButton(t("historysheet", "Close"), "primary", "close");
   private selected = 0;
+  // Set when the sheet comes up again from the history it opened, which has the keyboard put back on its button.
+  private fromHistory = false;
 
   constructor(handlers: ScoresActions) {
     this.trick.element.classList.add("in-sheet");
@@ -89,13 +91,15 @@ export class ScoresSheet implements Sheet {
     this.tabs = TABS.map((tab) =>
       el("button", {
         class: "sheet-tab",
-        attrs: { type: "button", role: "tab", id: `scores-tab-${tab}`, ...(tab === "history" ? {} : { "aria-controls": `scores-panel-${tab}` }) },
+        attrs: { type: "button", role: "tab", id: `scores-tab-${tab}`, "aria-controls": `scores-panel-${tab}` },
         data: { tab },
         text: tabLabel(tab),
       }),
     );
-    this.bar = el("div", { class: "sheet-tabs", attrs: { role: "tablist", "aria-labelledby": "sheet-scores-title" } }, ...this.tabs);
-    // The three tabs have two panels: the history is a page of its own.
+    // A tab is of a tablist, and the history is not a tab: it is a button, drawn between the two and like them.
+    this.historyButton = el("button", { class: "sheet-tab", attrs: { type: "button" }, data: { tab: "history" }, text: tabLabel("history") });
+    const tablist = el("div", { class: "sheet-tablist", attrs: { role: "tablist", "aria-labelledby": "sheet-scores-title" } }, ...this.tabs);
+    this.bar = el("div", { class: "sheet-tabs" }, tablist, this.historyButton);
     this.panels = [
       el("div", { class: "sheet-panel", attrs: { role: "tabpanel", id: "scores-panel-scores", "aria-labelledby": "scores-tab-scores" } }),
       el(
@@ -115,18 +119,14 @@ export class ScoresSheet implements Sheet {
       actions(this.close),
     );
     this.close.onClick(handlers.close);
+    this.historyButton.addEventListener("click", () => handlers.history());
     this.tabs.forEach((tab, index) => {
-      tab.addEventListener("click", () => (TABS[index] === "history" ? handlers.history() : this.select(index, false)));
+      tab.addEventListener("click", () => this.select(index, false));
       tab.addEventListener("keydown", (event) => {
         const next = tabAfter(index, this.tabs.length, event.key);
         if (next !== null) {
           event.preventDefault();
-          // The arrows go to the history tab and wait there: Enter or a tap opens it.
-          if (TABS[next] === "history") {
-            this.tabs[next].focus({ preventScroll: true });
-          } else {
-            this.select(next, true);
-          }
+          this.select(next, true);
         }
       });
     });
@@ -134,14 +134,13 @@ export class ScoresSheet implements Sheet {
   }
 
   // Shows this tab's panel, and puts the keyboard on its tab when asked. Only the shown tab is a stop of Tab: the
-  // arrows move between the three.
+  // arrows move between the two.
   select(index: number, focus: boolean): void {
     this.selected = index;
     this.tabs.forEach((tab, at) => {
       tab.setAttribute("aria-selected", String(at === index));
       tab.tabIndex = at === index ? 0 : -1;
     });
-    // The history has no panel here, and the others are shown by their tab.
     this.panels.forEach((panel) => (panel.hidden = panel.id !== `scores-panel-${TABS[index]}`));
     if (focus) {
       this.tabs[index].focus({ preventScroll: true });
@@ -172,7 +171,16 @@ export class ScoresSheet implements Sheet {
     this.board.element.remove();
   }
 
+  // Coming back from the history, the keyboard is on the button that opened it.
+  returning(fromHistory: boolean): void {
+    this.fromHistory = fromHistory;
+  }
+
   focusDefault(): void {
-    this.close.focus();
+    if (this.fromHistory) {
+      this.historyButton.focus();
+    } else {
+      this.close.focus();
+    }
   }
 }

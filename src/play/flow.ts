@@ -39,6 +39,8 @@ export class Flow {
   private continued: number | null = null;
   // The sheet that opened the one in the menu, where it matters which.
   private openedFrom: MenuSheet | null = null;
+  // The sheet just closed to come back to the one in the menu.
+  private cameBackFrom: MenuSheet | null = null;
   // Set when a way out of the table goes, until the table is gone: nothing is shown for a table being left.
   private leaving = false;
   // Set from the asking for a table until the server's answer: the sheet that asked stays up for it.
@@ -193,13 +195,21 @@ export class Flow {
 
   openMenu(sheet: MenuSheet): void {
     this.openedFrom = this.ui.menu === "scores" && sheet === "history" ? "scores" : null;
+    this.cameBackFrom = null;
     this.ask({ ...this.ui, menu: sheet });
+  }
+
+  // The sheet that was closed to come back to the one that is up, if that is how it came up: the keyboard goes back to
+  // the button that opened it.
+  returnedFrom(): MenuSheet | null {
+    return this.cameBackFrom;
   }
 
   // Create a table was opened from Play online and goes back to it, and the history opened from the scoreboard goes
   // back to the scoreboard; every other sheet goes back to what is under it.
   closeMenu(): void {
     const back = this.ui.menu === "create-table" ? "online" : this.ui.menu === "history" && this.openedFrom === "scores" ? "scores" : null;
+    this.cameBackFrom = back === null ? null : this.ui.menu;
     this.openedFrom = null;
     this.ask({ ...this.ui, menu: back });
   }

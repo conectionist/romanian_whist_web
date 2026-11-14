@@ -134,11 +134,13 @@ describe("the scoreboard's sheet", () => {
   const model = modelOf(state)!;
   const fields = scoresFields(model, state.lastTrick, seatingOf(state));
 
-  it("is the round and what was dealt for its title, and the trick's details and three tabs under it", () => {
+  it("is the round and what was dealt for its title, and the trick's details and its tabs under it", () => {
     expect(fields.title).toBe("Round 10 of 32");
     expect(fields.meta).toBe("8 cards dealt · Normal");
-    expect(TABS).toEqual(["scores", "history", "last-trick"]);
-    expect(TABS.map(tabLabel)).toEqual(["Scores", "History", "Last trick"]);
+    // Two tabs, and the history is a button between them.
+    expect(TABS).toEqual(["scores", "last-trick"]);
+    expect(TABS.map(tabLabel)).toEqual(["Scores", "Last trick"]);
+    expect(tabLabel("history")).toBe("History");
   });
 
   it("takes the last trick tab from the fields of the sheet of that name, and opens the history as a page of its own", () => {
@@ -149,14 +151,14 @@ describe("the scoreboard's sheet", () => {
   });
 
   it("moves between its tabs with the arrows, stops at the ends, and goes to the first and last with Home and End", () => {
-    expect(tabAfter(0, 3, "ArrowRight")).toBe(1);
-    expect(tabAfter(2, 3, "ArrowRight")).toBe(2);
-    expect(tabAfter(1, 3, "ArrowLeft")).toBe(0);
-    expect(tabAfter(0, 3, "ArrowLeft")).toBe(0);
-    expect(tabAfter(1, 3, "Home")).toBe(0);
-    expect(tabAfter(1, 3, "End")).toBe(2);
-    expect(tabAfter(1, 3, "a")).toBeNull();
-    expect(tabAfter(1, 3, "Enter")).toBeNull();
+    expect(tabAfter(0, 2, "ArrowRight")).toBe(1);
+    expect(tabAfter(1, 2, "ArrowRight")).toBe(1);
+    expect(tabAfter(1, 2, "ArrowLeft")).toBe(0);
+    expect(tabAfter(0, 2, "ArrowLeft")).toBe(0);
+    expect(tabAfter(1, 2, "Home")).toBe(0);
+    expect(tabAfter(0, 2, "End")).toBe(1);
+    expect(tabAfter(1, 2, "a")).toBeNull();
+    expect(tabAfter(1, 2, "Enter")).toBeNull();
   });
 });
 

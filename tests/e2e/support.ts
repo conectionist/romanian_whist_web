@@ -79,7 +79,9 @@ export async function tapNothing(page: Page): Promise<void> {
     ]) {
       const x = window.innerWidth * fx;
       const y = window.innerHeight * fy;
-      if (document.elementFromPoint(x, y)?.closest("button, .hcard, input, a") === null) {
+      // Nothing within a finger's width of it either: a panel's edge is no place for a tap that is to do nothing.
+      const clear = [-8, 0, 8].every((dx) => [-8, 0, 8].every((dy) => document.elementFromPoint(x + dx, y + dy)?.closest("button, .hcard, input, a") === null));
+      if (clear) {
         return { x, y };
       }
     }

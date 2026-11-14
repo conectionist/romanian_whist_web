@@ -412,6 +412,24 @@ test.describe("the notice for a table drawn small, at 754 by 247", () => {
     }
   }
 
+  test("stands 8 from the top of the window, whatever height the browser's bars leave it, and is anchored to nothing else", async ({ page }) => {
+    await page.goto("/look.html?shot=table-4-players&lang=ro");
+    await page.waitForSelector(READY);
+    const notice = page.locator(".scaled-notice");
+    // A window the bars take more or less of: shorter with them showing, taller without.
+    for (const height of [230, 247, 280, 330]) {
+      await page.setViewportSize({ width: 754, height });
+      await expect(notice).toBeVisible();
+      const scale = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale")));
+      const at = (await notice.boundingBox())!;
+      expect(at.y, `at ${height}`).toBeCloseTo(8 * scale, 0);
+      expect(at.y + at.height, `at ${height}`).toBeLessThan(height / 3);
+      // It is positioned from the top of the stage, which is the top of the window, and not from the foot or by the page's scroll.
+      expect(await notice.evaluate((node) => [getComputedStyle(node).position, node.style.bottom, getComputedStyle(node).top])).toEqual(["absolute", "", "8px"]);
+      expect(await page.evaluate(() => [getComputedStyle(document.querySelector(".window")!).position, window.scrollY, document.scrollingElement?.scrollTop])).toEqual(["fixed", 0, 0]);
+    }
+  });
+
   test("says to add the page to the home screen where the browser has no full screen, with no button for it", async ({ page }) => {
     await page.addInitScript(() => Object.defineProperty(document, "fullscreenEnabled", { value: false }));
     await page.goto("/look.html?shot=table-4-players&lang=en");

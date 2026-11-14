@@ -30,6 +30,7 @@ import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
 import { watchFullscreen } from "./table/fullscreen";
+import { keepFieldInView } from "./dom/editing";
 import { LayoutWatch, type WindowLayout } from "./table/layoutWatch";
 import { TableScene } from "./table/renderer";
 import { TooSmall } from "./table/tooSmall";
@@ -455,6 +456,7 @@ function handle(message: ServerMessage): void {
 status("connecting");
 render();
 new LayoutWatch(frame, drawLayout);
+keepFieldInView();
 // Entering or leaving full screen changes the window, which the layout watch sees; what the page offers depends
 // on it too.
 watchFullscreen(() => scene.refreshNotice());

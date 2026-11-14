@@ -84,8 +84,10 @@
   scroll-padding-bottom: 76px;
 }
 
+/* A page's actions are not pinned, so only its bar is clear of what scrolls to the top. */
 .window[data-layout="scaled"] .sheet[data-placement="page"] {
   scroll-padding-top: 76px;
+  scroll-padding-bottom: 12px;
 }
 
 /* A bottom sheet rises from the foot of the window, wide enough for its table and no wider than a phone's

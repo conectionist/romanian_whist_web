@@ -400,7 +400,8 @@ for (const [width, height] of [
         expect(box.x + box.width).toBeLessThanOrEqual(width);
         expect(box.y).toBeGreaterThanOrEqual(16);
         expect(box.y + box.height).toBeLessThanOrEqual(height);
-        for (const button of await sheet.locator("button:not(:disabled), input:not(:disabled)").all()) {
+        // A page's Back button is for the scaled table, and is not there for a mouse.
+        for (const button of await sheet.locator("button:not(:disabled):not(.page-back), input:not(:disabled)").all()) {
           await button.scrollIntoViewIfNeeded();
           const at = (await button.boundingBox())!;
           expect(at.x, "left").toBeGreaterThanOrEqual(0);

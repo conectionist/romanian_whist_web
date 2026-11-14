@@ -469,6 +469,22 @@ describe("New Game", () => {
     expect(types(plain.sent.messages)).toEqual(["leaveTable"]);
   });
 
+  it("goes on waiting for the new game when the first sync after leaving an online table is the answer to leaving it, and the sheet goes with the new table", () => {
+    const { flow, receive } = setup("sheet-pause", (sync) => {
+      sync.table.mode = "online";
+    });
+    flow.openMenu("new-game");
+    flow.deal(defaults(seededRandom(1)));
+    flow.mainMenu();
+    expect(flow.asking()).toBe(true);
+    receive(syncOf({ ...serverFixture("sync"), table: null, snapshot: null, history: [], lastTrick: null, prompt: null, held: null }));
+    expect(flow.asking()).toBe(true);
+    expect(flow.shown()).toBe("new-game");
+    receive(syncOf(serverFixture("sync")));
+    expect(flow.asking()).toBe(false);
+    expect(flow.shown()).toBeNull();
+  });
+
   it("leaves the table first when there is one, a game running or ended, and then makes the new game", () => {
     const running = setup("sheet-pause");
     running.flow.openMenu("new-game");

@@ -7,7 +7,7 @@ import { defaults } from "../../src/lobby/setup";
 import { modelOf } from "../../src/play/model";
 import { Flow } from "../../src/play/flow";
 import type { SheetName } from "../../src/play/sheets";
-import { fieldsFor as menuFields } from "../../src/sheets/menuListSheet";
+import { fieldsFor as menuFields, listFor } from "../../src/sheets/menuListSheet";
 import { PAGE_ACTION, SIDE_MOST, placementFor, sideWidthFor, type SheetKey } from "../../src/sheets/placement";
 import { TABS, fieldsFor as scoresFields, tabAfter, tabLabel } from "../../src/sheets/scoresSheet";
 import { seatingOf } from "../../src/sheets/seating";
@@ -15,6 +15,18 @@ import { fullscreenActionFor, fullscreenOffered, smallNoticeFor, type Fullscreen
 import { storeFor, sender } from "./support/sheetState";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
+
+function memoryOf() {
+  const setup = defaults(seededRandom(3));
+  return { setup: () => setup, keepSetup: () => undefined, profile: () => null, keepProfile: () => undefined };
+}
+
+function flowFor(name: string, change?: (sync: any) => void) {
+  const store = storeFor(name, change);
+  const sent = sender();
+  const flow = new Flow({ send: sent.send, store, changed: () => undefined, keepPace: () => undefined, memory: memoryOf() });
+  return { flow, sent };
+}
 
 describe("where a sheet is placed", () => {
   const sides: SheetKey[] = ["last-trick", "scores"];
@@ -167,18 +179,6 @@ describe("the menu as a list", () => {
 // A sheet opened from another returns to it when it closes, in both layouts: the flow holds what was asked for,
 // and what is on the table shows under it.
 describe("a sheet opened from another returns to it", () => {
-  function flowFor(name: string, change?: (sync: any) => void) {
-    const store = storeFor(name, change);
-    const sent = sender();
-    const flow = new Flow({ send: sent.send, store, changed: () => undefined, keepPace: () => undefined, memory: memoryOf() });
-    return { flow, sent };
-  }
-
-  function memoryOf() {
-    const setup = defaults(seededRandom(3));
-    return { setup: () => setup, keepSetup: () => undefined, profile: () => null, keepProfile: () => undefined };
-  }
-
   it("goes back to the end of a round from the round history", () => {
     const { flow } = flowFor("sheet-round");
     expect(flow.shown()).toBe("round");
@@ -227,10 +227,10 @@ describe("a sheet opened from another returns to it", () => {
       expect(flow.shown(), `back from ${sheet}`).toBe("pause");
     }
     // The game was held once, and is let go when the last sheet is.
-    expect(sent.messages.map((each) => each.type)).toEqual(["pause"]);
+    expect(sent.messages.map((each: { type: string }) => each.type)).toEqual(["pause"]);
     flow.escape();
     expect(flow.shown()).toBeNull();
-    expect(sent.messages.map((each) => each.type)).toEqual(["pause", "resume"]);
+    expect(sent.messages.map((each: { type: string }) => each.type)).toEqual(["pause", "resume"]);
   });
 
   it("goes back to an online table's offer to leave, which does not hold the game", () => {
@@ -311,5 +311,70 @@ describe("the Romanian the owner chose", () => {
     );
     expect(said("bidstrip", "Not %1: the bids would add up to %2.")).toBe("N-ai voie să zici %1.");
     expect(said("fullscreen", "Exit full screen")).toBe("Ieși de pe tot ecranul");
+  });
+});
+
+describe("the menu list's Leave table", () => {
+  const facts = { scaled: true, gameOn: true, leaving: false };
+
+  it("is the list for a solo game's pause and an online game's offer to leave, until the offer is asked for itself", () => {
+    expect(listFor("pause", facts)).toBe("solo");
+    expect(listFor("leave", facts)).toBe("online");
+    expect(listFor("leave", { ...facts, leaving: true })).toBeNull();
+    // The desktop's table has no list, and a lobby's offer to leave is no game's.
+    expect(listFor("pause", { ...facts, scaled: false })).toBeNull();
+    expect(listFor("leave", { ...facts, scaled: false })).toBeNull();
+    expect(listFor("leave", { ...facts, gameOn: false })).toBeNull();
+    expect(listFor("rules", facts)).toBeNull();
+  });
+
+  function online() {
+    return flowFor("sheet-pause", (sync) => {
+      sync.table.mode = "online";
+    });
+  }
+
+  it("asks first at an online table: the row raises the offer to leave, Stay goes back to the list, and only Leave table leaves", () => {
+    const { flow, sent } = online();
+    flow.escape();
+    expect(flow.shown()).toBe("leave");
+    expect(flow.leaveAsked()).toBe(false);
+    flow.askLeave();
+    expect(flow.shown()).toBe("leave");
+    expect(flow.leaveAsked()).toBe(true);
+    // Stay, and Esc, which is Stay, go back to the list, and the table is still joined.
+    flow.resume();
+    expect(flow.leaveAsked()).toBe(false);
+    expect(flow.shown()).toBe("leave");
+    flow.askLeave();
+    flow.escape();
+    expect(flow.leaveAsked()).toBe(false);
+    expect(flow.shown()).toBe("leave");
+    expect(sent.messages.map((each: { type: string }) => each.type)).not.toContain("leaveTable");
+    flow.askLeave();
+    flow.mainMenu();
+    expect(sent.messages.map((each: { type: string }) => each.type)).toContain("leaveTable");
+  });
+
+  it("is asked for itself by a sheet that must leave the table first, whose Stay goes back to that sheet", () => {
+    const { flow, sent } = online();
+    flow.escape();
+    flow.escape();
+    expect(flow.shown()).toBeNull();
+    flow.deal(defaults(seededRandom(1)));
+    expect(flow.shown()).toBe("leave");
+    expect(flow.leaveAsked()).toBe(true);
+    flow.resume();
+    expect(flow.shown()).toBe("new-game");
+    expect(flow.leaveAsked()).toBe(false);
+    expect(sent.messages.map((each: { type: string }) => each.type)).not.toContain("leaveTable");
+  });
+
+  it("is not asked for by a solo game's Main menu, which leaves at once", () => {
+    const { flow, sent } = flowFor("sheet-pause");
+    flow.escape();
+    expect(flow.shown()).toBe("pause");
+    flow.mainMenu();
+    expect(sent.messages.map((each: { type: string }) => each.type)).toContain("leaveTable");
   });
 });

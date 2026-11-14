@@ -2,7 +2,7 @@ import { el, setText } from "../dom/el";
 import { icon, type IconName } from "../dom/icons";
 import { t } from "../i18n/t";
 import { fullscreenButton } from "../table/fullscreen";
-import type { MenuSheet } from "../play/sheets";
+import type { MenuSheet, SheetName } from "../play/sheets";
 import type { Sheet } from "./layer";
 import { SheetButton, actions } from "./parts";
 
@@ -11,6 +11,19 @@ import { SheetButton, actions } from "./parts";
 // an online one goes on.
 
 export type MenuKind = "solo" | "online";
+
+// Which list stands for a sheet the flow names, if any: where the menu bar is gone a solo game's pause and an online game's
+// offer to leave are the list, until the offer to leave is asked for itself, from its row or by a sheet that must leave
+// the table first.
+export function listFor(name: SheetName, facts: { scaled: boolean; gameOn: boolean; leaving: boolean }): MenuKind | null {
+  if (!facts.scaled) {
+    return null;
+  }
+  if (name === "pause") {
+    return "solo";
+  }
+  return name === "leave" && facts.gameOn && !facts.leaving ? "online" : null;
+}
 
 export interface MenuListActions {
   open(sheet: MenuSheet): void;

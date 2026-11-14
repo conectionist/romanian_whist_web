@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
-import { sheet } from "./online";
+import { createTable, sheet } from "./online";
 import { questionOf, tapCard, taken } from "./support";
 
 // The sheets and pages of the scaled table, played by touch at the window of a phone held sideways: where each opens,
@@ -302,6 +302,74 @@ test.describe("a page open when the window changes", () => {
     await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
     expect(await placementOf(page, "new-game")).toBe("page");
     expect(await where()).toEqual({ title: false, bar: true, dealIn: "page-bar", back: "grid" });
+  });
+});
+
+test.describe("leaving an online table under a finger at 832 by 384", () => {
+  test.use({ viewport: PHONE, ...touch });
+
+  const WARNING = "The game goes on without you: a computer player takes your seat.";
+
+  async function playing(page: Page): Promise<void> {
+    await createTable(page, "Alice", { seats: 2, others: ["computer"], speed: "fastest" });
+    await sheet(page, "lobby").locator('[data-action="start"]').click();
+    await expect(page.locator(".stage .seat:not([hidden])")).toHaveCount(2);
+  }
+
+  test("is asked about first: the row opens the offer to leave, Stay and Esc go back to the list, and the table is joined until Leave table", async ({ page }) => {
+    await playing(page);
+    const status = page.locator("body");
+    await page.locator('.stage [data-round-button="menu"]').tap();
+    await opens(page, "menu", "bottom");
+    await sheet(page, "menu").locator('[data-menu-item="leave"]').tap();
+    await opens(page, "leave", "bottom");
+    await expect(sheet(page, "leave").locator(".sheet-meta")).toHaveText(WARNING);
+    await expect(status).toHaveAttribute("data-status", "at a table");
+    // Stay goes back to the list, and so does Esc.
+    await sheet(page, "leave").locator('[data-action="stay"]').tap();
+    await opens(page, "menu", "bottom");
+    await expect(status).toHaveAttribute("data-status", "at a table");
+    await sheet(page, "menu").locator('[data-menu-item="leave"]').tap();
+    await opens(page, "leave", "bottom");
+    await page.keyboard.press("Escape");
+    await opens(page, "menu", "bottom");
+    await expect(status).toHaveAttribute("data-status", "at a table");
+    // Only Leave table leaves.
+    await sheet(page, "menu").locator('[data-menu-item="leave"]').tap();
+    await opens(page, "leave", "bottom");
+    await sheet(page, "leave").locator('[data-action="leave"]').tap();
+    await expect(status).toHaveAttribute("data-status", "at no table");
+  });
+
+  test("is asked about first too by a New Game's Deal over the table: the offer to leave, not the list, and Stay goes back to New Game", async ({ page }) => {
+    await playing(page);
+    await page.keyboard.press("Alt+N");
+    await opens(page, "new-game", "page");
+    await sheet(page, "new-game").locator('.page-bar [data-action="deal"]').tap();
+    await opens(page, "leave", "bottom");
+    await expect(sheet(page, "leave").locator(".sheet-meta")).toHaveText(WARNING);
+    await expect(page.locator(".menu-sheet:not([hidden])")).toHaveCount(0);
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+    await sheet(page, "leave").locator('[data-action="stay"]').tap();
+    await opens(page, "new-game", "page");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+    // Leaving for the new game makes it.
+    await sheet(page, "new-game").locator('.page-bar [data-action="deal"]').tap();
+    await opens(page, "leave", "bottom");
+    await sheet(page, "leave").locator('[data-action="leave"]').tap();
+    // The new game is dealt: a solo table, in which the bid is asked for and nothing is up over it.
+    await bids(page).first().waitFor();
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+    await noSheet(page);
+  });
+
+  test("is not asked about in a solo game, whose Main menu row leaves at once", async ({ page }) => {
+    await page.goto("/?solo=3&seed=7&speed=4&wait=1");
+    await bids(page).first().waitFor();
+    await page.locator('.stage [data-round-button="menu"]').tap();
+    await opens(page, "menu", "bottom");
+    await sheet(page, "menu").locator('[data-menu-item="leave"]').tap();
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
   });
 });
 

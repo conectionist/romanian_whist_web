@@ -13,7 +13,7 @@ import type { StoreState } from "../play/store";
 import { SettingsSheet, type SettingsValues } from "./settingsSheet";
 import { GameOverSheet, failureFields, fieldsFor as gameOverFields, resultFor } from "./gameOverSheet";
 import { HistorySheet, fieldsFor as historyFields } from "./historySheet";
-import { MenuListSheet, fieldsFor as menuFields } from "./menuListSheet";
+import { MenuListSheet, fieldsFor as menuFields, listFor, type MenuKind } from "./menuListSheet";
 import { ScoresSheet, fieldsFor as scoresFields } from "./scoresSheet";
 import { LastTrickSheet, fieldsFor as lastTrickFields } from "./lastTrickSheet";
 import { SheetLayer } from "./layer";
@@ -37,6 +37,8 @@ export interface SheetActions extends LobbyActions {
   createTable(setup: TableSetup): void;
   join(code: string, profile: Profile): void;
   cancelJoin(): void;
+  // The row of the menu list that leaves an online table: it asks first.
+  askLeave(): void;
   // The Back button of a page, on the scaled table: what Esc does.
   back(): void;
 }
@@ -49,6 +51,7 @@ export const NO_ACTIONS: SheetActions = {
   continueRound: none,
   playAgain: none,
   mainMenu: none,
+  askLeave: none,
   resume: none,
   settingsChanged: none,
   deal: none,
@@ -90,6 +93,8 @@ export interface RenderContext {
   // Whether the table is the scaled one, which has no menu bar: its sheets are placed by what they are, and its
   // pause menu and offer to leave are a list.
   scaled?: boolean;
+  // Whether the offer to leave is asked for itself and not as the list.
+  leaving?: boolean;
 }
 
 // The sheets over the layer. Each is made once, and filled from the store when it is shown.
@@ -109,6 +114,8 @@ export class Sheets {
   private readonly lobby: LobbySheet;
   private readonly scores: ScoresSheet;
   private readonly menu: MenuListSheet;
+  // Which list is up, if one is: an online table's Leave table asks first, and a solo game's Main menu does not.
+  private listed: MenuKind | null = null;
   private readonly byName: Record<SheetName, { element: HTMLElement; focusDefault(): void }>;
   // Whether the round sheet up holds the game, which is when it has the keyboard.
   private roundHolding = false;
@@ -139,7 +146,7 @@ export class Sheets {
     this.createTable = new CreateTableSheet({ create: (setup) => actions.createTable(setup), cancel: () => actions.closeMenu() }, random);
     this.lobby = new LobbySheet(actions);
     this.scores = new ScoresSheet({ close: () => actions.closeMenu(), history: () => actions.openMenu("history") });
-    this.menu = new MenuListSheet({ open: (sheet) => actions.openMenu(sheet), resume: () => actions.resume(), leave: () => actions.mainMenu() });
+    this.menu = new MenuListSheet({ open: (sheet) => actions.openMenu(sheet), resume: () => actions.resume(), leave: () => (this.listed === "online" ? actions.askLeave() : actions.mainMenu()) });
     this.byName = {
       scores: this.scores,
       round: this.round,
@@ -173,10 +180,10 @@ export class Sheets {
       this.roundHolding = false;
       return;
     }
-    // Where the menu bar is gone, a solo game's pause and an online game's offer to leave are one list.
-    if (context.scaled === true && (name === "pause" || (name === "leave" && gameOn(state)))) {
+    const kind = listFor(name, { scaled: context.scaled === true, gameOn: gameOn(state), leaving: context.leaving === true });
+    this.listed = kind;
+    if (kind !== null) {
       const snapshot = state.snapshot;
-      const kind = name === "pause" ? "solo" : "online";
       this.menu.update(kind, menuFields(kind, snapshot === null ? null : { index: snapshot.round.index + 1, count: snapshot.round.count }));
       this.layer.show(this.menu);
       this.roundHolding = false;

@@ -47,6 +47,8 @@ export class Flow {
   private leftForIt = false;
   // What Leave table goes on to when the question was raised by a sheet, and the sheet Stay returns to.
   private afterLeave: { sheet: MenuSheet; run(): void } | null = null;
+  // Set when the menu list's Leave table row asked for the offer to leave, whose Stay returns to the list.
+  private leaveOffered = false;
 
   constructor(private readonly deps: FlowDeps) {}
 
@@ -90,11 +92,13 @@ export class Flow {
   onApply(message: ServerMessage): void {
     switch (message.type) {
       case "sync": {
+        // The first sync after the table was left says so, and the answer to what was asked after it is still to come.
+        const leftOnPurpose = this.leaving;
         this.leaving = false;
         this.continued = null;
         // An answer lost with the connection never comes: at no table, nothing is waited for.
         if (!atTable(this.state)) {
-          this.asked = false;
+          this.asked = this.asked && leftOnPurpose;
           this.leftForIt = false;
         }
         // What was asked between games or of a round is for the game it was asked in, whose start a
@@ -161,6 +165,7 @@ export class Flow {
     }
     if (!this.ui.pauseMenu) {
       this.afterLeave = null;
+      this.leaveOffered = false;
     }
     if (this.ui.backAtTable && !atTable(this.state)) {
       this.ui = { ...this.ui, backAtTable: false };
@@ -204,6 +209,17 @@ export class Flow {
     this.ask({ ...this.ui, menu: null, joinCode: null });
   }
 
+  // Whether the offer to leave is asked for itself: by the menu list's row, or by a sheet that must leave the table first.
+  leaveAsked(): boolean {
+    return this.leaveOffered || this.afterLeave !== null;
+  }
+
+  // The menu list's Leave table row at an online table: the offer to leave comes up first.
+  askLeave(): void {
+    this.leaveOffered = true;
+    this.ask({ ...this.ui });
+  }
+
   // Esc closes the sheet from the menu bar or a corner button, as the mock-up's does, and otherwise
   // raises the pause menu, or drops it again.
   escape(): void {
@@ -211,7 +227,7 @@ export class Flow {
       this.closeMenu();
     } else if (this.ui.joinCode !== null && !atTable(this.state)) {
       this.cancelJoin();
-    } else if (this.ui.pauseMenu && this.afterLeave !== null) {
+    } else if (this.ui.pauseMenu && this.leaveAsked()) {
       this.resume();
     } else if (this.ui.pauseMenu || canExit(this.state)) {
       this.ask({ ...this.ui, pauseMenu: !this.ui.pauseMenu });
@@ -227,6 +243,11 @@ export class Flow {
   }
 
   resume(): void {
+    if (this.afterLeave === null && this.leaveOffered) {
+      this.leaveOffered = false;
+      this.ask({ ...this.ui });
+      return;
+    }
     const back = this.afterLeave?.sheet ?? null;
     this.ask({ ...this.ui, pauseMenu: false, menu: back ?? this.ui.menu });
   }

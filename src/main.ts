@@ -144,6 +144,7 @@ const sheets = new Sheets(
     playAgain: () => flow.playAgain(),
     mainMenu: () => flow.mainMenu(),
     resume: () => flow.resume(),
+    askLeave: () => flow.askLeave(),
     settingsChanged: (values) => flow.changeSettings(values),
     deal: (setup) => flow.deal(setup),
     chooseCreate: (kept) => flow.chooseCreate(kept),
@@ -343,7 +344,7 @@ function render(): void {
   const noTable = synced && !atTable(state);
   const waiting = state.held === null ? "" : holdNote(state.held.waitingFor, seatingOf(state), secondsLeft());
   const link = state.table === null ? "" : linkFor(state.table.code, window.location.origin);
-  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking(), scaled: scaledNow });
+  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking(), scaled: scaledNow, leaving: flow.leaveAsked() });
   menuBar.update(menuStateFor(state, true));
   menuPage.show(noTable);
   // The table under a sheet or the menu page takes neither clicks nor the keyboard, but for a round

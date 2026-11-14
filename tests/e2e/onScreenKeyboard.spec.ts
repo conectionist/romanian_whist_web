@@ -144,6 +144,35 @@ test.describe("a turn of the phone while a field is typed in", () => {
     await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
   });
 
+  test("a field that loses its focus while the window is still short does not bring the too-small page as the window grows back in steps", async ({ page }) => {
+    await page.goto("/");
+    await page.locator('[data-menu-page="online"]').tap();
+    const field = sheet(page, "online").locator('input[name="profileName"]');
+    await field.tap();
+    // What the page is at every moment from here: its layout, whether it can be touched, and how its page is placed.
+    await page.evaluate(() => {
+      const seen: string[] = [];
+      (window as unknown as { seen: string[] }).seen = seen;
+      window.setInterval(() => {
+        const open = document.querySelector<HTMLElement>(".sheet:not([hidden])");
+        seen.push([document.querySelector<HTMLElement>(".window")!.dataset.layout, document.getElementById("app")!.hasAttribute("inert"), open?.dataset.placement].join(" "));
+      }, 10);
+    });
+    await page.setViewportSize({ width: 754, height: 111 });
+    await page.waitForTimeout(150);
+    // The keyboard is going: the field loses the focus while the window is as short as it was.
+    await field.evaluate((node) => (node as HTMLInputElement).blur());
+    for (const height of [140, 175, 210, 235, 247]) {
+      await page.waitForTimeout(160);
+      await page.setViewportSize({ width: 754, height });
+    }
+    await page.waitForTimeout(700);
+    const seen = await page.evaluate(() => (window as unknown as { seen: string[] }).seen);
+    expect(seen.length).toBeGreaterThan(60);
+    expect(new Set(seen)).toEqual(new Set(["scaled false page"]));
+    await expect(page.locator(".too-small")).toBeHidden();
+  });
+
   test("a page that opens with a field focused opens at its top, and is scrolled only when the keyboard comes", async ({ page }) => {
     for (const [name, open] of PAGES) {
       await open(page);

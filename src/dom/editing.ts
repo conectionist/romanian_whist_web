@@ -1,9 +1,8 @@
 // Input types that take no keyboard.
 const NO_KEYBOARD = new Set(["checkbox", "radio", "range", "button", "submit", "reset", "file", "color", "image", "hidden"]);
 
-// Whether the person is typing: the focus is on a field that takes text. On a phone that is when the keyboard is up.
-export function typingIn(): boolean {
-  const node = document.activeElement;
+// Whether this takes text: a text-like input that can be written in, or a text area.
+export function editable(node: Element | null): boolean {
   if (node instanceof HTMLTextAreaElement) {
     return !node.readOnly;
   }
@@ -11,6 +10,11 @@ export function typingIn(): boolean {
     return !NO_KEYBOARD.has(node.type) && !node.readOnly;
   }
   return node instanceof HTMLElement && node.isContentEditable;
+}
+
+// Whether the person is typing: the focus is on a field that takes text. On a phone that is when the keyboard is up.
+export function typingIn(): boolean {
+  return editable(document.activeElement);
 }
 
 // Keeps the field being typed in on the screen: when the keyboard takes part of the window, the sheet that holds the

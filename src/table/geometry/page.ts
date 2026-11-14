@@ -23,8 +23,9 @@ export const TRUMP_WIDTH = 58;
 export const PANEL_X = 11;
 export const PANEL_Y = 19;
 
-// The gap between the trick's details and the trump under them.
+// The gap between the trick's details and the trump under them, and the least tall the trump's card is drawn.
 export const COLUMN_GAP = 8;
+export const TRUMP_LEAST = 28;
 
 // The tallest the trick's details are: a title and two lines of what led and what wins, each on several lines in the
 // narrowest panel.

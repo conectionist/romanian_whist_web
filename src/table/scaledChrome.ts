@@ -6,7 +6,7 @@ import { t } from "../i18n/t";
 import type { TableModel } from "../play/model";
 import { cardNameFor } from "./cardNames";
 import { fullscreenButton, type SmallNotice } from "./fullscreen";
-import type { Note, PageLayout } from "./geometry/page";
+import { COLUMN_GAP, PANEL_Y, TRUMP_LABEL, TRUMP_LEAST, type Note, type PageLayout } from "./geometry/page";
 import { SIDE_RUN } from "./geometry/scaled";
 import { DASH } from "./hudText";
 import { roundText } from "./roundText";
@@ -177,9 +177,6 @@ export class ScaledChrome {
     this.column.style.width = `${layout.column.w}px`;
     // The chip is as wide as the scores under it, or as its words are.
     this.chip.style.width = side === null ? "" : `${layout.chip.w}px`;
-    this.trumpCard.style.width = `${layout.trumpCard.w}px`;
-    this.trumpCard.style.height = `${layout.trumpCard.h}px`;
-    this.trumpNone.style.height = `${layout.trumpCard.h}px`;
 
     this.sideTrick.hidden = side === null;
     this.sideScores.hidden = side === null;
@@ -213,6 +210,17 @@ export class ScaledChrome {
         );
       }
     }
+
+    // The trump's card is as tall as one played on the felt, or, where the trick's details take more than the layout counts on
+    // with long names in a narrow panel, as tall as is left under them: the panel stays above the round buttons.
+    let card = layout.trumpCard.h;
+    if (side !== null) {
+      const left = layout.column.h - COLUMN_GAP - TRUMP_LABEL - PANEL_Y - this.sideTrick.offsetHeight;
+      card = Math.max(TRUMP_LEAST, Math.min(card, left));
+    }
+    this.trumpCard.style.width = `${(card * layout.trumpCard.w) / layout.trumpCard.h}px`;
+    this.trumpCard.style.height = `${card}px`;
+    this.trumpNone.style.height = `${card}px`;
 
     // The line above your hand: what to do. The short reason a bid is refused, when the strip has no room for its note, is
     // in a panel directly under the strip, or above the hand where there is no room there.

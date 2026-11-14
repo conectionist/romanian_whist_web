@@ -491,3 +491,65 @@ test.describe("the short words of a bid, which a screen reader says", () => {
     expect(await changes()).toBeGreaterThan(before);
   });
 });
+
+// The column at the left holds the trick's details and the trump's panel one under the other, over the round buttons. The
+// details are as tall as their words make them: with the longest names a player may have they must not take the room of the
+// trump or of the buttons.
+const LONG_NAMES = ["Constantin-Alexandru", "Alexandrina-Maria-I", "Gheorghița Elenuța-A", "Bogdănescu Radu-Ion", "Ecaterina-Ioana Ana", "Mălina-Ioana Dumitru"];
+
+function longNames(name: string): Json {
+  const state = structuredClone(stateOf(name)) as Json;
+  state.table.seats.forEach((seat: Json, at: number) => (seat.name = LONG_NAMES[at]));
+  state.snapshot.seats.forEach((seat: Json, at: number) => (seat.name = LONG_NAMES[at]));
+  return state;
+}
+
+for (const [width, height] of [
+  [754, 247],
+  [832, 384],
+  [640, 360],
+  [915, 412],
+] as const) {
+  test.describe(`the trick's details with the longest names at ${width} by ${height}`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    for (const language of ["en", "ro"]) {
+      for (const shot of ["table-3-players", "table-4-players", "table-5-players", "table-6-players", "hand-8-cards"]) {
+        test(`in ${language}, with ${shot}, stay in their column: the trump's panel and the round buttons are clear of them and of the window`, async ({ page }) => {
+          await page.goto(`/look.html?shot=${shot}&lang=${language}`);
+          await page.waitForSelector("body[data-ready]");
+          await page.evaluate(
+            (text) => (window as unknown as { look: { apply(text: string, animate: boolean): Promise<void> } }).look.apply(text, false),
+            JSON.stringify({ type: "sync", seq: 1, ...longNames(shot) }),
+          );
+          await page.evaluate(() => document.fonts.ready);
+          const found = await page.evaluate(() => {
+            const scale = parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale"));
+            const box = (selector: string) => {
+              const node = document.querySelector(selector);
+              if (node === null || !(node as HTMLElement).checkVisibility()) {
+                return null;
+              }
+              const rect = node.getBoundingClientRect();
+              return { x: rect.x, y: rect.y, w: rect.width, h: rect.height, text: (node.textContent ?? "").slice(0, 60) };
+            };
+            return { scale, details: box(".stage .side-trick"), trump: box(".stage .trump-corner"), buttons: box(".stage .rail-buttons"), menu: box('.stage [data-round-button="menu"]'), cut: Array.from(document.querySelectorAll<HTMLElement>(".stage .side-trick .sr, .stage .side-trick .st"), (node) => node.scrollWidth > node.clientWidth + 0.5) };
+          });
+          const { scale, details, trump, buttons, menu } = found;
+          expect(trump, "the trump's panel").not.toBeNull();
+          expect(buttons, "the round buttons").not.toBeNull();
+          const room = 6 * scale - 0.6;
+          // The trump's panel is clear of the round buttons, in the window, and under the trick's details where they are.
+          expect(buttons!.y - (trump!.y + trump!.h), "the trump and the round buttons").toBeGreaterThanOrEqual(room);
+          expect(trump!.y + trump!.h).toBeLessThanOrEqual(height);
+          if (details !== null) {
+            expect(trump!.y - (details.y + details.h), "the details and the trump").toBeGreaterThanOrEqual(8 * scale - 0.6);
+            expect(details.y - (menu!.y + menu!.h), "the menu button and the details").toBeGreaterThanOrEqual(0);
+            // The words are in the panel, none of them cut off by its edge.
+            expect(found.cut.every((each: boolean) => !each), "a line of the details is cut").toBe(true);
+          }
+        });
+      }
+    }
+  });
+}

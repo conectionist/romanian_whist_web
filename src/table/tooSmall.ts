@@ -12,14 +12,20 @@ export class TooSmall {
 
   constructor() {
     const least = { w: Math.ceil(DESIGN.w * SCALE_FLOOR), h: Math.ceil(DESIGN.h * SCALE_FLOOR) };
+    // The alert is what the page says once it shows. The window's size, which goes on changing, is outside it: it is said
+    // by being read, and a change of it does not say the page again.
     this.element = el(
       "div",
-      { class: "too-small", attrs: { role: "alert" } },
+      { class: "too-small" },
       el(
         "div",
         { class: "panel" },
-        el("h2", { text: t("toosmall", "This window is too small for the table") }),
-        el("p", { text: t("toosmall", "The game needs a window of at least %1 × %2 pixels to show every card and name.", [least.w, least.h]) }),
+        el(
+          "div",
+          { attrs: { role: "alert" } },
+          el("h2", { text: t("toosmall", "This window is too small for the table") }),
+          el("p", { text: t("toosmall", "The game needs a window of at least %1 × %2 pixels to show every card and name.", [least.w, least.h]) }),
+        ),
         this.sizes,
         el("p", { class: "small", text: t("toosmall", "Make the window bigger.") }),
         fullscreenButton("sheet-btn"),

@@ -66,3 +66,28 @@ test.describe("the page under the language dialog and the too-small page", () =>
     await expect(page.locator(".bidstrip:not([hidden]) .opt:not(:disabled)").first()).toBeVisible();
   });
 });
+
+test.describe("the page for a window too small", () => {
+  test("says its size as it changes, without saying the page again: the size is outside the alert, which is not touched", async ({ page }) => {
+    await page.goto("/");
+    await page.setViewportSize({ width: 700, height: 200 });
+    const notice = page.locator(".too-small");
+    await expect(notice).toBeVisible();
+    await expect(notice).toContainText("This window is 700 × 200.");
+    const alert = notice.locator('[role="alert"]');
+    await expect(alert).toHaveCount(1);
+    await expect(alert).not.toContainText("700");
+    await alert.evaluate((node) => {
+      const seen = { changes: 0 };
+      (window as unknown as { seen: typeof seen }).seen = seen;
+      new MutationObserver((records) => (seen.changes += records.length)).observe(node, { childList: true, characterData: true, subtree: true, attributes: true });
+    });
+    // Wider, as high as before: still too small, at the same scale, and the line says the new size.
+    await page.setViewportSize({ width: 720, height: 200 });
+    await expect(notice).toContainText("This window is 720 × 200.");
+    await page.setViewportSize({ width: 760, height: 200 });
+    await expect(notice).toContainText("This window is 760 × 200.");
+    expect(await page.evaluate(() => (window as unknown as { seen: { changes: number } }).seen.changes)).toBe(0);
+    await expect(notice).toBeVisible();
+  });
+});

@@ -13,8 +13,9 @@ export function sameWindowLayout(a: WindowLayout | null, b: WindowLayout): boole
   if (a === null || !sameChoice(a.choice, b.choice)) {
     return false;
   }
-  // The scaled table is laid out for the window's own size; the desktop's follows the view by itself.
-  return a.choice.kind !== "scaled" || (a.size.w === b.size.w && a.size.h === b.size.h);
+  // The scaled table is laid out for the window's own size, and the page for a window too small says it; the desktop's
+  // follows the view by itself.
+  return a.choice.kind === "desktop" || (a.size.w === b.size.w && a.size.h === b.size.h);
 }
 
 // How long the window must be still, after a field lost the focus, before it is looked at again, and the longest it is

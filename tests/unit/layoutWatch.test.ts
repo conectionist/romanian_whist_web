@@ -91,10 +91,12 @@ describe("a layout watch", () => {
     expect(drawn.map((each) => each.choice.kind)).toEqual(["scaled", "tooSmall"]);
   });
 
-  it("is told of a change of size by the layout when the page for a window too small shows it", () => {
-    const small = (h: number) => ({ choice: { kind: "tooSmall" as const, scale: h / 360 }, size: { w: 700, h } });
-    expect(sameWindowLayout(small(200), small(200))).toBe(true);
-    expect(sameWindowLayout(small(200), small(190))).toBe(false);
+  it("is a change of layout when the window's size changes with the page for a window too small showing it, though the scale is the same", () => {
+    const small = (w: number, h: number) => ({ choice: { kind: "tooSmall" as const, scale: Math.min(w / 640, h / 360) }, size: { w, h } });
+    expect(sameWindowLayout(small(700, 200), small(700, 200))).toBe(true);
+    // The window is as high as before and wider: the scale is the same, and the words of its size are not.
+    expect(small(700, 200).choice.scale).toBe(small(720, 200).choice.scale);
+    expect(sameWindowLayout(small(700, 200), small(720, 200))).toBe(false);
     expect(sameWindowLayout({ choice: { kind: "desktop" }, size: { w: 1280, h: 800 } }, { choice: { kind: "desktop" }, size: { w: 1200, h: 700 } })).toBe(true);
   });
 

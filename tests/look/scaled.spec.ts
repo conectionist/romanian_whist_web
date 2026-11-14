@@ -451,3 +451,43 @@ for (const [width, height] of [
     }
   });
 }
+
+// A line that is said, role=status, is said again when its words are set again: the short words of a bid are set only
+// when they change.
+test.describe("the short words of a bid, which a screen reader says", () => {
+  test.use({ viewport: { width: 832, height: 384 }, hasTouch: true, isMobile: true });
+
+  test("are not rewritten when the table is drawn again with the same words, and are when the words change", async ({ page }) => {
+    await page.goto("/look.html?shot=table-4-players&lang=en");
+    await page.waitForSelector("body[data-ready]");
+    const apply = (state: Json, seq: number) =>
+      page.evaluate(
+        (text) => (window as unknown as { look: { apply(text: string, animate: boolean): Promise<void> } }).look.apply(text, false),
+        JSON.stringify({ type: "sync", seq, ...state }),
+      );
+    await apply(bidding("table-4-players", 8), 1);
+    const line = page.locator(".stage .prompt-line");
+    await expect(line).toBeVisible();
+    await expect(line).toHaveAttribute("role", "status");
+    await page.evaluate(() => {
+      const seen = { changes: 0 };
+      (window as unknown as { seen: typeof seen }).seen = seen;
+      new MutationObserver((records) => (seen.changes += records.length)).observe(document.querySelector(".stage .prompt-line")!, { childList: true, characterData: true, subtree: true });
+    });
+    const changes = () => page.evaluate(() => (window as unknown as { seen: { changes: number } }).seen.changes);
+    // Drawn again, as it is at each bid of the others: the same words are not set again.
+    for (const seq of [2, 3, 4]) {
+      await apply(bidding("table-4-players", 8), seq);
+    }
+    expect(await changes()).toBe(0);
+    // Other words are.
+    await apply(bidding("table-4-players", 8, 2), 5);
+    await expect(line).toContainText("Not 2");
+    expect(await changes()).toBeGreaterThan(0);
+    // And a line for a card to play with the same words as the short ones would not pass for them: the keys differ.
+    const before = await changes();
+    await apply(playing("hand-8-cards"), 6);
+    await expect(line).toContainText("Your turn");
+    expect(await changes()).toBeGreaterThan(before);
+  });
+});

@@ -224,13 +224,17 @@ export class ScaledChrome {
         this.prompt.style.top = `${under.top}px`;
         this.prompt.style.maxWidth = `${under.w}px`;
       }
-      this.promptKey = state.short;
-      renderSuited(this.prompt, state.short);
+      // The words are set again only when they change: a line that is said, whose node is rewritten, is said again.
+      const key = `short ${state.short}`;
+      if (key !== this.promptKey) {
+        this.promptKey = key;
+        renderSuited(this.prompt, state.short);
+      }
     } else if (line !== null) {
       this.prompt.dataset.tone = "turn";
       this.prompt.style.top = `${layout.lineBottom}px`;
       this.prompt.style.maxWidth = `${layout.lineW}px`;
-      const key = JSON.stringify(line);
+      const key = `line ${JSON.stringify(line)}`;
       if (key !== this.promptKey) {
         this.promptKey = key;
         renderSuited(this.prompt, textOf(line));

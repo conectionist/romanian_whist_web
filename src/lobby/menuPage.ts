@@ -49,7 +49,7 @@ export class MenuPage {
     const plaque = plaqueFor(lines);
     const settings = el("button", { class: "menu-foot-btn", attrs: { type: "button" }, data: { menuPage: "settings" } }, icon("settings"), el("span", { text: t("MainWindow", "Settings") }));
     const rules = el("button", { class: "menu-foot-btn", attrs: { type: "button" }, data: { menuPage: "rules" } }, icon("rules"), el("span", { text: t("MainWindow", "Rules") }));
-    const full = fullscreenButton("menu-foot-btn");
+    const full = fullscreenButton("menu-foot-btn", true);
     full.prepend(icon("fullscreen"));
     settings.addEventListener("click", () => actions.settings());
     rules.addEventListener("click", () => actions.rules());

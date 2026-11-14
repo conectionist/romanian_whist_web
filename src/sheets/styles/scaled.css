@@ -362,6 +362,7 @@
   color: var(--gold);
 }
 
+.menu-row .fullscreen-label,
 .menu-row .menu-row-text {
   flex: 1;
   min-width: 0;

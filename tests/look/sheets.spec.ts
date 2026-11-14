@@ -212,6 +212,43 @@ for (const [width, height] of SIZES) {
   });
 }
 
+// While the page is in full screen, the main menu's button and the menu list's row say how to leave it.
+test.describe("the full-screen buttons while the page is in full screen, at 832 by 384", () => {
+  test.use({ viewport: { width: 832, height: 384 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+
+  for (const [language, suffix, words] of [
+    ["en", "", "Exit full screen"],
+    ["ro", "-ro", "Ieși de pe tot ecranul"],
+  ] as const) {
+    test(`say ${words} in ${language}, and say the other when it is not`, async ({ page }) => {
+      const folder = join(OUT, `832x384${suffix}`);
+      mkdirSync(folder, { recursive: true });
+      await page.addInitScript(() => Object.defineProperty(document, "fullscreenElement", { get: () => document.documentElement, configurable: true }));
+      for (const [shot, where] of [
+        ["menu", ".menu-page"],
+        ["sheet-pause", ".sheet:not([hidden])"],
+      ] as const) {
+        await open(page, shot, language);
+        const button = page.locator(`${where} [data-action="fullscreen"]`);
+        await expect(button).toBeVisible();
+        await expect(button).toHaveText(words);
+        await expect(button).toHaveAttribute("data-fullscreen", "exit");
+        const at = (await button.boundingBox())!;
+        expect(at.x).toBeGreaterThanOrEqual(0);
+        expect(at.x + at.width).toBeLessThanOrEqual(832);
+        expect(await button.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+        await page.screenshot({ path: join(folder, `${shot}-fullscreen.png`), animations: "disabled" });
+      }
+    });
+  }
+
+  test("say Full screen when it is not, and the buttons that only enter it are gone while it is", async ({ page }) => {
+    await open(page, "menu", "en");
+    await expect(page.locator('.menu-page [data-action="fullscreen"]')).toHaveText("Full screen");
+    await expect(page.locator('.menu-page [data-action="fullscreen"]')).toHaveAttribute("data-fullscreen", "enter");
+  });
+});
+
 // A finger needs room: at a window with a scale of 1 or more, every control of every sheet is 44 pixels or more
 // across the way it is touched, and so are the main menu's.
 test.describe("the controls at 832 by 384 under a finger", () => {

@@ -71,7 +71,7 @@ export class MenuListSheet implements Sheet {
     rules.element.addEventListener("click", () => handlers.open("rules"));
     this.leave.element.addEventListener("click", () => handlers.leave());
     // Full screen is offered here, in the list, where the table is drawn at its size or larger.
-    const full = fullscreenButton("menu-row");
+    const full = fullscreenButton("menu-row", true);
     full.prepend(icon("fullscreen"));
     this.element = el(
       "section",

@@ -815,6 +815,11 @@
     },
     {
       "context": "fullscreen",
+      "source": "Exit full screen",
+      "translation": "Ieși de pe tot ecranul"
+    },
+    {
+      "context": "fullscreen",
       "source": "The table is small here.",
       "translation": "Masa e cam mică așa."
     },

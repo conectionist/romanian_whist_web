@@ -17,7 +17,21 @@ export interface FullscreenFacts {
 }
 
 export function fullscreenOffered(facts: FullscreenFacts): boolean {
-  return facts.coarse && facts.enabled && !facts.active && !facts.installed;
+  return fullscreenActionFor(facts, false) === "enter";
+}
+
+// What a full-screen button does now: asks for full screen, or, where it can, leaves it while the page is in it. Nothing
+// where there is nothing to do: not a touch screen, no full screen in the browser, or a page from the home screen.
+export type FullscreenAction = "enter" | "exit" | null;
+
+export function fullscreenActionFor(facts: FullscreenFacts, canExit: boolean): FullscreenAction {
+  if (!facts.coarse || !facts.enabled || facts.installed) {
+    return null;
+  }
+  if (facts.active) {
+    return canExit ? "exit" : null;
+  }
+  return "enter";
 }
 
 // What the browser tells now.
@@ -58,22 +72,44 @@ export async function enterFullscreen(): Promise<void> {
   }
 }
 
-const buttons = new Set<HTMLButtonElement>();
-
-// Every full-screen button there is shows or hides itself by what the browser says now.
-export function refreshFullscreenButtons(): void {
-  const offered = fullscreenOffered(fullscreenFacts());
-  for (const button of buttons) {
-    button.hidden = !offered;
+// Leaves full screen, and lets the phone turn as it likes again. Either may be refused.
+export async function exitFullscreen(): Promise<void> {
+  try {
+    await document.exitFullscreen();
+  } catch {
+    // The page was not in it, or the browser said no.
+  }
+  try {
+    (screen.orientation as unknown as { unlock(): void }).unlock();
+  } catch {
+    // Nothing was locked.
   }
 }
 
-// A button that asks for full screen, hidden where it cannot be had. `className` styles it where it stands.
-export function fullscreenButton(className: string): HTMLButtonElement {
-  const button = el("button", { class: className, attrs: { type: "button" }, data: { action: "fullscreen" }, text: t("fullscreen", "Full screen") });
-  button.addEventListener("click", () => void enterFullscreen());
-  buttons.add(button);
-  button.hidden = !fullscreenOffered(fullscreenFacts());
+// The full-screen buttons there are, each with whether it may also leave full screen.
+const buttons = new Map<HTMLButtonElement, { label: HTMLElement; canExit: boolean }>();
+
+// Every full-screen button shows, says what it does and hides itself by what the browser says now.
+export function refreshFullscreenButtons(): void {
+  const facts = fullscreenFacts();
+  for (const [button, { label, canExit }] of buttons) {
+    const action = fullscreenActionFor(facts, canExit);
+    button.hidden = action === null;
+    if (action !== null) {
+      button.dataset.fullscreen = action;
+      label.textContent = action === "exit" ? t("fullscreen", "Exit full screen") : t("fullscreen", "Full screen");
+    }
+  }
+}
+
+// A button that asks for full screen, hidden where it cannot be had, and, where `canExit`, that leaves it while the page
+// is in it. `className` styles it where it stands.
+export function fullscreenButton(className: string, canExit = false): HTMLButtonElement {
+  const label = el("span", { class: "fullscreen-label" });
+  const button = el("button", { class: className, attrs: { type: "button" }, data: { action: "fullscreen" } }, label);
+  button.addEventListener("click", () => void (button.dataset.fullscreen === "exit" ? exitFullscreen() : enterFullscreen()));
+  buttons.set(button, { label, canExit });
+  refreshFullscreenButtons();
   return button;
 }
 

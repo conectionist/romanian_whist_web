@@ -390,10 +390,14 @@ test.describe("a whole online game under a finger at 832 by 384", () => {
 // a stand-in for requestFullscreen and for the orientation lock, and a page in full screen is shown to it by a stand-in
 // for what it asks the document, with the window made larger as a phone's is.
 const STUBS = () => {
-  const seen = { fullscreen: 0, lock: [] as string[], refuse: false };
+  const seen = { fullscreen: 0, exit: 0, lock: [] as string[], refuse: false };
   Object.assign(window, { __seen: seen, __fullscreenElement: null });
   Object.defineProperty(document, "fullscreenEnabled", { value: true, configurable: true });
   Object.defineProperty(document, "fullscreenElement", { get: () => (window as unknown as { __fullscreenElement: Element | null }).__fullscreenElement, configurable: true });
+  document.exitFullscreen = () => {
+    seen.exit += 1;
+    return Promise.resolve();
+  };
   Element.prototype.requestFullscreen = function () {
     seen.fullscreen += 1;
     return seen.refuse ? Promise.reject(new Error("refused")) : Promise.resolve();
@@ -404,12 +408,13 @@ const STUBS = () => {
         seen.lock.push(orientation);
         return seen.refuse ? Promise.reject(new Error("refused")) : Promise.resolve();
       },
+      unlock: () => undefined,
     },
     configurable: true,
   });
 };
 
-type Seen = { fullscreen: number; lock: string[]; refuse: boolean };
+type Seen = { fullscreen: number; exit: number; lock: string[]; refuse: boolean };
 const seenOf = (page: Page) => page.evaluate(() => (window as unknown as { __seen: Seen }).__seen);
 const fullscreenIs = (page: Page, on: boolean) =>
   page.evaluate((now) => {
@@ -429,9 +434,9 @@ test.describe("full screen", () => {
     const notice = page.locator(".stage .scaled-notice");
     await expect(notice).toBeVisible();
     await expect(notice).toContainText("The table is small here.");
-    expect(await seenOf(page)).toEqual({ fullscreen: 0, lock: [], refuse: false });
+    expect(await seenOf(page)).toEqual({ fullscreen: 0, exit: 0, lock: [], refuse: false });
     await notice.locator('[data-action="fullscreen"]').tap();
-    expect(await seenOf(page)).toEqual({ fullscreen: 1, lock: ["landscape"], refuse: false });
+    expect(await seenOf(page)).toEqual({ fullscreen: 1, exit: 0, lock: ["landscape"], refuse: false });
     // The notice is up until the page is in full screen, which the browser says.
     await expect(notice).toBeVisible();
     expect(problems).toEqual([]);
@@ -558,6 +563,47 @@ test.describe("full screen", () => {
     await page.reload();
     await bids(page).first().waitFor();
     await expect(notice).toBeHidden();
+  });
+});
+
+test.describe("leaving full screen", () => {
+  test.use({ viewport: PHONE, ...touch });
+
+  test("is the main menu's button and the menu list's row while the page is in full screen, which then say so and leave it", async ({ page }) => {
+    await page.addInitScript(STUBS);
+    await page.goto("/");
+    const foot = page.locator('.menu-page [data-action="fullscreen"]');
+    await expect(foot).toHaveText("Full screen");
+    await fullscreenIs(page, true);
+    await expect(foot).toBeVisible();
+    await expect(foot).toHaveText("Exit full screen");
+    await foot.tap();
+    expect(await seenOf(page)).toMatchObject({ fullscreen: 0, exit: 1 });
+    // Out of it, the button asks for it again.
+    await fullscreenIs(page, false);
+    await expect(foot).toHaveText("Full screen");
+    await foot.tap();
+    expect(await seenOf(page)).toMatchObject({ fullscreen: 1, exit: 1 });
+
+    await page.goto("/?solo=3&seed=7&speed=4&wait=1");
+    await bids(page).first().waitFor();
+    await fullscreenIs(page, true);
+    await page.locator('.stage [data-round-button="menu"]').tap();
+    const row = sheet(page, "menu").locator('[data-action="fullscreen"]');
+    await expect(row).toHaveText("Exit full screen");
+    await row.tap();
+    expect(await seenOf(page)).toMatchObject({ fullscreen: 0, exit: 1 });
+  });
+
+  test("is not offered by the buttons that only enter it: the notice, the hint and the page for a window that is too small", async ({ page }) => {
+    await page.addInitScript(STUBS);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    await expect(page.locator('.rotate-hint [data-action="fullscreen"]')).toBeVisible();
+    await fullscreenIs(page, true);
+    await expect(page.locator('.rotate-hint [data-action="fullscreen"]')).toBeHidden();
+    await page.setViewportSize({ width: 380, height: 213 });
+    await expect(page.locator('.too-small [data-action="fullscreen"]')).toBeHidden();
   });
 });
 

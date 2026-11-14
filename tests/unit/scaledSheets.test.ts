@@ -11,7 +11,7 @@ import { fieldsFor as menuFields } from "../../src/sheets/menuListSheet";
 import { PAGE_ACTION, SIDE_MOST, placementFor, sideWidthFor, type SheetKey } from "../../src/sheets/placement";
 import { TABS, fieldsFor as scoresFields, tabAfter, tabLabel } from "../../src/sheets/scoresSheet";
 import { seatingOf } from "../../src/sheets/seating";
-import { fullscreenOffered, smallNoticeFor, type FullscreenFacts } from "../../src/table/fullscreen";
+import { fullscreenActionFor, fullscreenOffered, smallNoticeFor, type FullscreenFacts } from "../../src/table/fullscreen";
 import { storeFor, sender } from "./support/sheetState";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -82,6 +82,18 @@ describe("full screen", () => {
     expect(fullscreenOffered(facts({ enabled: false }))).toBe(false);
     expect(fullscreenOffered(facts({ active: true }))).toBe(false);
     expect(fullscreenOffered(facts({ installed: true }))).toBe(false);
+  });
+
+  it("is, to a button that may leave it, to enter it, or while the page is in it to leave it, and to one that may not, nothing then", () => {
+    expect(fullscreenActionFor(facts(), true)).toBe("enter");
+    expect(fullscreenActionFor(facts(), false)).toBe("enter");
+    expect(fullscreenActionFor(facts({ active: true }), true)).toBe("exit");
+    expect(fullscreenActionFor(facts({ active: true }), false)).toBeNull();
+    // Where there is nothing to do, there is no button, in or out of it.
+    for (const none of [{ coarse: false }, { enabled: false }, { installed: true }]) {
+      expect(fullscreenActionFor(facts(none), true), JSON.stringify(none)).toBeNull();
+      expect(fullscreenActionFor(facts({ ...none, active: true }), true), JSON.stringify(none)).toBeNull();
+    }
   });
 
   it("is what a table drawn small offers, or where the browser has none the home screen", () => {
@@ -279,5 +291,6 @@ describe("the Romanian the owner chose", () => {
       "Un joc online nu poate fi pus pe pauză: ceilalți joacă mai departe cât timp meniul este deschis.",
     );
     expect(said("bidstrip", "Not %1: the bids would add up to %2.")).toBe("N-ai voie să zici %1.");
+    expect(said("fullscreen", "Exit full screen")).toBe("Ieși de pe tot ecranul");
   });
 });

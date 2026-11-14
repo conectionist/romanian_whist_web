@@ -37,6 +37,8 @@ export class Flow {
   private paused = false;
   // The round whose Continue went out, until its hold ends.
   private continued: number | null = null;
+  // The sheet that opened the one in the menu, where it matters which.
+  private openedFrom: MenuSheet | null = null;
   // Set when a way out of the table goes, until the table is gone: nothing is shown for a table being left.
   private leaving = false;
   // Set from the asking for a table until the server's answer: the sheet that asked stays up for it.
@@ -185,12 +187,16 @@ export class Flow {
   }
 
   openMenu(sheet: MenuSheet): void {
+    this.openedFrom = this.ui.menu === "scores" && sheet === "history" ? "scores" : null;
     this.ask({ ...this.ui, menu: sheet });
   }
 
-  // Create a table was opened from Play online and goes back to it; every other sheet goes back to what is under it.
+  // Create a table was opened from Play online and goes back to it, and the history opened from the scoreboard goes
+  // back to the scoreboard; every other sheet goes back to what is under it.
   closeMenu(): void {
-    this.ask({ ...this.ui, menu: this.ui.menu === "create-table" ? "online" : null });
+    const back = this.ui.menu === "create-table" ? "online" : this.ui.menu === "history" && this.openedFrom === "scores" ? "scores" : null;
+    this.openedFrom = null;
+    this.ask({ ...this.ui, menu: back });
   }
 
   // The join sheet, closed without joining: the address is no longer asked about.

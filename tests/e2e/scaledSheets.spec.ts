@@ -88,8 +88,8 @@ async function playToTheResults(pages: Page[], limit: number, onRound: (page: Pa
 // A sheet opened from this one, and closed, is this one again: the round history from a round's end or the results.
 async function historyAndBack(page: Page, from: "round" | "game-over"): Promise<void> {
   await sheet(page, from).locator('[data-action="history"]').tap();
-  await opens(page, "history", "side");
-  await sheet(page, "history").locator('[data-action="close"]').tap();
+  await opens(page, "history", "page");
+  await sheet(page, "history").locator(".page-back").tap();
   await opens(page, from, "bottom");
 }
 
@@ -163,14 +163,14 @@ test.describe("under a finger at 832 by 384, without a table", () => {
     await opens(page, "menu", "bottom");
     await expect(sheet(page, "menu").locator(".sheet-title")).toHaveText("Paused");
     for (const [item, name, placement, close] of [
-      ["history", "history", "side", "close"],
-      ["last-trick", "last-trick", "side", "close"],
-      ["settings", "settings", "bottom", "done"],
-      ["rules", "rules", "bottom", "close"],
+      ["history", "history", "page", ".page-back"],
+      ["last-trick", "last-trick", "side", '[data-action="close"]'],
+      ["settings", "settings", "bottom", '[data-action="done"]'],
+      ["rules", "rules", "bottom", '[data-action="close"]'],
     ] as const) {
       await sheet(page, "menu").locator(`[data-menu-item="${item}"]`).tap();
       await opens(page, name, placement);
-      await sheet(page, name).locator(`[data-action="${close}"]`).tap();
+      await sheet(page, name).locator(close).tap();
       await opens(page, "menu", "bottom");
     }
     // Esc closes the sheet on top and no more: from Rules it goes back to the list, and from the list to the table.
@@ -196,14 +196,30 @@ test.describe("under a finger at 832 by 384, without a table", () => {
     const tabs = sheet(page, "scores").locator('[role="tab"]');
     await expect(tabs).toHaveText(["Scores", "History", "Last trick"]);
     await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
+    // The history is a page of the whole window, and Back from it is the scoreboard again.
+    await tabs.nth(2).tap();
     await tabs.nth(1).tap();
-    await expect(sheet(page, "scores").locator('[role="tabpanel"]:not([hidden]) .sheet-table')).toBeVisible();
+    await opens(page, "history", "page");
+    await expect(sheet(page, "history").locator(".sheet-table .th").first()).toBeVisible();
+    await sheet(page, "history").locator(".page-back").tap();
+    await opens(page, "scores", "side");
+    // Esc from the page does as Back does, and Esc from the scoreboard closes it.
+    await tabs.nth(1).tap();
+    await opens(page, "history", "page");
+    await page.keyboard.press("Escape");
+    await opens(page, "scores", "side");
+    // The arrows move to the history tab and wait there, as they do between the other two, and Enter opens the page.
     await tabs.nth(2).tap();
     await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
-    // The arrows move between the tabs, and Esc closes the sheet.
     await tabs.nth(2).focus();
     await page.keyboard.press("ArrowLeft");
-    await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+    await expect(tabs.nth(1)).toBeFocused();
+    await expect(sheet(page, "scores")).toBeVisible();
+    await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+    await page.keyboard.press("Enter");
+    await opens(page, "history", "page");
+    await page.keyboard.press("Escape");
+    await opens(page, "scores", "side");
     await page.keyboard.press("Escape");
     await noSheet(page);
     for (const opener of ['.stage [data-round-button="trump"]', ".stage .side-scores", ".stage .side-trick"]) {

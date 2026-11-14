@@ -105,8 +105,14 @@ export class HistorySheet implements Sheet {
     }
   }
 
-  // The foot of a long history is what is read: the latest round, the totals and Close.
+  // The foot of a long history is what is read: the latest round, the totals and Close. A page has Back in its bar
+  // and no Close.
   focusDefault(): void {
-    this.close.focus();
+    const back = this.element.querySelector<HTMLElement>(".page-back");
+    if (this.close.element.offsetParent === null && back !== null) {
+      back.focus();
+    } else {
+      this.close.focus();
+    }
   }
 }

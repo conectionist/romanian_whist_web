@@ -138,7 +138,7 @@ export class Sheets {
     });
     this.createTable = new CreateTableSheet({ create: (setup) => actions.createTable(setup), cancel: () => actions.closeMenu() }, random);
     this.lobby = new LobbySheet(actions);
-    this.scores = new ScoresSheet({ close: () => actions.closeMenu() });
+    this.scores = new ScoresSheet({ close: () => actions.closeMenu(), history: () => actions.openMenu("history") });
     this.menu = new MenuListSheet({ open: (sheet) => actions.openMenu(sheet), resume: () => actions.resume(), leave: () => actions.mainMenu() });
     this.byName = {
       scores: this.scores,
@@ -205,7 +205,7 @@ export class Sheets {
       case "scores": {
         const model = modelOf(state);
         if (model !== null) {
-          this.scores.update(model, scoresFields(model, state.history, state.lastTrick, seating));
+          this.scores.update(model, scoresFields(model, state.lastTrick, seating));
         }
         break;
       }

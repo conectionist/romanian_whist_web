@@ -201,6 +201,26 @@ def state(**changes):
 SHOT = {'width': 1920, 'height': 1034, 'view': 'table'}
 
 
+def fewer(content, count, names=None):
+    """A state with only the first `count` players at the table, whose history is theirs alone; `names` gives them others."""
+    state = json.loads(json.dumps(content))
+    state['table']['seats'] = state['table']['seats'][:count]
+    state['table']['settings']['seats'] = state['table']['settings']['seats'][:count]
+    if state['snapshot'] is not None:
+        state['snapshot']['seats'] = state['snapshot']['seats'][:count]
+    for each in state['history']:
+        each['seats'] = each['seats'][:count]
+    if names is not None:
+        for seat, name in zip(state['table']['seats'], names):
+            seat['name'] = name
+        for seat, name in zip(state['table']['settings']['seats'], names):
+            seat['name'] = name
+        if state['snapshot'] is not None:
+            for seat, name in zip(state['snapshot']['seats'], names):
+                seat['name'] = name
+    return state
+
+
 def fixture(file, state, **extra):
     shot = dict(SHOT, file=file)
     shot['handOrder'] = ['2C', '7C', 'JC', '9D', 'QD', 'TH', 'KH', 'AS']
@@ -224,6 +244,12 @@ def main():
     write('sheet-rules', fixture('sheet-rules.png', state(), sheet='rules'))
     write('sheet-settings', fixture('sheet-settings.png', state(), sheet='settings'))
     write('sheet-history', fixture('sheet-history.png', state(history=history()), sheet='history'))
+    # The history at every size of table, and with names of the longest length a player may have, which its columns are
+    # headed by.
+    for count in (3, 4, 5):
+        write(f'sheet-history-{count}', fixture(f'sheet-history-{count}.png', fewer(state(history=history()), count), sheet='history'))
+    write('sheet-history-long', fixture('sheet-history-long.png', fewer(state(history=history()), 6, [
+        'Alexandrina-Maria', 'Constantin-Mihai', 'Gheorghița Elena', 'Bogdănescu Radu', 'Ecaterina Ioana', 'Mălina-Ioana Ana']), sheet='history'))
     write('sheet-last-trick', fixture('sheet-last-trick.png', state(lastTrick=last_trick()), sheet='last-trick'))
     write('sheet-scores', fixture('sheet-scores.png', state(history=history(), lastTrick=last_trick()), sheet='scores'))
     write('sheet-menu-online', fixture('sheet-menu-online.png', state(table=online_table()), sheet='pause'))

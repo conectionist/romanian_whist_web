@@ -18,7 +18,7 @@ const SHEETS: readonly (readonly [string, Placement])[] = [
   ["sheet-rules", "bottom"],
   ["sheet-pause", "bottom"],
   ["sheet-menu-online", "bottom"],
-  ["sheet-history", "side"],
+  ["sheet-history", "page"],
   ["sheet-last-trick", "side"],
   ["sheet-scores", "side"],
   ["sheet-new-game", "page"],
@@ -149,7 +149,7 @@ for (const [width, height] of SIZES) {
     });
 
     test("the table under a sheet takes no touch: the dim over it catches it", async ({ page }) => {
-      for (const name of ["sheet-history", "sheet-rules"]) {
+      for (const name of ["sheet-last-trick", "sheet-rules"]) {
         await open(page, name, "en");
         const covered = await page.evaluate(() => {
           const hit = document.elementFromPoint(6, window.innerHeight / 2);
@@ -160,7 +160,7 @@ for (const [width, height] of SIZES) {
     });
 
     for (const [language, suffix] of LANGUAGES) {
-      test(`the scoreboard's three tabs in ${language} each show their own panel and fit the side sheet`, async ({ page }) => {
+      test(`the scoreboard's three tabs in ${language}: the scores and the last trick are panels that fit the side sheet, and the history opens a page`, async ({ page }) => {
         await open(page, "sheet-scores", language);
         const folder = join(OUT, `${width}x${height}${suffix}`);
         mkdirSync(folder, { recursive: true });
@@ -169,7 +169,13 @@ for (const [width, height] of SIZES) {
         await expect(tabs).toHaveCount(3);
         await expect(sheet.locator('[role="tablist"]')).toHaveCount(1);
         await expect(sheet.locator('[role="tabpanel"]:not([hidden])')).toHaveCount(1);
-        for (const [index, shot] of ["sheet-scores", "sheet-scores-history", "sheet-scores-last-trick"].entries()) {
+        // The history is not a panel: its tab controls none, and the table is not in the sheet.
+        expect(await tabs.nth(1).getAttribute("aria-controls")).toBeNull();
+        await expect(sheet.locator(".sheet-table")).toHaveCount(0);
+        for (const [index, shot] of [
+          [0, "sheet-scores"],
+          [2, "sheet-scores-last-trick"],
+        ] as const) {
           await tabs.nth(index).tap();
           await expect(tabs.nth(index)).toHaveAttribute("aria-selected", "true");
           await expect(sheet.locator('[role="tabpanel"]:not([hidden])')).toHaveCount(1);
@@ -208,6 +214,86 @@ for (const [width, height] of SIZES) {
         }
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       });
+    }
+  });
+}
+
+// The round history is a page of its own, its table as wide as its words and scrolling under the bar where the window is
+// too small for it: no heading or cell is cut, and the headings and the first column stay in view.
+const HISTORIES = ["sheet-history-3", "sheet-history-4", "sheet-history-5", "sheet-history", "sheet-history-long"] as const;
+
+for (const [width, height] of SIZES) {
+  test.describe(`the round history at ${width} by ${height} under a finger`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+
+    for (const [language, suffix] of LANGUAGES) {
+      for (const name of HISTORIES) {
+        test(`${name} in ${language} has no heading or cell cut, and its headings and first column stay in view as it scrolls`, async ({ page }) => {
+          await open(page, name, language);
+          const folder = join(OUT, `${width}x${height}${suffix}`);
+          mkdirSync(folder, { recursive: true });
+          const sheet = page.locator(".sheet:not([hidden])");
+          await expect(sheet).toHaveAttribute("data-placement", "page");
+          // Back and the title in the bar, and no Close at the foot.
+          await expect(sheet.locator(".page-bar > .page-back")).toBeVisible();
+          await expect(sheet.locator(".page-bar > .sheet-title")).toHaveText(language === "en" ? "Round history" : "Istoricul rundelor");
+          await expect(sheet.locator(".sheet-actions")).toBeHidden();
+          await page.screenshot({ path: join(folder, `${name}.png`), animations: "disabled" });
+
+          // Every heading and cell shows all of its words, whatever the window shows of the table.
+          const cut = await sheet.evaluate((node) =>
+            Array.from(node.querySelectorAll<HTMLElement>(".sheet-table .th, .sheet-table .td:not(.span)"))
+              .filter((cell) => (cell.textContent ?? "") !== "")
+              .filter((cell) => {
+                const range = document.createRange();
+                range.selectNodeContents(cell);
+                const text = range.getBoundingClientRect();
+                const box = cell.getBoundingClientRect();
+                return cell.scrollWidth > cell.clientWidth + 1 || text.right > box.right + 1 || text.left < box.left - 1;
+              })
+              .map((cell) => cell.textContent),
+          );
+          expect(cut).toEqual([]);
+          const headings = await sheet.locator(".sheet-table .th").allTextContents();
+          expect(headings.slice(0, 2)).toEqual(language === "en" ? ["Round", "Cards"] : ["Runda", "Cărți"]);
+          expect(headings.slice(2).every((each) => each.length > 1)).toBe(true);
+
+          // The last column can be reached, and the page's own width is the window's.
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+          await sheet.evaluate((node) => node.scrollTo(node.scrollWidth, node.scrollHeight));
+          const last = (await sheet.locator(".sheet-table .th").last().boundingBox())!;
+          expect(last.x + last.width).toBeLessThanOrEqual(width + 0.5);
+          expect(last.x).toBeGreaterThanOrEqual(0);
+
+          // Scrolled, the first column is at the left edge and the headings are under the bar, which is where it was.
+          const held = await sheet.evaluate((node) => {
+            const bar = node.querySelector(".page-bar")!.getBoundingClientRect();
+            const head = node.querySelector(".sheet-table .th:not(.first)")!.getBoundingClientRect();
+            const first = node.querySelector(".sheet-table .td.first")!.getBoundingClientRect();
+            const corner = node.querySelector(".sheet-table .th.first")!.getBoundingClientRect();
+            return { scrolledDown: node.scrollTop > 0, scrolledAcross: node.scrollLeft > 0, bar: bar.top, headUnder: head.top - bar.bottom, first: first.left, corner: [corner.left, corner.top - bar.bottom] };
+          });
+          expect(held.bar).toBeCloseTo(0, 0);
+          expect(held.headUnder).toBeGreaterThanOrEqual(-1.5);
+          expect(held.headUnder).toBeLessThanOrEqual(2);
+          expect(held.corner[1]).toBeGreaterThanOrEqual(-1.5);
+          expect(held.corner[1]).toBeLessThanOrEqual(2);
+          // Across, the first column is held at the edge; where the table fits, it is where it was.
+          if (held.scrolledAcross) {
+            expect(held.first).toBeCloseTo(0, 0);
+            expect(held.corner[0]).toBeCloseTo(0, 0);
+          } else {
+            expect(held.corner[0]).toBeGreaterThanOrEqual(0);
+            expect(held.corner[0]).toBeLessThanOrEqual(21);
+          }
+          // Twelve rounds do not fit the window, and six players with long names do not either.
+          expect(held.scrolledDown).toBe(true);
+          // Six players with the longest names are wider than the narrower window, which scrolls across to them.
+          if (name === "sheet-history-long" && width === 832) {
+            expect(held.scrolledAcross).toBe(true);
+          }
+        });
+      }
     }
   });
 }

@@ -223,6 +223,59 @@
   margin-top: 16px;
 }
 
+/* The round history: a page whose table the whole window shows, scrolling both ways where it must under the bar, with
+   its headings and its first column held in view. A column is as wide as its words, and wider where the window has the
+   room. */
+.window[data-layout="scaled"] .sheet[data-sheet="history"][data-placement="page"] {
+  overflow: auto;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"][data-placement="page"] > .page-bar {
+  left: 0;
+  width: 100%;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"][data-placement="page"] > .sheet-actions {
+  display: none;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"][data-placement="page"] > .sheet-meta {
+  position: sticky;
+  left: 18px;
+  width: max-content;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table {
+  grid-template-columns: repeat(var(--columns, 2), minmax(max-content, 1fr)) !important;
+  margin-bottom: 18px;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table .th {
+  position: sticky;
+  top: 63px;
+  z-index: 2;
+  overflow: visible;
+  text-overflow: clip;
+  background: #17100a;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table .first {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #17100a;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table .th.first {
+  z-index: 3;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table .span {
+  position: sticky;
+  left: 0;
+  width: max-content;
+}
+
 .page-back {
   display: none;
 }

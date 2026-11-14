@@ -1,20 +1,20 @@
 import { el, setText } from "../dom/el";
 import { t } from "../i18n/t";
-import type { LastTrick, RoundResult } from "../net/protocol";
+import type { LastTrick } from "../net/protocol";
 import type { TableModel } from "../play/model";
 import { dealtText } from "../table/scoreboard";
 import { Scoreboard } from "../table/scoreboard";
 import { roundText, roundTypeText } from "../table/roundText";
 import { TrickPanel } from "../table/trickPanel";
-import { fieldsFor as historyFields } from "./historySheet";
 import type { Sheet } from "./layer";
 import { LastTrickCards, fieldsFor as lastTrickFields, type MiniCard } from "./lastTrickSheet";
-import { SheetButton, SheetTable, actions, type TableFields } from "./parts";
+import { SheetButton, actions } from "./parts";
 import type { Seating } from "./seating";
 
 // The scoreboard on a table that has no room for it: the round, the trick's details, and three tabs, the scores
 // with the trump, the rounds so far, and the last trick. What each shows is what the desktop's corner panels and
-// the history and last-trick sheets show, from the same fields.
+// the last-trick sheet show, from the same fields. The rounds so far need the whole window, so that tab opens the
+// history page, and Back from it comes here again.
 
 export type Tab = "scores" | "history" | "last-trick";
 
@@ -23,17 +23,14 @@ export const TABS: readonly Tab[] = ["scores", "history", "last-trick"];
 export interface ScoresFields {
   title: string;
   meta: string;
-  history: { meta: string; table: TableFields };
   lastTrick: { meta: string; cards: MiniCard[] };
 }
 
-export function fieldsFor(model: TableModel, rounds: readonly RoundResult[], trick: LastTrick | null, seating: Seating): ScoresFields {
-  const history = historyFields(rounds, seating);
+export function fieldsFor(model: TableModel, trick: LastTrick | null, seating: Seating): ScoresFields {
   const last = lastTrickFields(trick, seating, model.roundNumber);
   return {
     title: roundText(model.roundNumber, model.roundCount),
     meta: `${dealtText(model.trickCount)} · ${roundTypeText(model.roundType)}`,
-    history: { meta: history.meta, table: history.table },
     lastTrick: { meta: last.meta, cards: last.cards },
   };
 }
@@ -68,6 +65,7 @@ export function tabAfter(current: number, count: number, key: string): number | 
 
 export interface ScoresActions {
   close(): void;
+  history(): void;
 }
 
 export class ScoresSheet implements Sheet {
@@ -76,9 +74,7 @@ export class ScoresSheet implements Sheet {
   private readonly meta = el("div", { class: "sheet-meta" });
   private readonly trick = new TrickPanel();
   private readonly board = new Scoreboard();
-  private readonly table = new SheetTable();
   private readonly cards = new LastTrickCards();
-  private readonly historyMeta = el("div", { class: "sheet-meta" });
   private readonly lastMeta = el("div", { class: "sheet-meta" });
   private readonly tabs: HTMLButtonElement[];
   private readonly panels: HTMLElement[];
@@ -90,19 +86,18 @@ export class ScoresSheet implements Sheet {
   constructor(handlers: ScoresActions) {
     this.trick.element.classList.add("in-sheet");
     this.board.element.classList.add("in-sheet");
-    this.table.element.classList.add("sheet-after-head");
     this.tabs = TABS.map((tab) =>
       el("button", {
         class: "sheet-tab",
-        attrs: { type: "button", role: "tab", id: `scores-tab-${tab}`, "aria-controls": `scores-panel-${tab}` },
+        attrs: { type: "button", role: "tab", id: `scores-tab-${tab}`, ...(tab === "history" ? {} : { "aria-controls": `scores-panel-${tab}` }) },
         data: { tab },
         text: tabLabel(tab),
       }),
     );
     this.bar = el("div", { class: "sheet-tabs", attrs: { role: "tablist", "aria-labelledby": "sheet-scores-title" } }, ...this.tabs);
+    // The three tabs have two panels: the history is a page of its own.
     this.panels = [
       el("div", { class: "sheet-panel", attrs: { role: "tabpanel", id: "scores-panel-scores", "aria-labelledby": "scores-tab-scores" } }),
-      el("div", { class: "sheet-panel", attrs: { role: "tabpanel", id: "scores-panel-history", "aria-labelledby": "scores-tab-history" } }, this.historyMeta, this.table.element),
       el(
         "div",
         { class: "sheet-panel", attrs: { role: "tabpanel", id: "scores-panel-last-trick", "aria-labelledby": "scores-tab-last-trick" } },
@@ -121,12 +116,17 @@ export class ScoresSheet implements Sheet {
     );
     this.close.onClick(handlers.close);
     this.tabs.forEach((tab, index) => {
-      tab.addEventListener("click", () => this.select(index, false));
+      tab.addEventListener("click", () => (TABS[index] === "history" ? handlers.history() : this.select(index, false)));
       tab.addEventListener("keydown", (event) => {
         const next = tabAfter(index, this.tabs.length, event.key);
         if (next !== null) {
           event.preventDefault();
-          this.select(next, true);
+          // The arrows go to the history tab and wait there: Enter or a tap opens it.
+          if (TABS[next] === "history") {
+            this.tabs[next].focus({ preventScroll: true });
+          } else {
+            this.select(next, true);
+          }
         }
       });
     });
@@ -140,8 +140,9 @@ export class ScoresSheet implements Sheet {
     this.tabs.forEach((tab, at) => {
       tab.setAttribute("aria-selected", String(at === index));
       tab.tabIndex = at === index ? 0 : -1;
-      this.panels[at].hidden = at !== index;
     });
+    // The history has no panel here, and the others are shown by their tab.
+    this.panels.forEach((panel) => (panel.hidden = panel.id !== `scores-panel-${TABS[index]}`));
     if (focus) {
       this.tabs[index].focus({ preventScroll: true });
     }
@@ -162,8 +163,6 @@ export class ScoresSheet implements Sheet {
     setText(this.meta, fields.meta);
     this.trick.update(model);
     this.board.update(model);
-    setText(this.historyMeta, fields.history.meta);
-    this.table.update(fields.history.table);
     setText(this.lastMeta, fields.lastTrick.meta);
     this.cards.update(fields.lastTrick.cards);
   }

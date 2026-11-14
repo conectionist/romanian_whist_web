@@ -17,9 +17,9 @@ import { storeFor, sender } from "./support/sheetState";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 describe("where a sheet is placed", () => {
-  const sides: SheetKey[] = ["history", "last-trick", "scores"];
+  const sides: SheetKey[] = ["last-trick", "scores"];
   const bottoms: SheetKey[] = ["round", "settings", "rules", "pause", "leave", "game-over", "menu"];
-  const pages: SheetKey[] = ["new-game", "online", "create-table", "lobby"];
+  const pages: SheetKey[] = ["history", "new-game", "online", "create-table", "lobby"];
 
   it("is the centred dialog for every sheet on the desktop's table", () => {
     for (const name of [...sides, ...bottoms, ...pages]) {
@@ -27,7 +27,7 @@ describe("where a sheet is placed", () => {
     }
   });
 
-  it("is a side sheet for the table's records, a bottom sheet for what ends or pauses the game, and a page for what is filled in before a table", () => {
+  it("is a side sheet for the last trick and the scoreboard, a bottom sheet for what ends or pauses the game, and a page for what is filled in before a table and for the history, whose table needs the whole window", () => {
     for (const name of sides) {
       expect(placementFor(name, true), name).toBe("side");
     }
@@ -61,7 +61,8 @@ describe("where a sheet is placed", () => {
   });
 
   it("gives a page the action that does what it is for", () => {
-    expect(Object.keys(PAGE_ACTION).sort()).toEqual([...pages].sort());
+    // The history has Back and no action.
+    expect(Object.keys(PAGE_ACTION).sort()).toEqual(pages.filter((each) => each !== "history").sort());
     expect(PAGE_ACTION).toMatchObject({ "new-game": "deal", online: "join", "create-table": "create", lobby: "start" });
   });
 
@@ -114,7 +115,7 @@ describe("full screen", () => {
 describe("the scoreboard's sheet", () => {
   const state = storeFor("sheet-last-trick").state;
   const model = modelOf(state)!;
-  const fields = scoresFields(model, state.history, state.lastTrick, seatingOf(state));
+  const fields = scoresFields(model, state.lastTrick, seatingOf(state));
 
   it("is the round and what was dealt for its title, and the trick's details and three tabs under it", () => {
     expect(fields.title).toBe("Round 10 of 32");
@@ -123,12 +124,11 @@ describe("the scoreboard's sheet", () => {
     expect(TABS.map(tabLabel)).toEqual(["Scores", "History", "Last trick"]);
   });
 
-  it("takes the history tab and the last trick tab from the fields of the sheets of those names", () => {
-    expect(fields.history.meta).toBe("Score per round, then taken/bid");
-    expect(fields.history.table.columns.map((column) => column.heading).slice(0, 3)).toEqual(["Round", "Cards", "Player"]);
+  it("takes the last trick tab from the fields of the sheet of that name, and opens the history as a page of its own", () => {
     expect(fields.lastTrick.cards).toHaveLength(6);
     expect(fields.lastTrick.cards.filter((card) => card.winning)).toHaveLength(1);
     expect(fields.lastTrick.meta).toMatch(/won it/);
+    expect(Object.keys(fields).sort()).toEqual(["lastTrick", "meta", "title"]);
   });
 
   it("moves between its tabs with the arrows, stops at the ends, and goes to the first and last with Home and End", () => {
@@ -186,6 +186,25 @@ describe("a sheet opened from another returns to it", () => {
     expect(flow.shown()).toBe("history");
     flow.closeMenu();
     expect(flow.shown()).toBe("round");
+  });
+
+  it("goes back to the scoreboard from the history opened from its tab, and then to the table", () => {
+    const { flow } = flowFor("sheet-pause");
+    flow.escape();
+    flow.openMenu("scores");
+    flow.openMenu("history");
+    expect(flow.shown()).toBe("history");
+    flow.closeMenu();
+    expect(flow.shown()).toBe("scores");
+    flow.openMenu("history");
+    flow.escape();
+    expect(flow.shown()).toBe("scores");
+    flow.escape();
+    expect(flow.shown()).toBe("pause");
+    // The history opened from anywhere else goes back to what is under it, and not to a scoreboard long closed.
+    flow.openMenu("history");
+    flow.closeMenu();
+    expect(flow.shown()).toBe("pause");
   });
 
   it("goes back to the results from the round history", () => {

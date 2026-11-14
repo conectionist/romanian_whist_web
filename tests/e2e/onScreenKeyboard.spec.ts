@@ -145,12 +145,13 @@ test.describe("a turn of the phone while a field is typed in", () => {
   });
 
   test("a page that opens with a field focused opens at its top, and is scrolled only when the keyboard comes", async ({ page }) => {
-    await page.goto("/");
-    await page.locator('[data-menu-page="new-game"]').tap();
-    const on = sheet(page, "new-game");
-    await expect(on.locator(":focus")).toHaveCount(1);
-    await page.waitForTimeout(400);
-    expect(await on.evaluate((node) => node.scrollTop)).toBe(0);
+    for (const [name, open] of PAGES) {
+      await open(page);
+      const on = sheet(page, name);
+      await expect(on.locator(":focus")).toHaveCount(1);
+      await page.waitForTimeout(400);
+      expect(await on.evaluate((node) => node.scrollTop), name).toBe(0);
+    }
   });
 
   test("is told, by the page, that the keyboard shrinks only what is seen of it", async ({ page }) => {

@@ -134,6 +134,16 @@ test.describe("a turn of the phone while a field is typed in", () => {
     await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
   });
 
+  test("with no field typed in, a window made shorter is a window made shorter: too small for the table, as before", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".menu-page")).toBeVisible();
+    await page.setViewportSize({ width: 754, height: 111 });
+    await expect(page.locator(".window")).toHaveAttribute("data-layout", "tooSmall");
+    await expect(page.locator(".too-small")).toBeVisible();
+    await page.setViewportSize({ width: 754, height: 247 });
+    await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
+  });
+
   test("is told, by the page, that the keyboard shrinks only what is seen of it", async ({ page }) => {
     await page.goto("/");
     expect(await page.locator('meta[name="viewport"]').getAttribute("content")).toContain("interactive-widget=resizes-visual");

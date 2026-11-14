@@ -238,6 +238,8 @@ for (const [width, height] of SIZES) {
           await expect(sheet.locator(".page-bar > .page-back")).toBeVisible();
           await expect(sheet.locator(".page-bar > .sheet-title")).toHaveText(language === "en" ? "Round history" : "Istoricul rundelor");
           await expect(sheet.locator(".sheet-actions")).toBeHidden();
+          // It scrolls both ways under a finger, and not only by script.
+          expect(await sheet.evaluate((node) => [getComputedStyle(node).overflowX, getComputedStyle(node).overflowY])).toEqual(["auto", "auto"]);
           await page.screenshot({ path: join(folder, `${name}.png`), animations: "disabled" });
 
           // Every heading and cell shows all of its words, whatever the window shows of the table.

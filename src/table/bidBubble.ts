@@ -71,13 +71,14 @@ export class BidBubble {
   }
 
   // Shows `text` over the panel and lets it go by itself. A new bid replaces the one showing, from
-  // the start. `animate` false holds it still, there from the first moment to the last.
-  say(text: string, panel: Rect, animate: boolean): void {
+  // the start. `animate` false holds it still, there from the first moment to the last. A panel at the
+  // top of a window has no room over it: `leastTop` keeps the pill on the window.
+  say(text: string, panel: Rect, animate: boolean, leastTop = -Infinity): void {
     this.animation?.cancel();
     this.pill.textContent = text;
     const at = anchorOver(panel);
     this.element.style.left = `${at.x}px`;
-    this.element.style.top = `${at.y}px`;
+    this.element.style.top = `${Math.max(at.y, leastTop)}px`;
     this.element.hidden = false;
 
     const frames: Keyframe[] = animate ? keyframes() : [{ opacity: 1 }, { opacity: 1 }];

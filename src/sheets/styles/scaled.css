@@ -1,0 +1,517 @@
+/* The sheets and the main menu on the scaled table. The layer, like the table, is the window in its own units, from 640
+   by 360 up, scaled by --scale, so a sheet is drawn at the sizes it has and grows with the window. A sheet is a side
+   sheet, a bottom sheet or a page by what it is (sheets/placement.ts); the desktop's dialogs are in sheet.css. */
+
+.window[data-layout="scaled"] .sheet-layer {
+  left: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  width: calc(100% / var(--scale, 1));
+  height: calc(100% / var(--scale, 1));
+  transform: scale(var(--scale, 1));
+  transform-origin: 0 0;
+}
+
+/* What every scaled sheet is: a column that scrolls, its actions pinned to its foot. */
+.window[data-layout="scaled"] .sheet[data-placement] {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgb(40, 29, 19), rgb(19, 13, 8));
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] > * {
+  flex: none;
+  margin-left: 18px;
+  margin-right: 18px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] > .sheet-title {
+  margin-top: 14px;
+  font-size: 26px;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] > .sheet-meta {
+  font-size: 15.5px;
+  line-height: 1.4;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] > .sheet-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: auto 0 0;
+  padding: 10px 18px 12px;
+  border-top: 1px solid var(--hud-rule);
+  background: rgb(19, 13, 8);
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] > .sheet-actions .sheet-btn {
+  flex: 1 1 0;
+  min-height: 44px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] > .sheet-actions:not(:has(*)) {
+  display: none;
+}
+
+/* The foot of a sheet with nothing above it that scrolls keeps its place under the content. */
+.window[data-layout="scaled"] .sheet[data-placement]::after {
+  content: none;
+}
+
+/* A control the finger has to hit is 44 across in the window's units, which are 44 pixels or more where the table is
+   drawn at full size. A key that scrolls a control into view leaves it clear of what is pinned. */
+.window[data-layout="scaled"] .sheet[data-placement] .field,
+.window[data-layout="scaled"] .sheet[data-placement] .sheet-btn.small {
+  height: 44px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] .check {
+  height: auto;
+  min-height: 44px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement] {
+  scroll-padding-bottom: 76px;
+}
+
+/* A page's actions are not pinned, so only its bar is clear of what scrolls to the top. */
+.window[data-layout="scaled"] .sheet[data-placement="page"] {
+  scroll-padding-top: 76px;
+  scroll-padding-bottom: 12px;
+}
+
+/* A bottom sheet rises from the foot of the window, wide enough for its table and no wider than a phone's
+   thumbs reach. */
+.window[data-layout="scaled"] .sheet[data-placement="bottom"] {
+  left: 50%;
+  top: auto;
+  bottom: 0;
+  width: min(640px, 100%);
+  max-width: none;
+  max-height: calc(100% - 14px);
+  border-radius: 22px 22px 0 0;
+  border-bottom: 0;
+  transform: translateX(-50%);
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="bottom"]::before {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin: 10px 0 2px;
+  border-radius: 2px;
+  background: rgba(241, 230, 204, 0.4);
+}
+
+/* A side sheet at the right, the table in view beside it. */
+.window[data-layout="scaled"] .sheet[data-placement="side"] {
+  left: auto;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(420px, 46%);
+  max-width: none;
+  max-height: none;
+  border-radius: 18px 0 0 18px;
+  border-right: 0;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="side"] > .sheet-center {
+  text-align: left;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="side"] .sheet-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* A column is as wide as its words, and the table scrolls sideways where they do not fit. */
+.window[data-layout="scaled"] .sheet[data-placement="side"] .sheet-table .th,
+.window[data-layout="scaled"] .sheet[data-placement="side"] .sheet-table .td {
+  min-width: auto;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="side"] .mini-row {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="side"] .mini,
+.window[data-layout="scaled"] .sheet[data-placement="side"] .mini-face {
+  width: 72px;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="side"] .mini-face {
+  height: auto !important;
+}
+
+/* A page fills the window: a bar with Back, the title and the page's one action, always in reach, and the content
+   scrolling under it. */
+.window[data-layout="scaled"] .sheet[data-placement="page"] {
+  left: 0;
+  top: 0;
+  width: auto;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  right: 0;
+  bottom: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: radial-gradient(ellipse at 50% 0%, #2a190d 0%, #150d07 55%, #0b0704 100%);
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="page"] > .page-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 64px;
+  margin: 0;
+  padding: 0 8px 0 4px;
+  background: linear-gradient(180deg, var(--menu-top), var(--menu-bottom));
+  border-bottom: 1px solid var(--panel-border);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="page"] .page-bar > .sheet-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0 4px;
+  overflow: hidden;
+  font-size: 22px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="page"] .page-bar > .sheet-btn {
+  flex: none;
+}
+
+/* The page's actions that are not its one: a button of its own in the content, and Cancel is the Back button. */
+.window[data-layout="scaled"] .sheet[data-placement="page"] > .sheet-actions {
+  position: static;
+  margin: 14px 18px 18px;
+  padding: 0;
+  border-top: 0;
+  background: none;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="page"] [data-action="cancel"] {
+  display: none;
+}
+
+.window[data-layout="scaled"] .sheet[data-placement="page"] > :nth-child(2) {
+  margin-top: 16px;
+}
+
+/* The round history: a page whose table the whole window shows, scrolling both ways where it must under the bar, with
+   its headings and its first column held in view. A column is as wide as its words, and wider where the window has the
+   room. */
+.window[data-layout="scaled"] .sheet[data-sheet="history"][data-placement="page"] {
+  overflow: auto;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"][data-placement="page"] > .page-bar {
+  left: 0;
+  width: 100%;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"][data-placement="page"] > .sheet-actions {
+  display: none;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"][data-placement="page"] > .sheet-meta {
+  position: sticky;
+  left: 18px;
+  width: max-content;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table {
+  grid-template-columns: repeat(var(--columns, 2), minmax(max-content, 1fr)) !important;
+  margin-bottom: 18px;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table .th {
+  position: sticky;
+  top: 63px;
+  z-index: 2;
+  overflow: visible;
+  text-overflow: clip;
+  background: #17100a;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table .first {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #17100a;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table .th.first {
+  z-index: 3;
+}
+
+.window[data-layout="scaled"] .sheet[data-sheet="history"] .sheet-table .span {
+  position: sticky;
+  left: 0;
+  width: max-content;
+}
+
+.page-back {
+  display: none;
+}
+
+.window[data-layout="scaled"] .page-back {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.window[data-layout="scaled"] .page-back svg {
+  width: 24px;
+  height: 24px;
+}
+
+.window[data-layout="scaled"] .page-back:active,
+.window[data-layout="scaled"] .page-back:focus-visible {
+  background: rgba(242, 211, 140, 0.12);
+  outline: none;
+}
+
+/* The scoreboard: the trick's details over three tabs. */
+.sheet.scores .trickpanel.in-sheet,
+.sheet.scores .score.in-sheet {
+  position: static;
+  width: auto;
+  max-width: none;
+  padding: 9px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: none;
+  border-radius: 8px;
+  transform: none;
+  text-align: left;
+}
+
+.sheet.scores .trickpanel.in-sheet {
+  margin-top: 12px;
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+
+.sheet.scores .trickpanel.in-sheet .tp-title {
+  font-size: 18px;
+}
+
+.sheet.scores .trickpanel.in-sheet .tp-prompt:empty {
+  display: none;
+}
+
+.sheet.scores .score.in-sheet {
+  margin-top: 6px;
+}
+
+.sheet.scores .score.in-sheet .score-round,
+.sheet.scores .score.in-sheet .score-sub {
+  display: none;
+}
+
+.sheet-tabs {
+  display: flex;
+  margin-top: 14px;
+  border-bottom: 1px solid var(--hud-rule);
+}
+
+.sheet-tab {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font-family: var(--f-head);
+  font-size: 17px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.sheet-tab[aria-selected="true"] {
+  border-bottom-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+
+.sheet-tab:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: -3px;
+}
+
+.sheet-panel {
+  margin-top: 12px;
+}
+
+/* The menu as a list. */
+.menu-list {
+  display: grid;
+  margin-top: 10px;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font-family: var(--f-head);
+  font-size: 18px;
+  text-align: left;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.menu-row + .menu-row {
+  border-top: 1px solid rgba(201, 164, 92, 0.12);
+  border-radius: 0;
+}
+
+.menu-row:active,
+.menu-row:focus-visible {
+  background: rgba(242, 211, 140, 0.08);
+  outline: none;
+}
+
+.menu-row svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  color: var(--gold);
+}
+
+.menu-row .fullscreen-label,
+.menu-row .menu-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-row svg:last-child {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+/* The menu's list is for the scaled table only. */
+.window:not([data-layout="scaled"]) .menu-sheet {
+  display: none;
+}
+
+/* The main menu with the logo beside its buttons. */
+.menu-actions {
+  display: contents;
+}
+
+.menu-foot {
+  display: none;
+}
+
+.window[data-layout="scaled"] .menu-page {
+  left: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  width: calc(100% / var(--scale, 1));
+  height: calc(100% / var(--scale, 1));
+  transform: scale(var(--scale, 1));
+  transform-origin: 0 0;
+}
+
+.window[data-layout="scaled"] .menu-column {
+  flex-direction: row;
+  gap: 40px;
+  zoom: 1;
+}
+
+.window[data-layout="scaled"] .menu-logo {
+  --plaque-scale: 1.1;
+  width: 297px;
+  height: 156.2px;
+}
+
+.window[data-layout="scaled"] .menu-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 280px;
+}
+
+.window[data-layout="scaled"] .menu-buttons {
+  margin-top: 0;
+  gap: 10px;
+}
+
+.window[data-layout="scaled"] .menu-btn {
+  height: 60px;
+}
+
+.window[data-layout="scaled"] .menu-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.menu-foot .menu-foot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-family: var(--f-head);
+  font-size: 17px;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.menu-foot .menu-foot-btn svg {
+  width: 20px;
+  height: 20px;
+  color: var(--gold);
+}
+
+.menu-foot .menu-foot-btn:active,
+.menu-foot .menu-foot-btn:focus-visible {
+  background: rgba(242, 211, 140, 0.08);
+  color: var(--gold-bright);
+  outline: none;
+}

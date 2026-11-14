@@ -2,11 +2,11 @@ import { el } from "../dom/el";
 import { startIn } from "../i18n/document";
 import { languageFromCode } from "../i18n/language";
 import { decode } from "../net/decode";
-import type { ServerMessage } from "../net/protocol";
+import type { Card, ServerMessage } from "../net/protocol";
 import { modelOf, type TableModel } from "../play/model";
 import { PACES, storedPace, type Pace } from "../play/motion";
 import { NOTHING_ASKED, sheetFor, type MenuSheet, type UiState } from "../play/sheets";
-import { Store } from "../play/store";
+import { NO_CHANGE, Store } from "../play/store";
 import { MenuBar, menuStateFor } from "../menu/menuBar";
 import { NO_ACTIONS, Sheets } from "../sheets/host";
 import { LanguageDialog } from "../lobby/languageDialog";
@@ -14,6 +14,7 @@ import { MenuPage } from "../lobby/menuPage";
 import { defaults } from "../lobby/setup";
 import { seededRandom } from "../lobby/catalogue";
 import { loadFonts } from "../table/fonts";
+import { LayoutWatch } from "../table/layoutWatch";
 import { TableScene } from "../table/renderer";
 import { TABLE_PICTURES } from "../table/tableTop";
 import { TableView } from "../table/view";
@@ -26,8 +27,10 @@ import "../table/styles/cards.css";
 import "../table/styles/hud.css";
 import "../table/styles/strip.css";
 import "../table/styles/touch.css";
+import "../table/styles/scaled.css";
 import "../sheets/styles/sheet.css";
 import "../lobby/styles/lobby.css";
+import "../sheets/styles/scaled.css";
 
 // A look fixture: the desktop picture it pairs with, and the sync's fields the picture shows. The
 // page's own, in tests/look/fixtures, may also name a sheet that is open over the table, server
@@ -106,15 +109,37 @@ async function main(): Promise<void> {
 
   // The sheets, as the live page has them, asking for nothing.
   const sheets = new Sheets(NO_ACTIONS, { setup: () => defaults(seededRandom(1)), profile: () => null, pace: storedPace }, seededRandom(1));
-  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined });
+  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined, settings: () => undefined, rules: () => undefined });
   frame.append(menuPage.element, sheets.layer.element);
   let ui: UiState = NOTHING_ASKED;
   let order: readonly string[] | undefined;
+  let scaledNow = false;
+  // What is open over the table, drawn again where the layout changes.
+  const drawSheet = () => sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", asking: false, scaled: scaledNow });
 
   const draw = (change: Parameters<typeof scene.relayout>[1]) => {
     const model = modelOf(store.state);
     return scene.relayout(model !== null && order !== undefined ? inGivenOrder(model, order) : model, change, false);
   };
+
+  // The table the window gets, as the live page chooses it: on a touch screen smaller than the desktop's,
+  // the scaled table, which has the whole window and no menu bar.
+  new LayoutWatch(frame, ({ choice, size }) => {
+    const desktop = choice.kind === "desktop";
+    frame.dataset.layout = choice.kind;
+    frame.style.setProperty("--scale", String(choice.kind === "scaled" ? choice.scale : 1));
+    frame.style.setProperty("--band", bar !== null && desktop ? `${MENU_BAR}px` : "0px");
+    if (bar !== null) {
+      bar.element.hidden = !desktop;
+    }
+    scene.setLayout(choice.kind === "scaled" ? { kind: "scaled", size, scale: choice.scale } : { kind: "desktop" });
+    scaledNow = choice.kind === "scaled";
+    sheets.setScaled(scaledNow);
+    if (store.state.snapshot !== null) {
+      void draw(NO_CHANGE);
+      drawSheet();
+    }
+  });
 
   // Draws the state a fixture holds, as a sync would, at once, and what it says is open over it.
   const show = async (fixture: Fixture) => {
@@ -127,7 +152,7 @@ async function main(): Promise<void> {
       }
       const asked = fixture.sheet;
       ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null, backAtTable: false, dismissedRound: null };
-      sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", asking: false });
+      drawSheet();
     }
     menuPage.show(fixture.page === "menu");
     bar?.update(menuStateFor(store.state, true));
@@ -141,6 +166,10 @@ async function main(): Promise<void> {
       const change = store.apply(message, 0);
       await scene.relayout(modelOf(store.state), change, animate);
     },
+    // The ring round your plate for a prompt's last seconds, at this moment of the page's clock.
+    tick: (now: number) => scene.updateCountdown(now),
+    // Your card goes to the felt before the server has said it was played.
+    playOwn: (card: string) => scene.playOwn(card as Card, false),
   };
 
   // So a test can tell the nodes a second state reuses from the ones it makes.

@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 const ASK = ".bidstrip:not([hidden]) .opt:not(:disabled), .hand .hcard.playable";
 
@@ -42,3 +42,51 @@ export async function answer(page: Page): Promise<void> {
   await taken(page, before);
 }
 
+// A tap on a card where a finger would land: the card nearest its middle that is not under another card, since
+// the cards of a fan overlap and the middle of one may be another's.
+export async function tapCard(page: Page, card: Locator, timeout?: number): Promise<void> {
+  const at = await card.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    let best: { x: number; y: number } | null = null;
+    for (let row = 1; row < 16; row++) {
+      for (let column = 1; column < 16; column++) {
+        const x = box.x + (box.width * column) / 16;
+        const y = box.y + (box.height * row) / 16;
+        if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight || document.elementFromPoint(x, y)?.closest(".hcard") !== node) {
+          continue;
+        }
+        if (best === null || Math.hypot(x - middle.x, y - middle.y) < Math.hypot(best.x - middle.x, best.y - middle.y)) {
+          best = { x, y };
+        }
+      }
+    }
+    return best;
+  }, undefined, { timeout });
+  expect(at, "a part of the card that a finger could land on").not.toBeNull();
+  await page.touchscreen.tap(at!.x, at!.y);
+}
+
+// A tap on the table where nothing is: not a card and not a control, found by asking the page.
+export async function tapNothing(page: Page): Promise<void> {
+  const at = await page.evaluate(() => {
+    for (const [fx, fy] of [
+      [0.01, 0.5],
+      [0.99, 0.5],
+      [0.5, 0.02],
+      [0.01, 0.75],
+      [0.99, 0.3],
+    ]) {
+      const x = window.innerWidth * fx;
+      const y = window.innerHeight * fy;
+      // Nothing within a finger's width of it either: a panel's edge is no place for a tap that is to do nothing.
+      const clear = [-8, 0, 8].every((dx) => [-8, 0, 8].every((dy) => document.elementFromPoint(x + dx, y + dy)?.closest("button, .hcard, input, a") === null));
+      if (clear) {
+        return { x, y };
+      }
+    }
+    return null;
+  });
+  expect(at, "a place on the table with nothing in it").not.toBeNull();
+  await page.touchscreen.tap(at!.x, at!.y);
+}

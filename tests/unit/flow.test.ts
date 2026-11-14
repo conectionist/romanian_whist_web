@@ -469,6 +469,22 @@ describe("New Game", () => {
     expect(types(plain.sent.messages)).toEqual(["leaveTable"]);
   });
 
+  it("goes on waiting for the new game when the first sync after leaving an online table is the answer to leaving it, and the sheet goes with the new table", () => {
+    const { flow, receive } = setup("sheet-pause", (sync) => {
+      sync.table.mode = "online";
+    });
+    flow.openMenu("new-game");
+    flow.deal(defaults(seededRandom(1)));
+    flow.mainMenu();
+    expect(flow.asking()).toBe(true);
+    receive(syncOf({ ...serverFixture("sync"), table: null, snapshot: null, history: [], lastTrick: null, prompt: null, held: null }));
+    expect(flow.asking()).toBe(true);
+    expect(flow.shown()).toBe("new-game");
+    receive(syncOf(serverFixture("sync")));
+    expect(flow.asking()).toBe(false);
+    expect(flow.shown()).toBeNull();
+  });
+
   it("leaves the table first when there is one, a game running or ended, and then makes the new game", () => {
     const running = setup("sheet-pause");
     running.flow.openMenu("new-game");
@@ -516,6 +532,20 @@ describe("Play online", () => {
     expect(memory.profile()).toEqual(me);
     // The sheet stays up, to say what the server answers, until there is a table.
     expect(flow.shown()).toBe("online");
+  });
+
+  it("goes back from the table's own sheet to Play online it was opened from, and Esc from there closes it too", () => {
+    const { flow } = setup("sheet-pause", nobody);
+    flow.openMenu("online");
+    flow.chooseCreate(me);
+    expect(flow.shown()).toBe("create-table");
+    flow.escape();
+    expect(flow.shown()).toBe("online");
+    flow.chooseCreate(me);
+    flow.closeMenu();
+    expect(flow.shown()).toBe("online");
+    flow.escape();
+    expect(flow.shown()).toBeNull();
   });
 
   it("goes on to the table's own sheet with who you are kept, and makes the table with them", () => {

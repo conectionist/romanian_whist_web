@@ -29,7 +29,11 @@ import { addressForLanguage, currentLanguage, keepLanguage, languageFromSearch, 
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
+import { watchFullscreen } from "./table/fullscreen";
+import { keepFieldInView } from "./dom/editing";
+import { LayoutWatch, type WindowLayout } from "./table/layoutWatch";
 import { TableScene } from "./table/renderer";
+import { TooSmall } from "./table/tooSmall";
 import { TableView } from "./table/view";
 import "./table/styles/fonts.css";
 import "./table/styles/theme.css";
@@ -40,8 +44,10 @@ import "./table/styles/cards.css";
 import "./table/styles/hud.css";
 import "./table/styles/strip.css";
 import "./table/styles/touch.css";
+import "./table/styles/scaled.css";
 import "./sheets/styles/sheet.css";
 import "./lobby/styles/lobby.css";
+import "./sheets/styles/scaled.css";
 
 // The live page: the connection feeds the queue, which draws the table, and a click goes back
 // through the controller. A page is told what the connection is doing, and whether it is at a table,
@@ -62,7 +68,7 @@ document.getElementById("app")?.append(frame);
 frame.style.setProperty("--band", "46px");
 
 const view = new TableView(frame);
-const scene = new TableScene(view, { pace: currentPace });
+const scene = new TableScene(view, { pace: currentPace, online: () => store.state.table?.mode === "online" });
 const store = new Store();
 
 // Whether the table moves for what is drawn now: the viewer's pace, and not in a background tab.
@@ -138,12 +144,14 @@ const sheets = new Sheets(
     playAgain: () => flow.playAgain(),
     mainMenu: () => flow.mainMenu(),
     resume: () => flow.resume(),
+    askLeave: () => flow.askLeave(),
     settingsChanged: (values) => flow.changeSettings(values),
     deal: (setup) => flow.deal(setup),
     chooseCreate: (kept) => flow.chooseCreate(kept),
     createTable: (setup) => flow.createTable(setup),
     join: (code, kept) => flow.join(code, kept),
     cancelJoin: () => flow.cancelJoin(),
+    back: () => flow.escape(),
     takeSeat: (seat) => flow.takeSeat(seat),
     seat: (seat, choice) => flow.chooseSeat(seat, choice),
     seatCount: (count) => flow.changeSeatCount(count),
@@ -167,10 +175,10 @@ const menuBar = new MenuBar({
 // The language dialog again, from the main menu page. A new choice is kept and the page loaded anew in
 // it, since every string was made in the old one; the same choice only closes it.
 function changeLanguage(): void {
-  const app = document.getElementById("app") as HTMLElement;
   const leave = () => {
     dialog.close();
-    app.inert = false;
+    covered.dialog = false;
+    coverPage();
     menuPage.language.focus();
   };
   const dialog = new LanguageDialog(
@@ -187,7 +195,8 @@ function changeLanguage(): void {
     },
     currentLanguage(),
   );
-  app.inert = true;
+  covered.dialog = true;
+  coverPage();
   document.body.append(dialog.element);
   dialog.focus();
 }
@@ -196,6 +205,14 @@ function changeLanguage(): void {
 // the language dialog is over the page.
 let shownSheet: SheetName | null = null;
 const appElement = document.getElementById("app") as HTMLElement;
+
+// What covers the page: the language dialog, and the page for a window too small for the table. The page takes no touch
+// and no key while either is there, and is given back when both have gone.
+const covered = { dialog: false, tooSmall: false };
+
+function coverPage(): void {
+  appElement.inert = covered.dialog || covered.tooSmall;
+}
 
 const keyboard = new Keyboard({
   model: () => controller.adjust(modelOf(store.state)),
@@ -234,11 +251,37 @@ keyboard.install();
 
 const announcer = new Announcer();
 
-const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage });
+const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage, settings: () => flow.openMenu("settings"), rules: () => flow.openMenu("rules") });
 frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element, rotateHint());
 
 scene.onHistory(() => flow.openMenu("history"));
 scene.onLastTrick(() => flow.openMenu("last-trick"));
+scene.onMenu(() => flow.escape());
+scene.onScores(() => flow.openMenu("scores"));
+
+// Which table the window gets: the desktop's with its menu bar, or on a small touch screen the scaled table,
+// which has the whole window and controls of its own, or a page that asks for more room.
+const tooSmall = new TooSmall();
+document.body.append(tooSmall.element);
+// Whether the scaled table is drawn, which places the sheets as its own side, bottom and page sheets.
+let scaledNow = false;
+
+function drawLayout({ choice, size }: WindowLayout): void {
+  const desktop = choice.kind === "desktop";
+  frame.style.setProperty("--band", desktop ? "46px" : "0px");
+  frame.dataset.layout = choice.kind;
+  frame.style.setProperty("--scale", String(choice.kind === "scaled" ? choice.scale : 1));
+  menuBar.element.hidden = !desktop;
+  // The page under the notice takes no touch and no key, and is given back as it was.
+  covered.tooSmall = choice.kind === "tooSmall";
+  coverPage();
+  tooSmall.show(choice.kind === "tooSmall", size);
+  scaledNow = choice.kind === "scaled";
+  sheets.setScaled(scaledNow);
+  scene.setLayout(choice.kind === "scaled" ? { kind: "scaled", size, scale: choice.scale } : { kind: "desktop" });
+  void redraw();
+  render();
+}
 
 // The address follows the table: an online table's is /t/<code>, and the page at no table is at the
 // root, unless it was asked to join the table the address names.
@@ -307,7 +350,7 @@ function render(): void {
   const noTable = synced && !atTable(state);
   const waiting = state.held === null ? "" : holdNote(state.held.waitingFor, seatingOf(state), secondsLeft());
   const link = state.table === null ? "" : linkFor(state.table.code, window.location.origin);
-  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking() });
+  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking(), scaled: scaledNow, leaving: flow.leaveAsked() });
   menuBar.update(menuStateFor(state, true));
   menuPage.show(noTable);
   // The table under a sheet or the menu page takes neither clicks nor the keyboard, but for a round
@@ -325,9 +368,9 @@ function render(): void {
 }
 
 // Esc closes the sheet the menu bar or a corner button opened, and otherwise raises the pause menu,
-// or drops it again. A key held down acts once.
+// or drops it again. A key held down acts once, and none acts on a page that is covered.
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !event.repeat) {
+  if (event.key === "Escape" && !event.repeat && !appElement.inert) {
     flow.escape();
   }
 });
@@ -419,6 +462,11 @@ function handle(message: ServerMessage): void {
 
 status("connecting");
 render();
+new LayoutWatch(frame, drawLayout);
+keepFieldInView();
+// Entering or leaving full screen changes the window, which the layout watch sees; what the page offers depends
+// on it too.
+watchFullscreen(() => scene.refreshNotice());
 void scene.relayout(null, { kind: "sync", event: null, fresh: true }, false);
 void loadFonts().then(() => scene.refit());
 connection.start();

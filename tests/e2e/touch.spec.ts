@@ -1,8 +1,9 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { questionOf, taken } from "./support";
+import { questionOf, tapCard, tapNothing, taken } from "./support";
 
 // A phone held sideways: a touch screen of 844 by 390, which Chromium emulates with touch events and
-// the coarse pointer the stylesheet asks about. Every answer here is a tap.
+// the coarse pointer the stylesheet asks about. Every answer here is a tap. A window smaller than 1100 by
+// 740 has the scaled table; a larger one the desktop's, with the enlargements a finger gets there.
 test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 
 // Nothing flies, so what is on the table is what the server last said.
@@ -24,9 +25,14 @@ async function cardAt(page: Page, end: "first" | "last"): Promise<Locator> {
   return page.locator(`.hand .hcard.playable[data-slot="${slot}"]`);
 }
 
-// A tap on the felt between the cards, where nothing is.
-async function tapNothing(page: Page): Promise<void> {
-  await page.touchscreen.tap(60, 200);
+// How far a picked card is raised, in pixels: 30 table units on the desktop's table, and what the layout
+// gives on the scaled one.
+async function lift(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const stage = document.querySelector<HTMLElement>(".stage");
+    const set = stage === null || stage.hidden ? "" : getComputedStyle(stage).getPropertyValue("--lift-sel");
+    return set === "" ? 30 : parseFloat(set);
+  });
 }
 
 // What a turn showed of the pick: that a tap on nothing put it down, and that a tap on another card moved it.
@@ -44,17 +50,20 @@ async function playWithTwoTaps(page: Page, done: Checked): Promise<Checked> {
   const before = await felt.count();
   const several = (await playable(page).count()) > 1;
   const question = await questionOf(page);
-  await card.tap();
+  // The hand is drawn again when a question arrives, and a tap while it moves lands on a neighbour of the card.
+  await page.waitForFunction(() => document.getAnimations().length === 0, undefined, { timeout: 3000 }).catch(() => undefined);
+  await tapCard(page, card);
   await expect(card).toHaveClass(/selected/);
   expect(await felt.count()).toBe(before);
   if (!done.moved && several) {
-    expect(await card.locator(".face").evaluate((face) => getComputedStyle(face).transform)).toBe("matrix(1, 0, 0, 1, 0, -30)");
+    const raised = await lift(page);
+    expect(await card.locator(".face").evaluate((face) => getComputedStyle(face).transform)).toBe(`matrix(1, 0, 0, 1, 0, -${raised})`);
     const other = await cardAt(page, "last");
-    await other.tap();
+    await tapCard(page, other);
     await expect(other).toHaveClass(/selected/);
     await expect(card).not.toHaveClass(/selected/);
     expect(await felt.count()).toBe(before);
-    await other.tap();
+    await tapCard(page, other);
     await taken(page, question);
     return { ...done, moved: true };
   }
@@ -62,53 +71,67 @@ async function playWithTwoTaps(page: Page, done: Checked): Promise<Checked> {
     await tapNothing(page);
     await expect(card).not.toHaveClass(/selected/);
     expect(await felt.count()).toBe(before);
-    await card.tap();
+    await tapCard(page, card);
     await expect(card).toHaveClass(/selected/);
   }
-  await card.tap();
+  await tapCard(page, card);
   await taken(page, question);
   return { ...done, cleared: true };
 }
 
-test("a whole solo game is played by taps on a phone held sideways, from the first bid to the final results", async ({ page }) => {
-  test.setTimeout(240_000);
-  const problems: string[] = [];
-  page.on("pageerror", (error) => problems.push(error.message));
-  await page.goto("/?solo=2&seed=7&speed=4&wait=1");
-  await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+// The windows a game is played in by touch: a touch screen that has the desktop's table, and three phones' that
+// have the scaled one, the last the owner's inside a browser's bars.
+for (const [width, height, layout] of [
+  [1280, 800, "desktop"],
+  [844, 390, "scaled"],
+  [832, 384, "scaled"],
+  [754, 247, "scaled"],
+] as const) {
+  test.describe(`a touch screen of ${width} by ${height}`, () => {
+    test.use({ viewport: { width, height } });
 
-  const until = Date.now() + 200_000;
-  let answered = 0;
-  let checked: Checked = { cleared: false, moved: false };
-  while (Date.now() < until) {
-    if ((await sheet(page, "game-over").count()) > 0) {
-      break;
-    }
-    const next = sheet(page, "round").locator('[data-action="continue"]:not(:disabled)');
-    if ((await next.count()) > 0) {
-      await next.tap();
-      continue;
-    }
-    if ((await bids(page).count()) > 0) {
-      // A bid takes one tap: there is no card to pick first.
-      await bids(page).first().tap();
-      answered += 1;
-    } else if ((await playable(page).count()) > 0) {
-      checked = await playWithTwoTaps(page, checked);
-      answered += 1;
-    } else {
-      await page.waitForTimeout(15);
-    }
-  }
-  expect(answered).toBe(20 + 76);
-  // A pick was put down by a tap on nothing, and moved to another card by a tap on it, in this game.
-  expect(checked).toEqual({ cleared: true, moved: true });
-  await expect(sheet(page, "game-over").locator(".sheet-title")).toHaveText("Final results");
-  // The ways on are reached by taps: the sheet fits a window of this height, or scrolls to them.
-  await sheet(page, "game-over").locator('[data-action="main-menu"]').tap();
-  await expect(page.locator(".menu-page")).toBeVisible();
-  expect(problems).toEqual([]);
-});
+    test("a whole solo game is played by taps, from the first bid to the final results", async ({ page }) => {
+      test.setTimeout(240_000);
+      const problems: string[] = [];
+      page.on("pageerror", (error) => problems.push(error.message));
+      await page.goto("/?solo=2&seed=7&speed=4&wait=1");
+      await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+      await expect(page.locator(".window")).toHaveAttribute("data-layout", layout);
+
+      const until = Date.now() + 200_000;
+      let answered = 0;
+      let checked: Checked = { cleared: false, moved: false };
+      while (Date.now() < until) {
+        if ((await sheet(page, "game-over").count()) > 0) {
+          break;
+        }
+        const next = sheet(page, "round").locator('[data-action="continue"]:not(:disabled)');
+        if ((await next.count()) > 0) {
+          await next.tap();
+          continue;
+        }
+        if ((await bids(page).count()) > 0) {
+          // A bid takes one tap: there is no card to pick first.
+          await bids(page).first().tap();
+          answered += 1;
+        } else if ((await playable(page).count()) > 0) {
+          checked = await playWithTwoTaps(page, checked);
+          answered += 1;
+        } else {
+          await page.waitForTimeout(15);
+        }
+      }
+      expect(answered).toBe(20 + 76);
+      // A pick was put down by a tap on nothing, and moved to another card by a tap on it, in this game.
+      expect(checked).toEqual({ cleared: true, moved: true });
+      await expect(sheet(page, "game-over").locator(".sheet-title")).toHaveText("Final results");
+      // The ways on are reached by taps: the sheet fits a window of this height, or scrolls to them.
+      await sheet(page, "game-over").locator('[data-action="main-menu"]').tap();
+      await expect(page.locator(".menu-page")).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+  });
+}
 
 // The smallest windows the page is asked to work in: a phone held sideways, and a smaller one.
 for (const [width, height] of [
@@ -137,12 +160,13 @@ for (const [width, height] of [
       // Closed where it was scrolled to, it opens at its top again.
       await sheet(page, "new-game").evaluate((node) => (node.scrollTop = node.scrollHeight));
       expect(await sheet(page, "new-game").evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
-      await sheet(page, "new-game").locator('[data-action="cancel"]').tap();
+      // A page has Back where the desktop's dialog has Cancel.
+      await sheet(page, "new-game").locator(".page-back").tap();
       await expect(sheet(page, "new-game")).toHaveCount(0);
       await page.locator('[data-menu-page="new-game"]').tap();
       await expect(sheet(page, "new-game")).toBeVisible();
       expect(await sheet(page, "new-game").evaluate((node) => node.scrollTop)).toBe(0);
-      await sheet(page, "new-game").locator('[data-action="cancel"]').tap();
+      await sheet(page, "new-game").locator(".page-back").tap();
       await expect(sheet(page, "new-game")).toHaveCount(0);
 
       await page.locator('[data-menu-page="online"]').tap();
@@ -152,14 +176,15 @@ for (const [width, height] of [
       await sheet(page, "create-table").locator('[data-action="create"]').tap();
       const lobby = sheet(page, "lobby");
       await expect(lobby).toBeVisible();
-      // "Take this seat" is drawn 32 tall and is 44 to a finger: a touch 21 above or below its middle lands on it.
+      // "Take this seat" is 44 tall in the page, as every control a finger has to hit: a touch 21 above or below its
+      // middle lands on it.
       const take = lobby.locator('[data-action="take-seat"]:visible').first();
       await take.evaluate((node) => node.scrollIntoView({ block: "center" }));
       const middle = (await take.boundingBox())!;
       const lands = (y: number) =>
         page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest("[data-action]")?.getAttribute("data-action") ?? null, [middle.x + middle.width / 2, y]);
-      expect(middle.height).toBe(32);
-      expect([await lands(middle.y + 16 - 21), await lands(middle.y + 16 + 21)]).toEqual(["take-seat", "take-seat"]);
+      expect(middle.height).toBeGreaterThanOrEqual(44);
+      expect([await lands(middle.y + middle.height / 2 - 21), await lands(middle.y + middle.height / 2 + 21)]).toEqual(["take-seat", "take-seat"]);
       await lobby.locator('[data-action="fill"]').tap();
       await lobby.locator('[data-action="start"]:not(:disabled)').tap();
       await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
@@ -198,33 +223,37 @@ test.describe("a small window under a mouse", () => {
   });
 });
 
-test("a bid is 44 pixels from the next one under a finger, and a corner button is 44 tall", async ({ page }) => {
-  await page.goto("/?solo=3&seed=7&speed=4");
-  await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
-  await bids(page).first().waitFor();
-  const centres = await bids(page).evaluateAll((buttons) =>
-    buttons.map((button) => {
-      const box = button.getBoundingClientRect();
-      return { x: box.x + box.width / 2, y: box.y + box.height / 2, width: box.width };
-    }),
-  );
-  expect(centres.length).toBeGreaterThan(1);
-  for (let at = 1; at < centres.length; at++) {
-    expect(centres[at].x - centres[at - 1].x).toBeGreaterThanOrEqual(43.5);
-  }
-  // A touch 22 above or below the middle of a bid, and half the way to its neighbour, still lands on it.
-  const lands = (x: number, y: number) => page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest(".opt")?.textContent ?? null, [x, y]);
-  expect(await lands(centres[0].x, centres[0].y - 21)).toBe("0");
-  expect(await lands(centres[0].x, centres[0].y + 21)).toBe("0");
-  expect(await lands(centres[0].x + 21, centres[0].y)).toBe("0");
+test.describe("a touch screen that has the desktop's table", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
 
-  const corner = await page.evaluate(() => {
-    const box = document.querySelector('[data-button="history"]')!.getBoundingClientRect();
-    const at = (y: number) => document.elementFromPoint(box.x + box.width / 2, y)?.closest("[data-button]")?.getAttribute("data-button") ?? null;
-    // The button stands on the window's edge, so its touch area grows upward: 43 up from its foot.
-    return { top: at(box.bottom - 43), foot: at(box.bottom - 2), over: at(box.bottom - 46) };
+  test("a bid is 44 pixels from the next one under a finger, and a corner button is 44 tall", async ({ page }) => {
+    await page.goto("/?solo=3&seed=7&speed=4");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at a table");
+    await bids(page).first().waitFor();
+    const centres = await bids(page).evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const box = button.getBoundingClientRect();
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2, width: box.width };
+      }),
+    );
+    expect(centres.length).toBeGreaterThan(1);
+    for (let at = 1; at < centres.length; at++) {
+      expect(centres[at].x - centres[at - 1].x).toBeGreaterThanOrEqual(43.5);
+    }
+    // A touch 22 above or below the middle of a bid, and half the way to its neighbour, still lands on it.
+    const lands = (x: number, y: number) => page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest(".opt")?.textContent ?? null, [x, y]);
+    expect(await lands(centres[0].x, centres[0].y - 21)).toBe("0");
+    expect(await lands(centres[0].x, centres[0].y + 21)).toBe("0");
+    expect(await lands(centres[0].x + 21, centres[0].y)).toBe("0");
+
+    const corner = await page.evaluate(() => {
+      const box = document.querySelector('[data-button="history"]')!.getBoundingClientRect();
+      const at = (y: number) => document.elementFromPoint(box.x + box.width / 2, y)?.closest("[data-button]")?.getAttribute("data-button") ?? null;
+      // The button stands on the window's edge, so its touch area grows upward: 43 up from its foot.
+      return { top: at(box.bottom - 43), foot: at(box.bottom - 2), over: at(box.bottom - 46) };
+    });
+    expect(corner).toEqual({ top: "history", foot: "history", over: null });
   });
-  expect(corner).toEqual({ top: "history", foot: "history", over: null });
 });
 
 test("the table asks for no zoom and no callout, and selects nothing, whatever is held down", async ({ page }) => {
@@ -246,7 +275,8 @@ test.describe("a phone held upright", () => {
     await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
     const hint = page.locator(".rotate-hint");
     await expect(hint).toBeVisible();
-    await expect(hint).toHaveText("Turn your phone sideways: the table needs the room.");
+    // And the button for full screen, where the browser has it.
+    await expect(hint).toContainText("Turn your phone sideways: the table needs the room.");
     // It does not stand in the way of a touch, nor over the table.
     expect(await hint.evaluate((node) => getComputedStyle(node).pointerEvents)).toBe("none");
     await page.setViewportSize({ width: 844, height: 390 });
@@ -255,7 +285,7 @@ test.describe("a phone held upright", () => {
     await expect(hint).toBeVisible();
 
     await page.goto("/?lang=ro");
-    await expect(page.locator(".rotate-hint")).toHaveText("Rotește telefonul: masa are nevoie de loc.");
+    await expect(page.locator(".rotate-hint")).toContainText("Rotește telefonul: masa are nevoie de loc.");
   });
 
   test("is asked at a table too, below it", async ({ page }) => {

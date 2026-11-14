@@ -25,13 +25,14 @@ export function fullscreenOffered(facts: FullscreenFacts): boolean {
 export type FullscreenAction = "enter" | "exit" | null;
 
 export function fullscreenActionFor(facts: FullscreenFacts, canExit: boolean): FullscreenAction {
-  if (!facts.coarse || !facts.enabled || facts.installed) {
+  if (!facts.coarse || !facts.enabled) {
     return null;
   }
+  // A page in full screen is in it, whatever display-mode a browser reports then; installed counts only for a page that is not.
   if (facts.active) {
     return canExit ? "exit" : null;
   }
-  return "enter";
+  return facts.installed ? null : "enter";
 }
 
 // What the browser tells now.

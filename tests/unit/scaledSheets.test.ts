@@ -103,10 +103,15 @@ describe("full screen", () => {
     expect(fullscreenActionFor(facts({ active: true }), true)).toBe("exit");
     expect(fullscreenActionFor(facts({ active: true }), false)).toBeNull();
     // Where there is nothing to do, there is no button, in or out of it.
-    for (const none of [{ coarse: false }, { enabled: false }, { installed: true }]) {
+    for (const none of [{ coarse: false }, { enabled: false }]) {
       expect(fullscreenActionFor(facts(none), true), JSON.stringify(none)).toBeNull();
       expect(fullscreenActionFor(facts({ ...none, active: true }), true), JSON.stringify(none)).toBeNull();
     }
+    // A page from the home screen has none to enter, but a page in full screen through the browser is in it, whatever
+    // display-mode the browser reports for that, and can leave it.
+    expect(fullscreenActionFor(facts({ installed: true }), true)).toBeNull();
+    expect(fullscreenActionFor(facts({ installed: true, active: true }), true)).toBe("exit");
+    expect(fullscreenActionFor(facts({ installed: true, active: true }), false)).toBeNull();
   });
 
   it("is what a table drawn small offers, or where the browser has none the home screen", () => {

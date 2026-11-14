@@ -679,6 +679,24 @@ test.describe("leaving full screen", () => {
     expect(await seenOf(page)).toMatchObject({ fullscreen: 0, exit: 1 });
   });
 
+  test("is left from a page that a browser calls display-mode fullscreen while the page is in full screen through the browser", async ({ page }) => {
+    await page.addInitScript(STUBS);
+    await page.addInitScript(() => {
+      const ask = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) =>
+        /display-mode: fullscreen/.test(query) ? ({ matches: true, media: query, addEventListener: () => undefined, removeEventListener: () => undefined } as unknown as MediaQueryList) : ask(query);
+    });
+    await page.goto("/");
+    const foot = page.locator('.menu-page [data-action="fullscreen"]');
+    // Not in full screen, a page the browser calls fullscreen is one from the home screen, which has none to enter.
+    await expect(foot).toBeHidden();
+    await fullscreenIs(page, true);
+    await expect(foot).toBeVisible();
+    await expect(foot).toHaveText("Exit full screen");
+    await foot.tap();
+    expect(await seenOf(page)).toMatchObject({ fullscreen: 0, exit: 1 });
+  });
+
   test("is not offered by the buttons that only enter it: the notice, the hint and the page for a window that is too small", async ({ page }) => {
     await page.addInitScript(STUBS);
     await page.setViewportSize({ width: 390, height: 844 });

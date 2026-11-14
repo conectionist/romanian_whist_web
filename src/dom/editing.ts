@@ -13,8 +13,9 @@ export function typingIn(): boolean {
   return node instanceof HTMLElement && node.isContentEditable;
 }
 
-// Keeps the field being typed in on the screen: where the keyboard takes part of the window, the sheet that holds the
-// field scrolls to it, under its bar and above the keyboard.
+// Keeps the field being typed in on the screen: when the keyboard takes part of the window, the sheet that holds the
+// field scrolls to it, under its bar and above the keyboard. A sheet that opens with a field focused is not scrolled,
+// since it opens at its top.
 export function keepFieldInView(): void {
   const show = () => {
     const node = document.activeElement;
@@ -22,7 +23,6 @@ export function keepFieldInView(): void {
       node.scrollIntoView({ block: "center", inline: "nearest" });
     }
   };
-  document.addEventListener("focusin", () => window.setTimeout(show, 60));
   window.addEventListener("resize", show);
   window.visualViewport?.addEventListener("resize", show);
 }

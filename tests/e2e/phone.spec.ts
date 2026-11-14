@@ -267,6 +267,30 @@ test.describe("the corners of the scaled table", () => {
   }
 });
 
+// The round chip, the trick's details and the scores are buttons that open the scoreboard, and say so by name, where a
+// reader would otherwise read what is in them as one run; the trump says what it is.
+test.describe("the names of the panels that are buttons, on the scaled table", () => {
+  test.use({ viewport: { width: 832, height: 384 }, ...touch });
+
+  for (const [language, names] of [
+    ["en", { chip: /^Round \d+ of \d+\. Scores$/, details: /^(Trick \d+ of \d+|Bidding)\. Scores$/, scores: "Scores", trump: /^Trump: / }],
+    ["ro", { chip: /^Runda \d+ din \d+\. Punctaje$/, details: /^(Mâna \d+ din \d+|Licitație)\. Punctaje$/, scores: "Punctaje", trump: /^Atu: / }],
+  ] as const) {
+    test(`in ${language} each says what it opens, or what it is`, async ({ page }) => {
+      await page.goto(`/?solo=3&seed=7&speed=4&lang=${language}`);
+      await stripUp(page);
+      await expect(page.getByRole("button", { name: names.chip })).toHaveCount(1);
+      await expect(page.getByRole("button", { name: names.details })).toHaveCount(1);
+      await expect(page.getByRole("button", { name: names.scores, exact: true })).toHaveCount(1);
+      await expect(page.getByRole("button", { name: names.trump })).toHaveCount(1);
+      // And each is the button it names: the chip, the details and the scores open the scoreboard.
+      expect(await page.getByRole("button", { name: names.chip }).evaluate((node) => node.classList.contains("round-chip"))).toBe(true);
+      expect(await page.getByRole("button", { name: names.details }).evaluate((node) => node.classList.contains("side-trick"))).toBe(true);
+      expect(await page.getByRole("button", { name: names.scores, exact: true }).evaluate((node) => node.classList.contains("side-scores"))).toBe(true);
+    });
+  }
+});
+
 test.describe("the controls under a finger, on the scaled table", () => {
   for (const [width, height] of [
     [832, 384],

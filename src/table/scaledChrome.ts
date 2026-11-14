@@ -151,6 +151,11 @@ export class ScaledChrome {
     const trick = trickFields(model);
     const side = layout.side;
     setText(this.roundLine, roundText(model.roundNumber, model.roundCount));
+    // The three panels are buttons that open the scoreboard, and are named for it: what is in them is read in the sheet.
+    const scores = t("scoreboard", "Scores");
+    setAttr(this.chip, "aria-label", `${roundText(model.roundNumber, model.roundCount)}. ${scores}`);
+    setAttr(this.sideTrick, "aria-label", `${trick.title}. ${scores}`);
+    setAttr(this.sideScores, "aria-label", scores);
     // The trick's line goes while the side panels show it.
     setText(this.trickLine, trick.title);
     this.trickLine.hidden = side !== null;

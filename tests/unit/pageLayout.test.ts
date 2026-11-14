@@ -176,6 +176,12 @@ describe("pageLayout", () => {
           expect(layout.trumpCard.w).toBeCloseTo((layout.trumpCard.h * 500) / 726, 9);
         });
 
+        it("sizes the trump's panel: the trick's details' width where they show, and otherwise what its card and word need, with the panel's padding; as tall as its word, its card and the padding", () => {
+          expect(layout.trump.h).toBeCloseTo(TRUMP_LABEL + layout.trumpCard.h + PANEL_Y, 9);
+          expect(layout.trump.w).toBeCloseTo(layout.side === null ? Math.max(TRUMP_WIDTH, layout.trumpCard.w) + 2 * PANEL_X : layout.side.w, 9);
+          expect(layout.column.w).toBeCloseTo(layout.trump.w, 9);
+        });
+
         it("keeps every corner's controls, the seats, the hand and the side panels apart, and inside the window", () => {
           expect(crowded(layout, each.design.w, each.design.h, count)).toEqual([]);
           expect(layout.chip.h).toBe(PAGE_CHIP_HEIGHT);

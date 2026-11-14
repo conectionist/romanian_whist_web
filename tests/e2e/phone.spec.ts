@@ -162,7 +162,19 @@ for (const [width, height] of WINDOWS) {
         }
         for (const control of all.controls) {
           for (const other of [...all.side, ...all.strip]) {
+            // The trump stands under the trick's details, whose column it is in, and apart from the controls.
             expect(gap(control, other), `${control.name} and ${other.name}`).toBeGreaterThanOrEqual(-0.6);
+          }
+        }
+        // No control is on another, and the scores and the trick's details keep apart from them and the chip.
+        for (const [at, one] of all.controls.entries()) {
+          for (const other of all.controls.slice(at + 1)) {
+            expect(gap(one, other), `${one.name} and ${other.name}`).toBeGreaterThanOrEqual(-0.6);
+          }
+        }
+        for (const [at, one] of all.side.entries()) {
+          for (const other of all.side.slice(at + 1)) {
+            expect(gap(one, other), `${one.name} and ${other.name}`).toBeGreaterThanOrEqual(-0.6);
           }
         }
       });
@@ -170,8 +182,9 @@ for (const [width, height] of WINDOWS) {
   });
 }
 
-// The round buttons are at the foot on the left, where the desktop has them, the trump is at the foot on the right
-// under the scores, and the chip at the top on the right holds the round and the trick and no trump.
+// The round buttons are at the foot on the left, where the desktop has them. The trump is in the column at the left, under
+// the trick's details, or under the menu button where there are no side panels. The chip at the top on the right holds the
+// round and the trick and no trump, and is as wide as the scores under it, or as its words.
 test.describe("the corners of the scaled table", () => {
   for (const [width, height, sides] of [
     [754, 247, true],
@@ -182,7 +195,7 @@ test.describe("the corners of the scaled table", () => {
       test.use({ viewport: { width, height }, ...touch });
 
       for (const players of [3, 6]) {
-        test(`with ${players} players have the round buttons bottom left, the trump bottom right and the chip top right`, async ({ page }) => {
+        test(`with ${players} players have the round buttons bottom left, the trump under the trick's details and the chip over the scores`, async ({ page }) => {
           await page.goto(`/?solo=${players}&seed=7&speed=4`);
           await stripUp(page);
           const scale = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale")));
@@ -199,29 +212,39 @@ test.describe("the corners of the scaled table", () => {
           expect(last.y + last.height).toBeCloseTo(height - edge, 0);
           expect(last.x - (history.x + history.width)).toBeCloseTo(10 * scale, 0);
           expect(history.width).toBeCloseTo(48 * scale, 0);
-          expect(trump.x + trump.width).toBeCloseTo(width - edge, 0);
-          expect(trump.y + trump.height).toBeCloseTo(height - edge, 0);
           expect(chip.x + chip.width).toBeCloseTo(width - edge, 0);
           expect(chip.y).toBeCloseTo(edge, 0);
           expect(menu.x).toBeCloseTo(edge, 0);
           expect(menu.y).toBeCloseTo(edge, 0);
-          // The chip holds no trump, and the trump has its word, its card and its name.
+          // The trump is at the left, and has its word, its card and its name.
+          expect(trump.x).toBeCloseTo(edge, 0);
           await expect(page.locator(".stage .round-chip img")).toHaveCount(0);
           await expect(page.locator(".stage .trump-corner .lbl")).toHaveText("Trump");
           await expect(page.locator(".stage .trump-corner")).toHaveAttribute("aria-label", /^Trump: (\d+|Jack|Queen|King|Ace) of (spades|hearts|diamonds|clubs)$/);
           const card = await box(".stage .trump-corner .trump-card");
           expect(card.width / card.height).toBeCloseTo(500 / 726, 2);
           expect(card.height / scale).toBeGreaterThan(40);
-          // Under the scores, and the trick's details over the round buttons, where there are side panels.
+          expect(trump.y + trump.height).toBeLessThanOrEqual(history.y - 6 * scale + 0.6);
           const panels = await page.locator(".stage .side-panel:not([hidden])").count();
           expect(panels).toBe(sides ? 2 : 0);
           if (sides) {
             const scores = await box(".stage .side-scores");
             const details = await box(".stage .side-trick");
-            expect(scores.y + scores.height).toBeLessThanOrEqual(trump.y - 6 * scale + 0.6);
-            expect(details.y + details.height).toBeLessThanOrEqual(history.y - 6 * scale + 0.6);
-            expect(scores.y).toBeGreaterThanOrEqual(chip.y + chip.height);
+            // The trump under the trick's details, on their left edge, and the chip over the scores, on both edges.
+            expect(trump.x).toBeCloseTo(details.x, 0);
+            expect(trump.y).toBeGreaterThanOrEqual(details.y + details.height + 8 * scale - 0.6);
             expect(details.y).toBeGreaterThanOrEqual(menu.y + menu.height);
+            expect(chip.x).toBeCloseTo(scores.x, 0);
+            expect(chip.width).toBeCloseTo(scores.width, 0);
+            expect(scores.y).toBeGreaterThanOrEqual(chip.y + chip.height);
+            expect(scores.y + scores.height).toBeLessThanOrEqual(height - edge + 0.6);
+          } else {
+            // Alone, under the menu button, which it has the left edge of.
+            expect(trump.y).toBeCloseTo(menu.y + menu.height + edge, 0);
+            // The chip is as wide as its words.
+            expect(chip.width).toBeLessThanOrEqual(172 * scale + 0.6);
+            const words = await page.locator(".stage .round-chip .l1").evaluate((node) => node.getBoundingClientRect().width);
+            expect(chip.width).toBeLessThanOrEqual(words + 24 * scale);
           }
         });
       }

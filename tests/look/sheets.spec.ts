@@ -397,7 +397,7 @@ test.describe("the notice for a table drawn small, at 754 by 247", () => {
         expect(at.x).toBeGreaterThanOrEqual(0);
         expect(at.x + at.width).toBeLessThanOrEqual(754 + 0.5);
         expect(at.y).toBeGreaterThanOrEqual(0);
-        for (const covered of [".hand .hcard:not([hidden])", ".bidstrip .opt:not([hidden])", ".round-chip", ".round-btn"]) {
+        for (const covered of [".hand .hcard:not([hidden])", ".bidstrip .opt:not([hidden])", ".round-chip", ".round-btn", ".trump-corner", ".side-panel:not([hidden])"]) {
           for (const node of await page.locator(covered).all()) {
             const other = await node.boundingBox();
             if (other === null) {

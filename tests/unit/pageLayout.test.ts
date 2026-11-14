@@ -3,12 +3,15 @@ import { describe, expect, it } from "vitest";
 import {
   BUTTON,
   BUTTON_GAP,
+  COLUMN_GAP,
   PAGE_CHIP_HEIGHT,
+  TRICK_MOST,
   TRUMP_LABEL,
   TRUMP_WIDTH,
   cornersFor,
   pageLayout,
   playedHeight,
+  stripBeside,
   type PageLayout,
 } from "../../src/table/geometry/page";
 import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
@@ -46,31 +49,36 @@ describe("the corners of the port", () => {
 });
 
 describe("what the page's corners hold", () => {
-  it("is the mock-up's top corners, the round buttons bottom left and the trump bottom right", () => {
+  it("is the menu button top left, the chip top right, the round buttons bottom left, and the trump under the menu button", () => {
     const corners = cornersFor(65);
-    expect(corners.topLeft).toEqual(MOCKUP_CORNERS.topLeft);
     expect(corners.topRight.w).toBe(CHIP_WIDTH + CORNER_INSET + 6);
     expect(corners.bottomLeft).toEqual({ w: CORNER_INSET + 2 * BUTTON + BUTTON_GAP + 6, h: CORNER_INSET + BUTTON + 6 });
-    // The trump is as wide as its words or its card, and as tall as its word and its card.
-    expect(corners.bottomRight).toEqual({ w: CORNER_INSET + TRUMP_WIDTH + 6, h: CORNER_INSET + TRUMP_LABEL + 65 + 6 });
-    expect(cornersFor(140).bottomRight.w).toBeCloseTo(CORNER_INSET + 140 * (500 / 726) + 6, 9);
-    // The hand stays clear of whichever of the two is wider.
+    // Bottom right holds nothing now.
+    expect(corners.bottomRight).toEqual({ w: 0, h: 0 });
+    // Where there are no side panels the trump stands under the menu button, as wide as its words or its card, and as
+    // tall as the button and the gap under it, its word and its card.
+    expect(corners.topLeft).toEqual({ w: CORNER_INSET + TRUMP_WIDTH + 6, h: CORNER_INSET + BUTTON + CORNER_INSET + TRUMP_LABEL + 65 + 6 });
+    expect(cornersFor(140).topLeft.w).toBeCloseTo(CORNER_INSET + 140 * (500 / 726) + 6, 9);
+    // The hand stays clear of the round buttons, the wider of the corners at the foot; nothing is at the right.
     expect(corners.handLeft).toBeGreaterThan(corners.bottomLeft.w);
-    expect(corners.handRight).toBeGreaterThan(corners.bottomRight.w);
+    expect(corners.handRight).toBe(16);
   });
 });
 
-// What of the table's parts overlap, or leave the window, as a list of words.
+// What of the table's parts overlap, or leave the window, as a list of words. The column at the left is drawn as the
+// trick's details at their tallest and the trump at the lowest it can stand, which is just over the round buttons.
 function crowded(layout: PageLayout, w: number, h: number, count: number): string[] {
   const found: string[] = [];
   const menu = { x: CORNER_INSET, y: CORNER_INSET, w: BUTTON, h: BUTTON };
   const side = layout.side;
+  const trumpAt = (y: number): Box => ({ x: layout.column.x, y, w: layout.trump.w, h: layout.trump.h });
+  const trumps: Box[] = side === null ? [trumpAt(layout.column.y)] : [trumpAt(layout.column.y + TRICK_MOST + COLUMN_GAP), trumpAt(layout.column.y + layout.column.h - layout.trump.h)];
   const panels: [string, Box][] =
     side === null
       ? []
       : [
-          ["the left panel", { x: CORNER_INSET, y: side.y, w: side.w, h: layout.sideRoom.left }],
-          ["the right panel", { x: w - CORNER_INSET - side.w, y: side.y, w: side.w, h: layout.sideRoom.right }],
+          ["the trick's details", { x: CORNER_INSET, y: side.y, w: side.w, h: TRICK_MOST }],
+          ["the scores", { x: w - CORNER_INSET - side.w, y: side.y, w: side.w, h: layout.sideRoom.right }],
         ];
   // The fan at its widest, which is a hand of eight: its span and the cards' lean.
   const fan = handSlots(layout.hand, 8);
@@ -81,7 +89,7 @@ function crowded(layout: PageLayout, w: number, h: number, count: number): strin
     ["the menu button", menu],
     ["the round chip", layout.chip],
     ["the round buttons", layout.buttons],
-    ["the trump", layout.trump],
+    ...trumps.map((box, at): [string, Box] => [`the trump (${at})`, box]),
   ];
   const apart = (a: string, one: Box, b: string, other: Box, least = 0) => {
     if (gap(one, other) < least - 1e-9) {
@@ -93,10 +101,11 @@ function crowded(layout: PageLayout, w: number, h: number, count: number): strin
       found.push(`${name} leaves the window`);
     }
   }
+  const foot = [controls[2], ...controls.slice(3)];
   for (const [at, seat] of layout.seats.entries()) {
     const name = at === 0 ? "your plate" : `plate ${at}`;
-    // Your plate stands over the foot of the hand by design, between the two corners at the foot.
-    for (const [other, box] of at === 0 ? [controls[2], controls[3]] : [...controls, ...panels]) {
+    // Your plate stands over the foot of the hand by design, between the corners at the foot.
+    for (const [other, box] of at === 0 ? [controls[2]] : [...controls, ...panels]) {
       apart(name, seat, other, box);
     }
     if (at > 0) {
@@ -106,18 +115,37 @@ function crowded(layout: PageLayout, w: number, h: number, count: number): strin
       found.push(`${name} leaves the window`);
     }
   }
-  apart("the hand", hand, "the round buttons", controls[2][1]);
-  apart("the hand", hand, "the trump", controls[3][1]);
-  // The panels stand over the corners at the foot, and under the chip and the menu button.
+  for (const [name, box] of foot) {
+    apart("the hand", hand, name, box);
+  }
+  // The trump is under the trick's details, and the round buttons under it.
+  for (const [name, box] of controls.slice(3)) {
+    apart(name, box, "the round buttons", layout.buttons, 6);
+    apart(name, box, "the menu button", menu, 6);
+  }
+  if (side !== null) {
+    apart("the trick's details", panels[0][1], "the trump", trumps[0], COLUMN_GAP);
+  }
+  // The panels stand under the chip and the menu button, and over what is at the foot.
   for (const [name, panel] of panels) {
-    for (const [other, box] of controls) {
+    for (const [other, box] of controls.slice(0, 3)) {
       apart(name, panel, other, box, 6);
     }
   }
   // The scores panel is 72 tall and 20 more for each player, with the tension line over two lines as it is in the
-  // narrowest panel, which is the tallest a panel is.
-  if (side !== null && (layout.sideRoom.right < 76 + 20 * count || layout.sideRoom.left < 76 + 20 * count)) {
-    found.push(`the side panels have ${Math.min(layout.sideRoom.left, layout.sideRoom.right).toFixed(0)} to stand in`);
+  // narrowest panel, which is the tallest it is; the column has room for the trick's details and the trump.
+  if (side !== null && layout.sideRoom.right < 76 + 20 * count) {
+    found.push(`the scores have ${layout.sideRoom.right.toFixed(0)} to stand in`);
+  }
+  if (side !== null && layout.column.h < TRICK_MOST + COLUMN_GAP + layout.trump.h) {
+    found.push(`the column has ${layout.column.h.toFixed(0)} for the trick's details and the trump`);
+  }
+  // The chip is as wide as the scores where there are some, and no wider than CHIP_WIDTH where there are not.
+  if (side !== null ? Math.abs(layout.chip.w - side.w) > 1e-9 || Math.abs(layout.chip.x - (w - CORNER_INSET - side.w)) > 1e-9 : layout.chip.w !== CHIP_WIDTH) {
+    found.push("the chip is not as wide as the scores");
+  }
+  if (side === null && layout.column.w !== layout.trump.w) {
+    found.push("the column is not as wide as the trump alone");
   }
   return found;
 }
@@ -164,5 +192,28 @@ describe("pageLayout", () => {
         expect(crowded(layout, size.w, size.h, count), `${size.w} by ${size.h} with ${count} players`).toEqual([]);
       }
     }
+  });
+});
+
+describe("stripBeside", () => {
+  const narrow = pageLayout({ w: 640, h: 360, top: 0, bottom: 0 }, 4);
+  const wide = pageLayout({ w: 1099, h: 360, top: 0, bottom: 0 }, 4);
+  const across = (layout: PageLayout) => ({ x: layout.bid.x, w: layout.bid.w, mid: layout.band.mid });
+
+  it("keeps the strip to the right of the trump where the two meet, and in the middle", () => {
+    // A strip as tall as the band is is over the trump, which is under the menu button.
+    const area = { x: 24, w: 592, mid: narrow.column.y + 20 };
+    const fit = stripBeside(narrow, area, 100);
+    expect(fit.x).toBe(narrow.column.x + narrow.trump.w + 6);
+    expect(fit.x + fit.w / 2).toBeCloseTo(narrow.table.cx, 9);
+    expect(fit.w).toBeLessThan(area.w);
+  });
+
+  it("leaves it alone where it is below the trump, where it is already to the right of it, and where the trump is in the side panels' column", () => {
+    const below = { x: 24, w: 592, mid: narrow.column.y + narrow.trump.h + 100 };
+    expect(stripBeside(narrow, below, 60)).toEqual({ x: 24, w: 592 });
+    expect(stripBeside(narrow, { x: 200, w: 240, mid: narrow.column.y + 20 }, 100)).toEqual({ x: 200, w: 240 });
+    expect(wide.side).not.toBeNull();
+    expect(stripBeside(wide, { ...across(wide), mid: wide.column.y + 20 }, 100)).toEqual({ x: wide.bid.x, w: wide.bid.w });
   });
 });

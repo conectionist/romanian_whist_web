@@ -7,7 +7,7 @@ import { BidBubble, textFor } from "./bidBubble";
 import { BidStrip, shortNoteFor } from "./bidStrip";
 import { CornerButtons } from "./buttons";
 import { dismissSmallNotice, fullscreenFacts, smallNoticeDismissed, smallNoticeFor } from "./fullscreen";
-import { PAGE_CHIP_HEIGHT, pageLayout, type PageLayout } from "./geometry/page";
+import { PAGE_CHIP_HEIGHT, pageLayout, stripBeside, type PageLayout } from "./geometry/page";
 import { stripArea, type ScaledLayout } from "./geometry/scaled";
 import { humanSeated } from "./geometry/seats";
 import { desktopArrangement, scaledArrangement, scaledFan, type Arrangement } from "./geometry/spots";
@@ -322,6 +322,11 @@ export class TableScene {
     const area = stripArea(layout, this.layout.kind === "scaled" ? this.layout.size.w / this.layout.scale : 0, PAGE_CHIP_HEIGHT);
     this.bidStrip.place({ x: area.x, y: area.mid, w: area.w });
     this.bidStrip.showNote(true);
+    // Where it would stand over the trump, it is narrower.
+    const beside = stripBeside(layout, area, this.bidStrip.height());
+    if (beside.w !== area.w) {
+      this.bidStrip.place({ x: beside.x, y: area.mid, w: beside.w });
+    }
     const reason = shortNoteFor(model);
     let short: string | null = null;
     if (reason !== null && this.bidStrip.crowded(area.bottom - area.top)) {

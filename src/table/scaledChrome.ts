@@ -15,8 +15,9 @@ import { fieldsFor as trickFields } from "./trickPanel";
 import { z } from "./space";
 
 // What the scaled table draws in place of the desktop's menu bar and corner panels: the pause button top left, the
-// round chip top right, the two round buttons bottom left and the trump bottom right, the trick's details and the
-// scores in the gaps beside the table, and the line above your hand. Each is made once and filled from the model.
+// round chip top right, the two round buttons bottom left, the trick's details with the trump under them in a column at
+// the left, the scores in the gap at the right, and the line above your hand. Each is made once and filled from the
+// model.
 
 export interface ChromeActions {
   menu(): void;
@@ -46,8 +47,10 @@ export class ScaledChrome {
   readonly history: HTMLButtonElement;
   readonly lastTrick: HTMLButtonElement;
   readonly chip: HTMLButtonElement;
-  // The trump, bottom right under the scores: the word, and the card or, where there is no trump, the words for it.
+  // The trump, under the trick's details: the word, and the card or, where there is no trump, the words for it.
   readonly trump: HTMLButtonElement;
+  // The column at the left, which holds the trick's details and the trump one under the other.
+  readonly column: HTMLElement;
   readonly sideTrick: HTMLButtonElement;
   readonly sideScores: HTMLButtonElement;
   readonly prompt: HTMLElement;
@@ -95,6 +98,7 @@ export class ScaledChrome {
 
     this.sideTrick = el("button", { class: "panel side-panel side-trick", attrs: { type: "button" } }, this.trickTitle, this.trickRows);
     this.sideTrick.addEventListener("click", () => actions.scores());
+    this.column = el("div", { class: "left-column" }, this.sideTrick, this.trump);
     this.sideScores = el(
       "button",
       { class: "panel side-panel side-scores", attrs: { type: "button" } },
@@ -111,7 +115,7 @@ export class ScaledChrome {
     this.notice = el("div", { class: "panel scaled-notice", attrs: { role: "status" } }, this.noticeText, this.noticeButton, dismiss);
     this.notice.hidden = true;
 
-    this.elements = [this.menu, this.corner, this.rail, this.trump, this.sideTrick, this.sideScores, this.prompt, this.notice];
+    this.elements = [this.menu, this.corner, this.rail, this.column, this.sideScores, this.prompt, this.notice];
     for (const node of [this.menu, this.chip, this.history, this.lastTrick, this.trump, this.sideTrick, this.sideScores, this.prompt]) {
       stamp(node);
     }
@@ -132,7 +136,7 @@ export class ScaledChrome {
       setText(this.noticeText, notice === "fullscreen" ? t("fullscreen", "The table is small here.") : t("fullscreen", "Add the page to the home screen for a bigger table."));
       this.noticeButton.hidden = notice !== "fullscreen";
     }
-    for (const node of [this.menu, this.corner, this.rail, this.trump]) {
+    for (const node of [this.menu, this.corner, this.rail, this.column, this.trump]) {
       node.hidden = false;
     }
     if (state.online !== this.online || this.menu.getAttribute("aria-label") === "") {
@@ -161,7 +165,12 @@ export class ScaledChrome {
       setText(this.trumpNone, trump.name);
       setAttr(this.trump, "aria-label", t("announce", "Trump: %1", [trump.card === null ? trump.name : cardNameFor(trump.card)]));
     }
-    // The card is as tall as one played on the felt, in a box that is as wide for the words of a round with no trump.
+    // The card is as tall as one played on the felt, in a box that is as wide for the words of a round with no trump. The
+    // column goes from under the menu button, as wide as the trick's details where they show.
+    this.column.style.top = `${layout.column.y}px`;
+    this.column.style.width = `${layout.column.w}px`;
+    // The chip is as wide as the scores under it, or as its words are.
+    this.chip.style.width = side === null ? "" : `${layout.chip.w}px`;
     this.trump.style.width = `${layout.trump.w}px`;
     this.trumpCard.style.width = `${layout.trumpCard.w}px`;
     this.trumpCard.style.height = `${layout.trumpCard.h}px`;
@@ -170,9 +179,6 @@ export class ScaledChrome {
     this.sideTrick.hidden = side === null;
     this.sideScores.hidden = side === null;
     if (side !== null) {
-      this.sideTrick.style.left = "8px";
-      this.sideTrick.style.top = `${side.y}px`;
-      this.sideTrick.style.width = `${side.w}px`;
       this.sideScores.style.right = "8px";
       this.sideScores.style.top = `${side.y}px`;
       this.sideScores.style.width = `${side.w}px`;

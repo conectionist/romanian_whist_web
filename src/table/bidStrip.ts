@@ -208,6 +208,11 @@ export class BidStrip {
     setText(this.lead, inline ? "" : `${t("bidstrip", "Your bid")}. `);
   }
 
+  // How tall the strip is as it stands, in the units of the page it is placed in.
+  height(): number {
+    return this.element.hidden ? 0 : this.element.offsetHeight;
+  }
+
   // Whether the strip, with its note, is taller than the room the band leaves it.
   crowded(room: number): boolean {
     return !this.element.hidden && this.band !== null && this.element.offsetHeight > room;

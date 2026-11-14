@@ -123,10 +123,10 @@
   display: flex;
   height: 52px;
   align-items: center;
-  justify-content: flex-end;
-  width: 172px;
-  padding: 6px 12px;
-  text-align: right;
+  width: max-content;
+  max-width: 172px;
+  padding: 6px 10px;
+  text-align: left;
   color: var(--cream);
   cursor: pointer;
 }
@@ -136,6 +136,13 @@
   gap: 1px;
   min-width: 0;
   flex: 1;
+}
+
+/* With the scores panel under it the chip is as wide as it, and its round may go on to a second line, as the
+   trick's line that was under it has gone. */
+.stage .round-chip.short .l1 {
+  white-space: normal;
+  text-overflow: clip;
 }
 
 .stage .round-chip .l1,
@@ -155,15 +162,30 @@
   color: var(--muted);
 }
 
-/* The trump, bottom right under the scores, as the desktop's scoreboard shows it: the word, and the card as large as
-   one played on the felt, or the words that stand in its place. The card's size and the box's width are the layout's. */
-.stage .trump-corner {
+/* The column at the left: the trick's details, and the trump under them, which is where the desktop's scoreboard shows it,
+   or, with no room for the details, the trump alone under the menu button. The trump is the word and then the card as
+   large as one played on the felt, or the words that stand in its place. The card's size and the box's width are the
+   layout's. */
+.stage .left-column {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  z-index: 70;
+  left: 8px;
+  z-index: 62;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.stage .left-column .side-trick {
+  position: relative;
+  width: 100%;
+}
+
+.stage .trump-corner {
+  position: relative;
+  flex: none;
   display: grid;
-  justify-items: center;
+  justify-items: start;
   align-content: start;
   gap: 2px;
   padding: 0;
@@ -208,7 +230,7 @@
   font-family: var(--f-head);
   font-size: 11.5px;
   line-height: 1.15;
-  text-align: center;
+  text-align: left;
   color: var(--cream);
 }
 

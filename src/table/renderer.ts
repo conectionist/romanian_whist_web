@@ -7,7 +7,7 @@ import { BidBubble, textFor } from "./bidBubble";
 import { BidStrip, shortNoteFor } from "./bidStrip";
 import { CornerButtons } from "./buttons";
 import { dismissSmallNotice, fullscreenFacts, smallNoticeDismissed, smallNoticeFor } from "./fullscreen";
-import { PAGE_CHIP_HEIGHT, pageLayout, stripBeside, type PageLayout } from "./geometry/page";
+import { PAGE_CHIP_HEIGHT, noteBeside, pageLayout, stripBeside, type PageLayout } from "./geometry/page";
 import { stripArea, type ScaledLayout } from "./geometry/scaled";
 import { humanSeated } from "./geometry/seats";
 import { desktopArrangement, scaledArrangement, scaledFan, type Arrangement } from "./geometry/spots";
@@ -329,13 +329,17 @@ export class TableScene {
     }
     const reason = shortNoteFor(model);
     let short: string | null = null;
+    let under = null;
     if (reason !== null && this.bidStrip.crowded(area.bottom - area.top)) {
       this.bidStrip.showNote(false);
       short = this.bidStrip.leadsNote ? `${t("bidstrip", "Your bid")}. ${reason}` : reason;
+      // Directly under the strip, where there is room for it.
+      const box = this.bidStrip.box();
+      under = box === null ? null : noteBeside(layout, box);
     }
     const shrunk = this.layout.kind === "scaled" && this.layout.scale < 1;
     const notice = smallNoticeFor(fullscreenFacts(), shrunk, smallNoticeDismissed());
-    this.chrome.update(model, layout, { online: this.options.online?.() ?? false, short, notice });
+    this.chrome.update(model, layout, { online: this.options.online?.() ?? false, short, under, notice });
   }
 
   // The notice about a small table is drawn again: the page entered or left full screen, or it was put away.

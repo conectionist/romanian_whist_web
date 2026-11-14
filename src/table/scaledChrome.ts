@@ -6,7 +6,7 @@ import { t } from "../i18n/t";
 import type { TableModel } from "../play/model";
 import { cardNameFor } from "./cardNames";
 import { fullscreenButton, type SmallNotice } from "./fullscreen";
-import type { PageLayout } from "./geometry/page";
+import type { Note, PageLayout } from "./geometry/page";
 import { SIDE_RUN } from "./geometry/scaled";
 import { DASH } from "./hudText";
 import { roundText } from "./roundText";
@@ -130,7 +130,7 @@ export class ScaledChrome {
   }
 
   // Fills the controls from the table as it is, and places those that depend on its layout.
-  update(model: TableModel, layout: PageLayout, state: { online: boolean; short: string | null; notice?: SmallNotice }): void {
+  update(model: TableModel, layout: PageLayout, state: { online: boolean; short: string | null; under?: Note | null; notice?: SmallNotice }): void {
     const notice = state.notice ?? null;
     this.notice.hidden = notice === null;
     if (notice !== null) {
@@ -209,14 +209,21 @@ export class ScaledChrome {
       }
     }
 
-    // The line above your hand: what to do, or the short reason a bid is refused when the strip has no
-    // room for its note.
+    // The line above your hand: what to do. The short reason a bid is refused, when the strip has no room for its note, is
+    // in a panel directly under the strip, or above the hand where there is no room there.
     const line = state.short === null ? promptLineFor(model) : null;
     this.prompt.hidden = line === null && state.short === null;
+    const under = state.short === null ? null : (state.under ?? null);
+    setAttr(this.prompt, "data-place", under === null ? null : "strip");
     if (state.short !== null) {
       this.prompt.dataset.tone = "turn";
-      this.prompt.style.top = `${layout.hand.top - 6}px`;
-      this.prompt.style.maxWidth = `${layout.lineW}px`;
+      if (under === null) {
+        this.prompt.style.top = `${layout.hand.top - 6}px`;
+        this.prompt.style.maxWidth = `${layout.lineW}px`;
+      } else {
+        this.prompt.style.top = `${under.top}px`;
+        this.prompt.style.maxWidth = `${under.w}px`;
+      }
       this.promptKey = state.short;
       renderSuited(this.prompt, state.short);
     } else if (line !== null) {
@@ -229,7 +236,7 @@ export class ScaledChrome {
         renderSuited(this.prompt, textOf(line));
       }
     }
-    this.prompt.style.left = `${layout.hand.cx}px`;
+    this.prompt.style.left = `${under === null ? layout.hand.cx : under.cx}px`;
     this.prompt.style.zIndex = String(z.hud + 5);
   }
 }

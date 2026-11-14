@@ -142,3 +142,35 @@ export function stripBeside(layout: PageLayout, area: { x: number; w: number; mi
   const half = layout.table.cx - limit;
   return { x: layout.table.cx - half, w: 2 * half };
 }
+
+// The short reason for a refused bid, or the bids so far, which the strip has no room for inside it, is in a panel of its
+// own directly under the strip, so that the two read as one: NOTE_GAP under it, in its middle, and no wider than it. Its
+// words are in two lines at most, NOTE_MOST tall; the panel is no narrower than NOTE_LEAST, or the words would take more.
+export const NOTE_GAP = 4;
+export const NOTE_MOST = 43;
+export const NOTE_LEAST = 140;
+
+export interface Note {
+  cx: number;
+  top: number;
+  w: number;
+}
+
+// Where that panel goes: as wide as the strip, or as wide as the room between the plates beside the table that the panel
+// is as low as, and clear of the top of the hand and so of your plate. Null where there is not room for that, and then the
+// words stand above the hand.
+export function noteBeside(layout: PageLayout, strip: { cx: number; w: number; bottom: number }): Note | null {
+  const top = strip.bottom + NOTE_GAP;
+  // It may touch the top of the hand's cards, and covers none of them.
+  if (top + NOTE_MOST > layout.hand.top - HAND_GAP) {
+    return null;
+  }
+  let half = strip.w / 2;
+  for (const seat of layout.seats.slice(1)) {
+    if (seat.y + seat.h + ROOM <= top || seat.y >= top + NOTE_MOST + ROOM) {
+      continue;
+    }
+    half = Math.min(half, seat.x + seat.w / 2 > strip.cx ? seat.x - ROOM - strip.cx : strip.cx - (seat.x + seat.w + ROOM));
+  }
+  return 2 * half >= NOTE_LEAST ? { cx: strip.cx, top, w: 2 * half } : null;
+}

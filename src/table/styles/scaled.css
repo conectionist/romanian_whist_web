@@ -328,6 +328,15 @@
   color: var(--gold-bright);
 }
 
+/* Under the strip, the words that go with its bids: a panel of the same kind, smaller, as wide as the room between the
+   plates and no wider than the strip, in the middle of it. */
+.stage .prompt-line[data-place="strip"] {
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
 .stage .prompt-line[data-tone="wait"] {
   color: var(--warn);
 }

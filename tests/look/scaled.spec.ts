@@ -373,3 +373,78 @@ for (const [width, height] of [
     }
   });
 }
+
+// The short words that go with a bid stand directly under the strip when it has no room for them inside, in a panel in the
+// middle of it and no wider, which covers only the felt: no plate, none of the hand, not your plate, none of the corners.
+const WORDS = [
+  ["a bid of eight at four seats", () => bidding("table-4-players", 8), true],
+  ["a refused bid of eight at four seats", () => bidding("table-4-players", 8, 2), true],
+  ["a bid of eight at six seats", () => bidding("bidding", 8), null],
+  ["a refused bid of eight at six seats", () => bidding("bidding", 8, 2), null],
+  ["a bid of three at six seats", () => bidding("bidding", 3), false],
+] as const;
+
+for (const [width, height] of [
+  [754, 247],
+  [832, 384],
+  [640, 360],
+] as const) {
+  test.describe(`the words with a bid at ${width} by ${height}`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    for (const language of ["en", "ro"]) {
+      for (const [what, make, under] of WORDS) {
+        test(`in ${language}, for ${what}, stand under the strip and cover nothing but the felt`, async ({ page }) => {
+          await page.goto(`/look.html?shot=table-4-players&lang=${language}`);
+          await page.waitForSelector("body[data-ready]");
+          await page.evaluate(
+            (text) => (window as unknown as { look: { apply(text: string, animate: boolean): Promise<void> } }).look.apply(text, false),
+            JSON.stringify({ type: "sync", seq: 1, ...make() }),
+          );
+          await page.evaluate(() => document.fonts.ready);
+          const found = await page.evaluate(() => {
+            const scale = parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale"));
+            const box = (node: Element) => {
+              const rect = node.getBoundingClientRect();
+              return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
+            };
+            const note = document.querySelector<HTMLElement>(".stage .prompt-line");
+            const shown = note !== null && !note.hidden;
+            return {
+              scale,
+              shown,
+              place: note?.dataset.place ?? null,
+              inside: document.querySelector<HTMLElement>(".stage .bid-note")?.hidden === false,
+              note: shown ? box(note) : null,
+              strip: box(document.querySelector(".stage .bidstrip")!),
+              covers: Array.from(
+                document.querySelectorAll(".stage .seat:not([hidden]), .stage .hand .hcard:not([hidden]) .face, .stage .round-btn, .stage .round-chip, .stage .trump-corner, .stage .side-panel:not([hidden])"),
+                (node) => ({ name: node.className.toString().slice(0, 30), ...box(node) }),
+              ),
+            };
+          });
+          if (under === false || under === null && found.inside) {
+            // With room inside the strip the words are its last line, and there is no panel.
+            expect(found.shown && found.place === "strip").toBe(false);
+            return;
+          }
+          expect(found.shown, "the words are shown").toBe(true);
+          expect(found.place, "directly under the strip").toBe("strip");
+          const note = found.note!;
+          // Under the strip, not further than the gap between panels, in the middle of it and no wider.
+          const apart = (note.y - (found.strip.y + found.strip.h)) / found.scale;
+          expect(apart, "the gap under the strip").toBeGreaterThanOrEqual(-0.6);
+          expect(apart, "the gap under the strip").toBeLessThanOrEqual(8);
+          expect(Math.abs(note.x + note.w / 2 - (found.strip.x + found.strip.w / 2))).toBeLessThanOrEqual(0.5);
+          expect(note.w).toBeLessThanOrEqual(found.strip.w + 0.5);
+          // And over nothing: no plate, none of the hand, not your plate, none of the corners' panels.
+          for (const other of found.covers) {
+            const across = note.x < other.x + other.w - 0.5 && other.x + 0.5 < note.x + note.w;
+            const down = note.y < other.y + other.h - 0.5 && other.y + 0.5 < note.y + note.h;
+            expect(across && down, `the words and ${other.name}`).toBe(false);
+          }
+        });
+      }
+    }
+  });
+}

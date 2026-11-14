@@ -208,6 +208,14 @@ export class BidStrip {
     setText(this.lead, inline ? "" : `${t("bidstrip", "Your bid")}. `);
   }
 
+  // Where the strip is as it stands: its middle, its width and its foot, in the units of the page it is placed in.
+  box(): { cx: number; w: number; bottom: number } | null {
+    if (this.band === null || this.element.hidden) {
+      return null;
+    }
+    return { cx: this.band.x + this.band.w / 2, w: this.band.w, bottom: this.band.y + this.element.offsetHeight / 2 };
+  }
+
   // How tall the strip is as it stands, in the units of the page it is placed in.
   height(): number {
     return this.element.hidden ? 0 : this.element.offsetHeight;

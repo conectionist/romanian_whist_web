@@ -4,6 +4,9 @@ import {
   BUTTON,
   BUTTON_GAP,
   COLUMN_GAP,
+  NOTE_GAP,
+  NOTE_LEAST,
+  NOTE_MOST,
   PAGE_CHIP_HEIGHT,
   PANEL_X,
   PANEL_Y,
@@ -12,6 +15,7 @@ import {
   TRUMP_WIDTH,
   cornersFor,
   pageLayout,
+  noteBeside,
   playedHeight,
   stripBeside,
   type PageLayout,
@@ -225,5 +229,44 @@ describe("stripBeside", () => {
     expect(stripBeside(narrow, { x: 200, w: 240, mid: narrow.column.y + 20 }, 100)).toEqual({ x: 200, w: 240 });
     expect(wide.side).not.toBeNull();
     expect(stripBeside(wide, { ...across(wide), mid: wide.column.y + 20 }, 100)).toEqual({ x: wide.bid.x, w: wide.bid.w });
+  });
+});
+
+describe("noteBeside", () => {
+  const phone = pageLayout({ w: 1099, h: 360, top: 0, bottom: 0 }, 4);
+  const strip = (layout: PageLayout, bottom: number) => ({ cx: layout.bid.x + layout.bid.w / 2, w: layout.bid.w, bottom });
+
+  it("puts the words directly under the strip, in the middle of it and no wider", () => {
+    const under = strip(phone, 138);
+    const note = noteBeside(phone, under)!;
+    expect(note.cx).toBe(under.cx);
+    expect(note.top).toBe(138 + NOTE_GAP);
+    expect(note.w).toBeLessThanOrEqual(under.w);
+  });
+
+  it("keeps between the plates that are as low as it is, with room for its words on two lines", () => {
+    // A strip low enough for the plates at the sides of the table to be beside the words.
+    const note = noteBeside(phone, strip(phone, 138))!;
+    const lower = phone.seats.slice(1).filter((seat) => seat.y < note.top + NOTE_MOST && seat.y + seat.h > note.top);
+    expect(lower.length).toBeGreaterThan(0);
+    for (const seat of lower) {
+      expect(seat.x + seat.w <= note.cx - note.w / 2 || seat.x >= note.cx + note.w / 2, `plate at ${seat.x}`).toBe(true);
+    }
+    expect(note.w).toBeGreaterThanOrEqual(NOTE_LEAST);
+  });
+
+  it("is a panel above the plates' row as wide as the strip, where nothing is as low as it", () => {
+    const high = noteBeside(phone, strip(phone, 80))!;
+    expect(high.w).toBe(strip(phone, 80).w);
+  });
+
+  it("is nothing where the words would reach the top of the hand, or the plates leave less than it needs", () => {
+    expect(noteBeside(phone, strip(phone, phone.hand.top - NOTE_MOST))).toBeNull();
+    expect(noteBeside(phone, strip(phone, phone.hand.top - NOTE_MOST - NOTE_GAP - 2))).not.toBeNull();
+    const crowded = pageLayout({ w: 640, h: 360, top: 0, bottom: 0 }, 6);
+    expect(noteBeside(crowded, { cx: crowded.table.cx, w: 468, bottom: 215 })).not.toBeNull();
+    // Plates so close that the words have no room between them.
+    const squeezed = { ...phone, seats: phone.seats.map((seat, at) => (at === 0 ? seat : { ...seat, x: phone.table.cx + (at % 2 === 0 ? 40 : -40) - seat.w / 2, y: 150 })) };
+    expect(noteBeside(squeezed, strip(phone, 138))).toBeNull();
   });
 });

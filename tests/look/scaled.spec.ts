@@ -402,6 +402,9 @@ for (const [width, height] of [
             JSON.stringify({ type: "sync", seq: 1, ...make() }),
           );
           await page.evaluate(() => document.fonts.ready);
+          const folder = join(ROOT, "build/shots/bid-words", `${width}x${height}${language === "ro" ? "-ro" : ""}`);
+          mkdirSync(folder, { recursive: true });
+          await page.screenshot({ path: join(folder, `${what.replace(/ /g, "-")}.png`), animations: "disabled" });
           const found = await page.evaluate(() => {
             const scale = parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale"));
             const box = (node: Element) => {

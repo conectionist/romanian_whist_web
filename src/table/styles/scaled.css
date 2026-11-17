@@ -721,6 +721,22 @@
   max-width: calc(100% - 2 * 190px * var(--scale, 1));
 }
 
+/* The restart banner is two small lines here, 46 tall, and what shares the top with it stands below it: in the units
+   of the scaled window, which the scale draws smaller. */
+.window[data-layout="scaled"] .notice[data-kind="restart"] {
+  padding: 2px 10px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.window[data-layout="scaled"]:has(.notice[data-kind="restart"]) .menu-page {
+  padding-top: calc(52px / var(--scale, 1));
+}
+
+.window[data-layout="scaled"]:has(.notice[data-kind="restart"]) .stage .scaled-notice {
+  top: calc(56px / var(--scale, 1));
+}
+
 /* The scaled table's cards run off the foot of the window, and a focus or a scroll into view must not carry
    the table up to show them: a clipped box cannot be scrolled. */
 .view.scaled {

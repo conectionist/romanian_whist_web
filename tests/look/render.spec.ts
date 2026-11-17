@@ -387,7 +387,7 @@ for (const [width, height] of [
   test.describe(`a window of ${width} by ${height} under a mouse`, () => {
     test.use({ viewport: { width, height }, hasTouch: false, isMobile: false });
 
-    for (const name of ["sheet-round", "sheet-history", "sheet-last-trick", "sheet-game-over", "sheet-rules", "sheet-settings", "sheet-pause"]) {
+    for (const name of ["sheet-round", "sheet-history", "sheet-last-trick", "sheet-game-over", "sheet-rules", "sheet-settings", "sheet-pause", "sheet-about"]) {
       test(`${name} fits, and every one of its controls can be reached`, async ({ page }) => {
         await page.goto(`/look.html?shot=${name}`);
         await page.waitForSelector("body[data-ready]");
@@ -400,6 +400,10 @@ for (const [width, height] of [
         expect(box.y + box.height).toBeLessThanOrEqual(height);
         // A page's Back button is for the scaled table, and is not there for a mouse.
         for (const button of await sheet.locator("button:not(:disabled):not(.page-back), input:not(:disabled)").all()) {
+          // About's question, which stands in place of its buttons, is hidden until Forget asks it.
+          if (!(await button.isVisible())) {
+            continue;
+          }
           await button.scrollIntoViewIfNeeded();
           const at = (await button.boundingBox())!;
           expect(at.x, "left").toBeGreaterThanOrEqual(0);
@@ -419,9 +423,10 @@ for (const [width, height] of [
         const bar = document.querySelector(".menu-band")!.getBoundingClientRect().bottom;
         const logo = document.querySelector(".menu-logo")!.getBoundingClientRect();
         const last = document.querySelector('[data-menu-page="online"]')!.getBoundingClientRect();
-        return { top: logo.top >= bar, foot: last.bottom <= window.innerHeight, across: document.documentElement.scrollWidth <= window.innerWidth };
+        const source = document.querySelector(".menu-source")!.getBoundingClientRect();
+        return { top: logo.top >= bar, foot: last.bottom <= window.innerHeight, source: source.top >= last.bottom && source.bottom <= window.innerHeight, across: document.documentElement.scrollWidth <= window.innerWidth };
       });
-      expect(menu).toEqual({ top: true, foot: true, across: true });
+      expect(menu).toEqual({ top: true, foot: true, source: true, across: true });
 
       await page.goto("/look.html?shot=language");
       await page.waitForSelector("body[data-ready]");

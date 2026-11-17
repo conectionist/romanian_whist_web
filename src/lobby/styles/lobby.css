@@ -164,27 +164,27 @@ select.field option {
   margin: auto;
 }
 
-/* The plaque and the two buttons are 462 tall, and a landscape phone leaves the page 344: drawn smaller
+/* The plaque, the two buttons and the foot are 510 tall, and a landscape phone leaves the page 344: drawn smaller
    in steps until they, and the margin to the bar, fit. */
-@media (max-height: 523px) {
+@media (max-height: 571px) {
   .menu-column {
     zoom: 0.85;
   }
 }
 
-@media (max-height: 453px) {
+@media (max-height: 495px) {
   .menu-column {
     zoom: 0.7;
   }
 }
 
-@media (max-height: 384px) {
+@media (max-height: 418px) {
   .menu-column {
     zoom: 0.62;
   }
 }
 
-@media (max-height: 347px) {
+@media (max-height: 378px) {
   .menu-column {
     zoom: 0.52;
   }
@@ -292,6 +292,8 @@ select.field option {
   .menu-source-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    min-width: 44px;
     min-height: 44px;
     padding: 0 6px;
   }
@@ -459,6 +461,20 @@ select.field option {
 .notice[data-kind="wait"],
 .notice[data-kind="restart"] {
   border-color: var(--warn);
+}
+
+/* A banner that stays up for minutes is slim and sits high, clear of the top player's plate. */
+.notice[data-kind="restart"] {
+  margin-top: -6px;
+  padding: 3px 14px;
+  font-size: 15px;
+  line-height: 21px;
+  text-align: center;
+}
+
+/* The main menu and the small-table offer, which share the top with the banner, make room for it. */
+.window:has(.notice[data-kind="restart"]) .menu-page {
+  padding-top: 40px;
 }
 
 .notice-btn {

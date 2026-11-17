@@ -25,6 +25,7 @@ const SHEETS: readonly (readonly [string, Placement])[] = [
   ["sheet-online", "page"],
   ["sheet-create-table", "page"],
   ["sheet-lobby", "page"],
+  ["sheet-about", "page"],
 ];
 
 const SIZES = [
@@ -38,7 +39,7 @@ const LANGUAGES = [
 ] as const;
 
 const READY = "body[data-ready]";
-const CONTROLS = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), [role="tab"]';
+const CONTROLS = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), [role="tab"], a[href]';
 
 async function open(page: Page, name: string, language: string): Promise<void> {
   await page.goto(`/look.html?shot=${name}&lang=${language}`);
@@ -224,6 +225,48 @@ for (const [width, height] of SIZES) {
         }
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       });
+    }
+  });
+}
+
+// The server's restart is told in a slim banner over the table and the main menu, in the words of both languages: inside
+// the window, with the time of day, and clear of every control a finger has to reach.
+for (const [width, height] of SIZES) {
+  test.describe(`the restart banner at ${width} by ${height} under a finger`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+
+    for (const [language, suffix] of LANGUAGES) {
+      for (const name of ["menu-restarting", "notice-restarting"]) {
+        test(`over ${name} in ${language} stays inside the window and clear of the controls`, async ({ page }) => {
+          await page.goto(`/look.html?shot=${name}&lang=${language}`);
+          await page.waitForSelector(READY);
+          await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
+          const folder = join(OUT, `${width}x${height}${suffix}`);
+          mkdirSync(folder, { recursive: true });
+          const banner = page.locator('.notice[data-kind="restart"]');
+          await expect(banner).toBeVisible();
+          await expect(banner).toContainText("18:45");
+          await page.screenshot({ path: join(folder, `${name}.png`), animations: "disabled" });
+          const at = (await banner.boundingBox())!;
+          expect(at.x, "left").toBeGreaterThanOrEqual(-0.5);
+          expect(at.x + at.width, "right").toBeLessThanOrEqual(width + 0.5);
+          expect(at.y, "top").toBeGreaterThanOrEqual(-0.5);
+          expect(at.y + at.height, "bottom").toBeLessThanOrEqual(height + 0.5);
+          const covered = await page.evaluate(() => {
+            const banner = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();
+            const touches = Array.from(document.querySelectorAll<HTMLElement>("button, a[href]"))
+              .filter((node) => !node.closest("[hidden]") && node.getBoundingClientRect().width > 0)
+              .filter((node) => !node.closest(".notices"))
+              .filter((node) => {
+                const box = node.getBoundingClientRect();
+                return box.left < banner.right && box.right > banner.left && box.top < banner.bottom && box.bottom > banner.top;
+              });
+            return touches.map((node) => `${node.className || node.tagName}: ${node.textContent}`);
+          });
+          expect(covered, "controls under the banner").toEqual([]);
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+        });
+      }
     }
   });
 }

@@ -331,6 +331,14 @@
   color: var(--gold-bright);
 }
 
+@media (pointer: coarse) {
+  .about-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 .about-note {
   font-size: 14px;
   color: var(--muted);

@@ -1,0 +1,115 @@
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { expect, test, type Page } from "@playwright/test";
+import { sheet } from "./online";
+
+const PAGE_REPOSITORY = "https://github.com/conectionist/romanian_whist_web";
+const SERVER_REPOSITORY = "https://github.com/conectionist/romanian_whist_server";
+
+const PAGE_VERSION = (JSON.parse(readFileSync("package.json", "utf8")) as { version: string }).version;
+
+// The commit the page was built from: the one the build was told, else the checkout's.
+const pageCommit = (process.env.WHIST_WEB_COMMIT ?? "").trim() || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+
+async function menu(page: Page): Promise<void> {
+  await page.goto("/");
+  await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+  await expect(page.locator(".menu-page")).toBeVisible();
+}
+
+test("the main menu's foot links to the source of the server and the page at the commits that run", async ({ page }) => {
+  await menu(page);
+  const version = await page.evaluate(() => fetch("/version").then((response) => response.json() as Promise<{ commit: string; version: string; protocol: number }>));
+  const foot = page.locator(".menu-source");
+  await expect(foot).toContainText("Source:");
+  const server = foot.locator('[data-menu-page="server-source"]');
+  const source = foot.locator('[data-menu-page="page-source"]');
+  // A server built with no git history says no commit, and then the link is to the repository itself.
+  const named = /^[0-9a-f]{7,40}$/i.test(version.commit);
+  await expect(server).toHaveAttribute("href", named ? `${SERVER_REPOSITORY}/tree/${version.commit.toLowerCase()}` : SERVER_REPOSITORY);
+  await expect(source).toHaveAttribute("href", `${PAGE_REPOSITORY}/tree/${pageCommit.toLowerCase()}`);
+  // Each opens in a tab of its own, which cannot reach back into the page.
+  for (const link of [server, source]) {
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", /noopener/);
+  }
+  await expect(foot.locator('[data-menu-page="about"]')).toHaveText("About");
+});
+
+test("About tells the licence, the sources, the versions and what is kept, and Escape closes it and gives the keyboard back", async ({ page }) => {
+  const problems: string[] = [];
+  page.on("pageerror", (error) => problems.push(error.message));
+  await page.addInitScript(() => window.localStorage.setItem("whist.pace", "slow"));
+  await menu(page);
+  const version = await page.evaluate(() => fetch("/version").then((response) => response.json() as Promise<{ commit: string; version: string; protocol: number }>));
+
+  const about = page.locator('[data-menu-page="about"]');
+  await about.focus();
+  await about.press("Enter");
+  const sheetNow = sheet(page, "about");
+  await expect(sheetNow).toBeVisible();
+  await expect(sheetNow.locator(".sheet-title")).toHaveText("About this page");
+  await expect(sheetNow).toContainText("AGPL-3.0-or-later");
+  await expect(sheetNow.locator(".about-link").first()).toHaveAttribute("href", /^https:\/\/github\.com\/conectionist\/romanian_whist_server/);
+  await expect(sheetNow.locator(".about-link").nth(1)).toHaveAttribute("href", `${PAGE_REPOSITORY}/tree/${pageCommit.toLowerCase()}`);
+  const serverBuild = /^[0-9a-f]{7,40}$/i.test(version.commit) ? `commit ${version.commit.slice(0, 7).toLowerCase()}` : "commit unknown";
+  const versions = sheetNow.locator(".about-versions");
+  await expect(versions.locator("dt")).toHaveText(["Page", "Server", "Protocol"]);
+  await expect(versions.locator("dd")).toHaveText([`${PAGE_VERSION}, commit ${pageCommit.slice(0, 7).toLowerCase()}`, `${version.version}, ${serverBuild}`, String(version.protocol)]);
+  // Everything the page keeps, by name, and the words that nothing else is.
+  for (const key of ["whist.token", "whist.profile", "whist.setup.en", "whist.setup.ro", "whist.pace", "whist.language", "whist.reloaded", "whist.fullscreenNoticeDismissed"]) {
+    await expect(sheetNow.locator(".about-stored")).toContainText(key);
+  }
+  await expect(sheetNow).toContainText("no accounts and no cookies");
+  await expect(sheetNow.getByRole("link", { name: "Report a problem" })).toHaveAttribute("href", "https://github.com/conectionist/romanian_whist_web/issues");
+  await expect(sheetNow.locator('[data-action="close"]')).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(sheetNow).toBeHidden();
+  await expect(about).toBeFocused();
+  expect(problems).toEqual([]);
+});
+
+test("Forget this browser asks first, and then clears exactly what the page keeps and loads the page anew", async ({ page }) => {
+  await page.addInitScript(() => {
+    // Only the first load is given these, so that the reload after Forget starts from what is left.
+    if (window.sessionStorage.getItem("seeded") === null) {
+      window.sessionStorage.setItem("seeded", "1");
+      window.localStorage.setItem("whist.pace", "slow");
+      window.localStorage.setItem("whist.profile", "{}");
+      window.localStorage.setItem("other.site.key", "kept");
+      window.sessionStorage.setItem("other.session.key", "kept");
+    }
+  });
+  await menu(page);
+  expect(await page.evaluate(() => window.localStorage.getItem("whist.token"))).not.toBeNull();
+
+  await page.locator('[data-menu-page="about"]').click();
+  const about = sheet(page, "about");
+  await about.getByRole("button", { name: "Forget this browser" }).click();
+  // The question stands in place of the buttons, and Keep, the safe answer, has the keyboard.
+  await expect(about.locator(".about-confirm")).toBeVisible();
+  await expect(about.locator(".about-confirm-text")).toContainText("Remove everything listed above");
+  await expect(about.getByRole("button", { name: "Keep" })).toBeFocused();
+  await expect(about.getByRole("button", { name: "Close" })).toBeHidden();
+  await about.getByRole("button", { name: "Keep" }).click();
+  await expect(about.locator(".about-confirm")).toBeHidden();
+  expect(await page.evaluate(() => window.localStorage.getItem("whist.pace"))).toBe("slow");
+
+  // Closed and opened again, the question is not left standing.
+  await page.keyboard.press("Escape");
+  await page.locator('[data-menu-page="about"]').click();
+  await about.getByRole("button", { name: "Forget this browser" }).click();
+  const navigated = page.waitForEvent("load");
+  await about.getByRole("button", { name: "Forget", exact: true }).click();
+  await navigated;
+
+  // The language was forgotten with the rest, so the page asks for it before it does anything.
+  await expect(page.locator(".lang-page")).toBeVisible();
+  const left = await page.evaluate(() => ({
+    local: Object.keys(window.localStorage).sort(),
+    session: Object.keys(window.sessionStorage).sort(),
+  }));
+  expect(left.local).toEqual(["other.site.key"]);
+  expect(left.session).toEqual(["other.session.key", "seeded"]);
+});

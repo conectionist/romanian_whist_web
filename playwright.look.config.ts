@@ -9,6 +9,8 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4174",
     deviceScaleFactor: 1,
+    // The restart banner names a time of day, which is the same wherever the pictures are made.
+    timezoneId: "UTC",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], deviceScaleFactor: 1 } }],
   webServer: {

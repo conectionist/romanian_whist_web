@@ -18,6 +18,8 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
+    // The server's limits per address are lifted in server.json: every test connects, makes tables and plays from the
+    // one address 127.0.0.1, and the defaults would refuse them.
     command: `${server} --config tests/e2e/server.json`,
     url: "http://127.0.0.1:8090/",
     reuseExistingServer: false,

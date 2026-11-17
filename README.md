@@ -195,7 +195,8 @@ libs/romanian_whist_server/build/server/app/whist_server --config server.json
 ```
 
 and open http://127.0.0.1:8080/, which shows the main menu, or http://127.0.0.1:8080/?solo=4 for a game
-at once. `server.json` points the server at `dist/`.
+at once. `server.json` points the server at `dist/`, and lifts the limits per address on connections, tables and
+failed joins, since your tabs and tests are all one address.
 
 **An online table on one machine.** Choose Play online, give a name, and Create a table: its lobby shows
 the link, `/t/` and the table's code. Open that link in a private window, or another browser: a page
@@ -240,11 +241,11 @@ names and validation. One reads the source for every string the page translates,
 no Romanian, a translation that loses a placeholder, or a count without its three forms. The
 end-to-end tests start the server built in the submodule, or the one `WHIST_SERVER` names, and play
 through the page: solo games, the sheets, New Game, the language dialog, a game in Romanian, the footer and
-About, and online tables played by three browsers at once, each in a context of its own. One test starts a
+About, and online tables played by three browsers at once, each in a context of its own. They start with English chosen,
+as a browser that has been through the dialog; the tests of the dialog start with nothing. One test starts a
 server of its own on port 8091 with a drain of five seconds, stops it with a game in progress, and checks
 the banner, the refusal of a new game, the game cut at the deadline and the exit with no failure. The
-server's limits per address are lifted in `tests/e2e/server.json`, since every test is one address. They start with English chosen,
-as a browser that has been through the dialog; the tests of the dialog start with nothing. They need
+server's limits per address are lifted in `tests/e2e/server.json`, since every test is one address. The tests need
 Playwright's Chromium once: `npx playwright install chromium`.
 
 With the stack above running, one more test loads the page under the image's content-security-policy

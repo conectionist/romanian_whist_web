@@ -68,6 +68,8 @@ test("a restart is told in a banner, no new game starts, and the game someone is
     await expect(banner).toBeVisible();
     await expect(banner).toContainText(/^The server is restarting\. Games in progress can go on until \d\d:\d\d\. No new game can start\.$/);
     expect([clock(stopped + DRAIN_MS), clock(stopped + DRAIN_MS + 1000), clock(stopped)]).toContainEqual((await banner.textContent())!.match(/until (\d\d:\d\d)/)![1]);
+    // It is in the strip that a screen reader reads out as it is added, as the connection's notices are.
+    await expect(game.locator('.notices[role="status"][aria-live="polite"] .notice[data-kind="restart"]')).toHaveCount(1);
     // The game goes on meanwhile.
     await expect(game.locator("body")).toHaveAttribute("data-status", "at a table");
 

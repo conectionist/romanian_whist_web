@@ -11,19 +11,19 @@ import { smokeGame, waitForPage } from "../libs/romanian_whist_server/tools/smok
 export const PAGE_CSP =
   "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
-// Every place that sends the policy: the image's Caddyfile and the server's two proxy examples.
+// Every place that sends the policy: the image's Caddyfile and the server's own header file, which holds
+// it as a bare string literal.
 const CSP_FILES = [
-  "deploy/Caddyfile",
-  "libs/romanian_whist_server/deploy/examples/whist.caddy",
-  "libs/romanian_whist_server/deploy/examples/nginx/whist-headers.conf",
+  { file: "deploy/Caddyfile", pattern: /Content-Security-Policy[ \t]+"([^"]*)"/g },
+  { file: "libs/romanian_whist_server/server/app/PageHeaders.h", pattern: /contentSecurityPolicy\s*=\s*"([^"]*)"/g },
 ];
 
 const here = fileURLToPath(new URL("..", import.meta.url));
 
 // The policy each file sends, or null where a file has none or says it more than once.
 export function cspCopies(root = here) {
-  return CSP_FILES.map((file) => {
-    const found = [...readFileSync(`${root}/${file}`, "utf8").matchAll(/Content-Security-Policy[ \t]+"([^"]*)"/g)];
+  return CSP_FILES.map(({ file, pattern }) => {
+    const found = [...readFileSync(`${root}/${file}`, "utf8").matchAll(pattern)];
     return { file, csp: found.length === 1 ? found[0][1] : null };
   });
 }

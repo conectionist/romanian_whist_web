@@ -31,12 +31,32 @@ export function errorText(code: ErrorCode, detail?: string): string {
     case "illegal":
       return t("errors", "That is not allowed now.");
     case "rateLimited":
-      return t("errors", "That was too many messages. Wait a moment.");
+      switch (detail) {
+        case "connections":
+          return t("errors", "There are too many connections from your network. The page tries again in 30 seconds.");
+        case "tables":
+          return t("errors", "You have made too many tables this hour. Try again later.");
+        case "joins":
+          return t("errors", "Too many table codes that do not exist were tried. Try again in a few minutes.");
+        default:
+          return t("errors", "That was too many messages. Wait a moment.");
+      }
     case "draining":
       return t("errors", "The server is restarting and takes no new games just now.");
+    case "busy":
+      return t("errors", "The server is running as many games as it can. Try again in a few minutes.");
     case "openElsewhere":
       return t("errors", "This game is open in another window.");
   }
+}
+
+// What the banner says while the server restarts: its games may go on until a time of day, which is when the
+// server's drain ends at the latest, and none can start. The time is the page's own clock's, and the server
+// may quit sooner.
+export function restartingText(deadlineMs: number, now: Date, language: string): string {
+  const until = new Date(now.getTime() + deadlineMs);
+  const time = until.toLocaleTimeString(language === "ro" ? "ro-RO" : "en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return t("errors", "The server is restarting. Games in progress can go on until %1. No new game can start.", [time]);
 }
 
 // The connection's state, once the page has been welcomed: nothing while it is open, and a sentence

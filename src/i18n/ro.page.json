@@ -827,6 +827,31 @@
       "context": "fullscreen",
       "source": "Add the page to the home screen for a bigger table.",
       "translation": "Pentru o masă mai mare, adaugă pagina pe ecranul principal."
+    },
+    {
+      "context": "errors",
+      "source": "There are too many connections from your network. The page tries again in 30 seconds.",
+      "translation": "Sunt prea multe conexiuni din rețeaua ta. Pagina încearcă din nou peste 30 de secunde."
+    },
+    {
+      "context": "errors",
+      "source": "You have made too many tables this hour. Try again later.",
+      "translation": "Ai creat prea multe mese în ultima oră. Încearcă din nou mai târziu."
+    },
+    {
+      "context": "errors",
+      "source": "Too many table codes that do not exist were tried. Try again in a few minutes.",
+      "translation": "Au fost încercate prea multe coduri de masă care nu există. Încearcă din nou peste câteva minute."
+    },
+    {
+      "context": "errors",
+      "source": "The server is running as many games as it can. Try again in a few minutes.",
+      "translation": "Serverul rulează acum numărul maxim de jocuri. Încearcă din nou peste câteva minute."
+    },
+    {
+      "context": "errors",
+      "source": "The server is restarting. Games in progress can go on until %1. No new game can start.",
+      "translation": "Serverul repornește. Jocurile în desfășurare pot continua până la %1. Nu poate începe niciun joc nou."
     }
   ]
 }

@@ -91,7 +91,7 @@ describe("the connection", () => {
     const { socket, statuses } = setup();
     socket().readyState = 1;
     socket().fire("open", {});
-    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en" });
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 2, lang: "en" });
     expect(statuses).toEqual(["connecting", "open"]);
   });
 
@@ -99,14 +99,14 @@ describe("the connection", () => {
     const { socket } = setup({}, false, "ro");
     socket().readyState = 1;
     socket().fire("open", {});
-    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "ro" });
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 2, lang: "ro" });
   });
 
   it("sends the token it keeps, only in hello", () => {
     const { socket } = setup({ [TOKEN_KEY]: "LXF33D9tR1EIzH3GPvWDpw" });
     socket().readyState = 1;
     socket().fire("open", {});
-    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en", token: "LXF33D9tR1EIzH3GPvWDpw" });
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 2, lang: "en", token: "LXF33D9tR1EIzH3GPvWDpw" });
   });
 
   it("keeps the token the welcome gives, whichever it is", () => {
@@ -165,7 +165,7 @@ describe("the connection", () => {
     expect(socket()).not.toBe(refused);
     socket().readyState = 1;
     socket().fire("open", {});
-    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en" });
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 2, lang: "en" });
     expect(statuses[statuses.length - 1]).toBe("open");
     // The refused socket closing on its own is not a lost connection: nothing is waited for, the
     // new socket is still the connection, and it sends.

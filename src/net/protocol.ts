@@ -1,6 +1,6 @@
-// The messages of protocol version 1, as libs/romanian_whist_server/protocol/PROTOCOL.md sets them out.
+// The messages of protocol version 2, as libs/romanian_whist_server/protocol/PROTOCOL.md sets them out.
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export type Suit = "H" | "D" | "S" | "C";
 // Two characters: the rank (3-9, T, J, Q, K, A), then the suit.
@@ -201,7 +201,13 @@ export type ErrorCode =
   | "illegal"
   | "rateLimited"
   | "draining"
+  | "busy"
   | "openElsewhere";
+
+// What a rateLimited says it is for, when it says: the limits per address. With no detail it is
+// the connection's own message rate.
+export type RateLimit = "connections" | "tables" | "joins";
+export const RATE_LIMITS: readonly RateLimit[] = ["connections", "tables", "joins"];
 
 export interface SyncBody {
   table: TableState | null;
@@ -221,6 +227,7 @@ export type ServerMessage =
   | { type: "promptClosed"; seq: number; id: number; by: "you" | "computer" }
   | ({ type: "held"; seq: number } & Hold)
   | ({ type: "sync"; seq: number } & SyncBody)
+  | { type: "restarting"; seq: number; deadline: number }
   | { type: "error"; seq: number; code: ErrorCode; detail?: string };
 
 export type ClientMessage =

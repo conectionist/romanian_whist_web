@@ -845,8 +845,8 @@
     },
     {
       "context": "errors",
-      "source": "The server is running as many games as it can. Try again in a few minutes.",
-      "translation": "Serverul rulează acum numărul maxim de jocuri. Încearcă din nou peste câteva minute."
+      "source": "The server has as many games or tables as it can take. Try again in a few minutes.",
+      "translation": "Serverul are acum numărul maxim de jocuri sau de mese. Încearcă din nou peste câteva minute."
     },
     {
       "context": "errors",

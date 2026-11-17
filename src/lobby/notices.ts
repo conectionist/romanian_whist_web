@@ -44,7 +44,7 @@ export function errorText(code: ErrorCode, detail?: string): string {
     case "draining":
       return t("errors", "The server is restarting and takes no new games just now.");
     case "busy":
-      return t("errors", "The server is running as many games as it can. Try again in a few minutes.");
+      return t("errors", "The server has as many games or tables as it can take. Try again in a few minutes.");
     case "openElsewhere":
       return t("errors", "This game is open in another window.");
   }

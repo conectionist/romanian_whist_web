@@ -118,7 +118,7 @@ test("a server that runs as many games as it may says so in words, to the page t
     const second = await (await visitor(browser)).newPage();
     contexts.push(second.context());
     await second.goto("/?solo=4");
-    await expect(second.locator('.notice[data-kind="error"]')).toHaveText("The server is running as many games as it can. Try again in a few minutes.");
+    await expect(second.locator('.notice[data-kind="error"]')).toHaveText("The server has as many games or tables as it can take. Try again in a few minutes.");
     await expect(second.locator("body")).toHaveAttribute("data-status", "at no table");
   } finally {
     for (const context of contexts) {

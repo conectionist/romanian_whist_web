@@ -45,7 +45,7 @@ describe("the server's refusals in words", () => {
   });
 
   it("says a busy server is full, and asks for no more than a wait", () => {
-    expect(errorText("busy")).toBe("The server is running as many games as it can. Try again in a few minutes.");
+    expect(errorText("busy")).toBe("The server has as many games or tables as it can take. Try again in a few minutes.");
     expect(errorText("busy")).not.toBe(errorText("draining"));
   });
 

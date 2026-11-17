@@ -4,8 +4,8 @@
 > draws the table and plays a solo game against the server (PR #3). Phase 7, the sheets, the menus
 > and online tables, is complete (2026-11-12, PR #7). Phase 8, Romanian, the keyboard, screen readers
 > and touch, is complete (2026-11-13, PR #8). Phase 8b, the phone layout, is complete (2026-11-17,
-> PR #11). Outside the phases, the page's Docker image is built, has had two reviews, and waits
-> for the owner's approval (PR #5, [§14](#the-docker-image-outcome)).**
+> PR #11). Outside the phases, the page's Docker image is built, reviewed twice and merged
+> (2026-11-11, PR #5, [§14](#the-docker-image-outcome)). Phase 9, deployment, is next.**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the

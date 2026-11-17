@@ -13,9 +13,8 @@ import {
   type Pace,
 } from "../play/motion";
 import { CardView } from "./card";
-import type { Place } from "./geometry/seats";
-import { cardPlacement } from "./geometry/trick";
-import { handCardHeight, playedCardHeight, z, type Placement } from "./space";
+import type { Arrangement, Spot } from "./geometry/spots";
+import { z, type Placement } from "./space";
 
 // Which cards the trick shows, and whether the winner is lit: a winner once there is something to
 // beat. The server ranks a lone first card as winning, which it is, but until a second card is down
@@ -73,18 +72,14 @@ export interface TrickMotion {
   fresh: boolean;
   // Where a card of yours is drawn in the fan, which it leaves for the felt.
   fromHand(card: Card): Placement | null;
-  // How much larger than the table's own size the fan is drawn, which a card leaving it starts at.
-  handScale(): number;
+  // How tall a card of the fan is drawn, in table units, which a card leaving it starts at.
+  handHeight(): number;
 }
 
 interface Flight {
   animation: Animation;
   leaving: boolean;
   fromHand: boolean;
-}
-
-function centreOf(place: Place): { x: number; y: number } {
-  return { x: place.panel.x + place.panel.w / 2, y: place.panel.y + place.panel.h / 2 };
 }
 
 // The played cards round the logo, one element for each card that has been played, keyed by card
@@ -178,8 +173,8 @@ export class TrickView {
   }
 
   // Every card on the felt goes to the winner's panel, at a third of its size, gone.
-  private sweep(winner: Place, pace: Pace): Promise<unknown>[] {
-    const target = centreOf(winner);
+  private sweep(winner: Spot, pace: Pace): Promise<unknown>[] {
+    const target = winner.centre;
     const ended: Promise<unknown>[] = [];
     for (const [card, view] of this.cards) {
       const place = view.place;
@@ -211,16 +206,15 @@ export class TrickView {
   }
 
   // Your card goes to the felt the moment you click, before the server has said it was played.
-  flyOwn(card: Card, model: TableModel, places: readonly (Place | null)[], motion: TrickMotion): Promise<unknown> {
-    const seatCount = model.seats.length;
-    const place = places[model.humanSeat] ?? null;
-    if (place === null) {
+  flyOwn(card: Card, model: TableModel, arrangement: Arrangement, motion: TrickMotion): Promise<unknown> {
+    const spot = arrangement.spots[model.humanSeat] ?? null;
+    if (spot === null) {
       return Promise.resolve();
     }
     const view = this.cardFor(card);
-    const to = cardPlacement(seatCount, place);
+    const to = spot.played;
     view.setCard(card);
-    view.setHeight(playedCardHeight(seatCount));
+    view.setHeight(arrangement.playedHeight);
     view.placeAt(to);
     view.setLook("played");
     view.element.style.zIndex = String(model.table.length);
@@ -231,7 +225,7 @@ export class TrickView {
     if (from === null || !motion.animate) {
       return Promise.resolve();
     }
-    return this.launch(card, view, from, (motion.handScale() * handCardHeight) / playedCardHeight(seatCount), 1, to, flightDuration(motion.pace), true);
+    return this.launch(card, view, from, motion.handHeight() / arrangement.playedHeight, 1, to, flightDuration(motion.pace), true);
   }
 
   // Forgets a card of yours that went early and was not taken.
@@ -242,9 +236,9 @@ export class TrickView {
 
   // Places every card of the table where it lies, and flies the new ones. The promise ends when
   // every flight and sweep this started has.
-  update(model: TableModel, places: readonly (Place | null)[], motion: TrickMotion): Promise<unknown> {
-    const seatCount = model.seats.length;
-    const height = playedCardHeight(seatCount);
+  update(model: TableModel, arrangement: Arrangement, motion: TrickMotion): Promise<unknown> {
+    const spots = arrangement.spots;
+    const height = arrangement.playedHeight;
     const animate = motion.animate && animates(motion.pace);
     const ended: Promise<unknown>[] = [];
 
@@ -264,35 +258,35 @@ export class TrickView {
     if (!arrivals.agrees) {
       this.finishAll();
     }
-    const winnerPlace = winner === null ? null : (places[winner] ?? null);
-    if (winnerPlace !== null) {
-      ended.push(...this.sweep(winnerPlace, motion.pace));
+    const winnerSpot = winner === null ? null : (spots[winner] ?? null);
+    if (winnerSpot !== null) {
+      ended.push(...this.sweep(winnerSpot, motion.pace));
     }
 
     const onTable = new Set<Card>();
     model.table.forEach((played, index) => {
-      const place = places[played.seat] ?? null;
+      const spot = spots[played.seat] ?? null;
       const view = this.cardFor(played.card);
       // A seat this table cannot place is a snapshot it cannot draw; leaving the card off is
       // better than inventing a place for it.
-      if (place === null) {
+      if (spot === null) {
         view.hide();
         return;
       }
       onTable.add(played.card);
       view.setCard(played.card);
       view.setHeight(height);
-      const to = cardPlacement(seatCount, place);
+      const to = spot.played;
       const flight = this.flights.get(played.card);
       const early = this.flownByYou.delete(played.card);
 
       if (!early && arrivals.agrees && index >= arrivals.first) {
         view.placeAt(to);
-        const fromYourHand = place.human ? motion.fromHand(played.card) : null;
+        const fromYourHand = spot.human ? motion.fromHand(played.card) : null;
         if (fromYourHand !== null) {
-          ended.push(this.launch(played.card, view, fromYourHand, (motion.handScale() * handCardHeight) / height, 1, to, flightDuration(motion.pace), true));
+          ended.push(this.launch(played.card, view, fromYourHand, motion.handHeight() / height, 1, to, flightDuration(motion.pace), true));
         } else {
-          const panel = centreOf(place);
+          const panel = spot.centre;
           ended.push(
             this.launch(played.card, view, { x: panel.x, y: panel.y, rotation: to.rotation }, BOT_FLIGHT_SCALE, BOT_FLIGHT_OPACITY, to, flightDuration(motion.pace), false),
           );
@@ -321,6 +315,14 @@ export class TrickView {
       if (!this.flownByYou.has(card)) {
         this.finish(card);
         view.hide();
+      } else {
+        // A card of yours that went early and is not taken yet lies where this table puts it now,
+        // which is not where it landed if the window changed in between.
+        const yours = spots[model.humanSeat] ?? null;
+        if (yours !== null) {
+          view.setHeight(height);
+          view.placeAt(yours.played);
+        }
       }
     }
 

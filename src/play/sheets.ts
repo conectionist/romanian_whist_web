@@ -4,7 +4,7 @@ import type { StoreState } from "./store";
 // Which sheet is up, one at a time, as MainWindow arranges them. Decided from the store and what the
 // player asked for alone, so a sync is shown the same way as any message.
 
-export type MenuSheet = "history" | "last-trick" | "rules" | "settings" | "new-game" | "online" | "create-table";
+export type MenuSheet = "history" | "last-trick" | "scores" | "rules" | "settings" | "new-game" | "online" | "create-table";
 // The pause menu is a solo game's; "leave" is its online counterpart, which the game goes on behind;
 // the lobby is an online table between games.
 export type SheetName = MenuSheet | "round" | "game-over" | "pause" | "leave" | "lobby";

@@ -1,9 +1,44 @@
 import { el } from "../dom/el";
+import { icon } from "../dom/icons";
+import { t } from "../i18n/t";
+import { PAGE_ACTION, placementFor, type SheetKey } from "./placement";
 
 // What the layer shows: a panel of its own, made once, and the button the keyboard starts on.
 export interface Sheet {
   readonly element: HTMLElement;
   focusDefault(): void;
+}
+
+// A page's bar holds its Back button, its title and its one action, and stays where it is while the rest scrolls
+// under it. The title and the action are the sheet's own elements, moved into the bar for the scaled table and put
+// back where they were for the desktop's dialog.
+const homes = new WeakMap<HTMLElement, { primary: HTMLElement | null; before: Node | null; bar: HTMLElement }>();
+
+function arrangePage(sheet: HTMLElement, scaled: boolean): void {
+  const home = homes.get(sheet);
+  if (scaled && home === undefined) {
+    const back = sheet.querySelector(":scope > .page-back");
+    const title = sheet.querySelector(":scope > .sheet-title");
+    const action = PAGE_ACTION[sheet.dataset.sheet ?? ""];
+    const primary = sheet.querySelector<HTMLElement>(`:scope > .sheet-actions [data-action="${action}"]`);
+    const bar = el("div", { class: "page-bar" });
+    homes.set(sheet, { primary, before: primary?.nextSibling ?? null, bar });
+    bar.append(...[back, title, primary].filter((node): node is Element | HTMLElement => node !== null));
+    sheet.prepend(bar);
+  } else if (!scaled && home !== undefined) {
+    const parent = home.primary === null ? null : sheet.querySelector(":scope > .sheet-actions");
+    const [back, title] = [home.bar.querySelector(".page-back"), home.bar.querySelector(".sheet-title")];
+    if (home.primary !== null && parent !== null) {
+      parent.insertBefore(home.primary, home.before);
+    }
+    home.bar.remove();
+    sheet.prepend(...[back, title].filter((node): node is Element => node !== null));
+    homes.delete(sheet);
+  }
+}
+
+function nameOf(sheet: Sheet): SheetKey {
+  return (sheet.element.dataset.sheet ?? "") as SheetKey;
 }
 
 const FOCUSABLE = "button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex='-1'])";
@@ -15,14 +50,27 @@ export class SheetLayer {
   readonly element: HTMLElement;
   private open: Sheet | null = null;
   private returnTo: Element | null = null;
+  private scaled = false;
   private readonly watcher: ResizeObserver;
 
-  constructor(private readonly sheets: readonly Sheet[]) {
+  // `back` is what the Back button of a page does, on the scaled table.
+  constructor(
+    private readonly sheets: readonly Sheet[],
+    back: () => void = () => undefined,
+  ) {
     this.element = el("div", { class: "sheet-layer" }, ...sheets.map((sheet) => sheet.element));
     this.element.hidden = true;
     for (const sheet of sheets) {
       sheet.element.hidden = true;
+      // A page has its Back button in its bar, which the desktop's dialog does not show.
+      if (placementFor(nameOf(sheet), true) === "page") {
+        const label = t("sheets", "Back");
+        const button = el("button", { class: "page-back", attrs: { type: "button", "aria-label": label, title: label } }, icon("back"));
+        button.addEventListener("click", back);
+        sheet.element.prepend(button);
+      }
     }
+    this.placeAll();
     this.element.addEventListener("pointerdown", (event) => {
       if (event.target === this.element) {
         event.preventDefault();
@@ -37,10 +85,36 @@ export class SheetLayer {
     }
   }
 
+  // Draws the sheets as the scaled table's side, bottom and page sheets, or as the desktop's centred dialog. The
+  // stylesheet places the first by the attribute, and the dialog is placed here.
+  setScaled(scaled: boolean): void {
+    if (scaled === this.scaled) {
+      return;
+    }
+    this.scaled = scaled;
+    for (const sheet of this.sheets) {
+      if (placementFor(nameOf(sheet), true) === "page") {
+        arrangePage(sheet.element, scaled);
+      }
+    }
+    this.placeAll();
+    for (const sheet of this.sheets) {
+      sheet.element.style.left = "";
+      sheet.element.style.top = "";
+    }
+    this.place();
+  }
+
+  private placeAll(): void {
+    for (const sheet of this.sheets) {
+      sheet.element.dataset.placement = placementFor(nameOf(sheet), this.scaled);
+    }
+  }
+
   // The open sheet in the middle, on whole pixels, as Qt places it: a half pixel would be drawn blurred.
   private place(): void {
     const node = this.open?.element;
-    if (node === undefined) {
+    if (node === undefined || this.scaled) {
       return;
     }
     node.style.left = `${Math.max(0, Math.floor((this.element.clientWidth - node.offsetWidth) / 2))}px`;

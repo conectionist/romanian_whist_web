@@ -3,7 +3,7 @@ import { el, setSrc, stamp } from "../dom/el";
 import type { Card } from "../net/protocol";
 import { cardNameFor } from "./cardNames";
 import { sizeForHeight } from "./cards";
-import type { Placement } from "./space";
+import type { Placement, Size } from "./space";
 
 // What a card casts: on the felt, plain or the trick's winner; in your hand, at rest or raised
 // under the cursor.
@@ -17,6 +17,8 @@ export class CardView {
   private readonly picture: HTMLImageElement;
   private card: Card | null | undefined;
   private height = 0;
+  // A size set outright, which the scaled table's cards have: its card is not the art's aspect rounded.
+  private box: Size | null = null;
   private placed: Placement | null = null;
 
   constructor(look: Look, tag: "div" | "button" = "div") {
@@ -54,11 +56,25 @@ export class CardView {
 
   // The card's height in table units; its width follows from the art.
   setHeight(height: number): void {
-    if (height === this.height) {
+    if (height === this.height && this.box === null) {
       return;
     }
     this.height = height;
-    const size = sizeForHeight(height);
+    this.box = null;
+    this.resize(sizeForHeight(height));
+  }
+
+  // The card's size outright, for a table that sets its cards' size itself.
+  setBox(size: Size): void {
+    if (this.box !== null && this.box.w === size.w && this.box.h === size.h) {
+      return;
+    }
+    this.box = size;
+    this.height = size.h;
+    this.resize(size);
+  }
+
+  private resize(size: Size): void {
     this.element.style.width = `${size.w}px`;
     this.element.style.height = `${size.h}px`;
     // The place is the card's centre, so it moves with the size.
@@ -73,7 +89,7 @@ export class CardView {
       return;
     }
     this.placed = place;
-    const size = sizeForHeight(this.height);
+    const size = this.box ?? sizeForHeight(this.height);
     const style = this.element.style;
     style.left = `${place.x - size.w / 2}px`;
     style.top = `${place.y - size.h / 2}px`;

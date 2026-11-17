@@ -1,4 +1,4 @@
-import { el, setText, stamp } from "../dom/el";
+import { el, setAttr, setText, stamp } from "../dom/el";
 import { t } from "../i18n/t";
 import { translateGendered, yourGender, type Gendered } from "../i18n/person";
 import type { TableModel } from "../play/model";
@@ -59,6 +59,41 @@ export function fieldsFor(model: TableModel): Fields | null {
   return fields;
 }
 
+// The short reason for the one bid you may not make, or how the bids stand, which the scaled table gives on
+// the line above your hand when the strip has no room for its note. Null when there is no strip.
+export function shortNoteFor(model: TableModel): string | null {
+  const prompt = model.prompt;
+  if (prompt === null || prompt.kind !== "bet") {
+    return null;
+  }
+  if (prompt.forbidden !== null) {
+    return t("bidstrip", "Not %1: the bids would add up to %2.", [prompt.forbidden, prompt.max]);
+  }
+  const bids = [model.betSum, prompt.max];
+  return prompt.max === 1 ? t("scoreboard", "Bids so far: %1 of %2 trick", bids) : t("scoreboard", "Bids so far: %1 of %2 tricks", bids);
+}
+
+// The band the scaled table gives the strip, in its units: the strip is `w` wide from `x`, with its middle at
+// `y`.
+export interface Band {
+  x: number;
+  y: number;
+  w: number;
+}
+
+// Each bid is 48 wide with 8 between, the label beside them takes 108 and its gap and padding 24 more.
+const BID_PITCH = 56;
+const LABEL_ROOM = 108;
+const STRIP_PADDING = 24;
+
+// Whether "Your bid" stands beside the bids or leads the note, and how many bids make a row when they must
+// wrap: evenly, so a second row is not left with one.
+export function stripFlowFor(count: number, width: number): { inline: boolean; columns: number } {
+  const inline = width - STRIP_PADDING - LABEL_ROOM >= count * BID_PITCH - 8;
+  const fit = Math.max(1, Math.floor((width - (inline ? STRIP_PADDING + LABEL_ROOM : STRIP_PADDING) + 8) / BID_PITCH));
+  return { inline, columns: Math.ceil(count / Math.ceil(count / fit)) };
+}
+
 // Whether the strip offers this bid. A forbidden bid of zero is still forbidden, which is why this
 // tests that there is one and not its value: zero is a legal bid.
 export function offers(fields: Pick<Fields, "highest" | "forbidden">, bet: number): boolean {
@@ -68,8 +103,13 @@ export function offers(fields: Pick<Fields, "highest" | "forbidden">, bet: numbe
 export class BidStrip {
   readonly element: HTMLElement;
   private readonly question = el("div", { class: "bid-question" });
+  // "Your bid", which stands in the scaled table where the question does on the desktop's.
+  private readonly label = el("div", { class: "bid-label", attrs: { "aria-hidden": "true" }, text: t("bidstrip", "Your bid") });
   private readonly row = el("div", { class: "bid-row" });
-  private readonly note = el("div", { class: "bid-note" });
+  private readonly lead = el("span", { class: "bid-lead", attrs: { "aria-hidden": "true" } });
+  private readonly words = el("span");
+  private readonly note = el("div", { class: "bid-note" }, this.lead, this.words);
+  private band: Band | null = null;
   private readonly buttons: HTMLButtonElement[] = [];
   private onBid: (bet: number) => void = () => undefined;
   private onFocus: (bet: number) => void = () => undefined;
@@ -79,7 +119,7 @@ export class BidStrip {
 
   constructor() {
     this.question.id = "bid-question";
-    this.element = el("div", { class: "panel bidstrip", attrs: { role: "group", "aria-labelledby": "bid-question" } }, this.question, this.row, this.note);
+    this.element = el("div", { class: "panel bidstrip", attrs: { role: "group", "aria-labelledby": "bid-question" } }, this.question, this.label, this.row, this.note);
     this.element.hidden = true;
     stamp(this.element);
   }
@@ -136,6 +176,66 @@ export class BidStrip {
     return this.buttons[bet];
   }
 
+  // Draws the strip in the scaled table's band, or on the desktop's felt, as the stylesheet puts it, for none.
+  place(band: Band | null): void {
+    this.band = band;
+    const style = this.element.style;
+    if (band === null) {
+      for (const name of ["left", "top", "width", "transform"] as const) {
+        style[name] = "";
+      }
+      this.row.style.maxWidth = "";
+      this.element.removeAttribute("data-label");
+      this.note.hidden = false;
+      setText(this.lead, "");
+      return;
+    }
+    style.left = `${band.x}px`;
+    style.top = `${band.y}px`;
+    style.width = `${band.w}px`;
+    style.transform = "translateY(-50%)";
+    this.flow();
+  }
+
+  // Where the label stands, and how the bids wrap, for the band's width and the bids offered.
+  private flow(): void {
+    if (this.band === null || this.fields === null) {
+      return;
+    }
+    const { inline, columns } = stripFlowFor(this.fields.highest + 1, this.band.w);
+    this.row.style.maxWidth = `${columns * BID_PITCH - 8}px`;
+    setAttr(this.element, "data-label", inline ? "inline" : "note");
+    setText(this.lead, inline ? "" : `${t("bidstrip", "Your bid")}. `);
+  }
+
+  // Where the strip is as it stands: its middle, its width and its foot, in the units of the page it is placed in.
+  box(): { cx: number; w: number; bottom: number } | null {
+    if (this.band === null || this.element.hidden) {
+      return null;
+    }
+    return { cx: this.band.x + this.band.w / 2, w: this.band.w, bottom: this.band.y + this.element.offsetHeight / 2 };
+  }
+
+  // How tall the strip is as it stands, in the units of the page it is placed in.
+  height(): number {
+    return this.element.hidden ? 0 : this.element.offsetHeight;
+  }
+
+  // Whether the strip, with its note, is taller than the room the band leaves it.
+  crowded(room: number): boolean {
+    return !this.element.hidden && this.band !== null && this.element.offsetHeight > room;
+  }
+
+  // The note goes when the strip has no room for it.
+  showNote(shown: boolean): void {
+    this.note.hidden = !shown;
+  }
+
+  // Whether "Your bid" leads the note, and so leads the short reason too.
+  get leadsNote(): boolean {
+    return this.band !== null && this.element.getAttribute("data-label") === "note";
+  }
+
   update(model: TableModel | null): void {
     const fields = model === null ? null : fieldsFor(model);
     this.fields = fields;
@@ -144,7 +244,8 @@ export class BidStrip {
       return;
     }
     setText(this.question, fields.question);
-    setText(this.note, fields.note);
+    setText(this.words, fields.note);
+    this.flow();
     for (let bet = 0; bet <= fields.highest; bet++) {
       const button = this.button(bet);
       button.hidden = false;

@@ -97,6 +97,19 @@ export class TableTop {
     this.setLines(logoLines());
   }
 
+  // The logo is drawn this much of its size: 1 on the desktop's table, less on the scaled one, where the
+  // played cards need the room.
+  setLogoScale(scale: number): void {
+    const text = scale === 1 ? "" : String(scale);
+    if (this.element.style.getPropertyValue("--logo-k") !== text) {
+      if (text === "") {
+        this.element.style.removeProperty("--logo-k");
+      } else {
+        this.element.style.setProperty("--logo-k", text);
+      }
+    }
+  }
+
   setLines(lines: string[]): void {
     if (lines.join("\n") !== this.lines.join("\n")) {
       this.lines = lines;

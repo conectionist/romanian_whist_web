@@ -117,23 +117,27 @@ export class SheetTable {
     }
     this.shown = key;
     this.element.style.gridTemplateColumns = `repeat(${fields.columns.length}, minmax(auto, 1fr))`;
+    this.element.style.setProperty("--columns", String(fields.columns.length));
 
-    const nodes: HTMLElement[] = fields.columns.map((column) =>
-      el("div", { class: column.align === "right" ? "th right" : "th", text: column.heading }),
+    const nodes: HTMLElement[] = fields.columns.map((column, at) =>
+      el("div", { class: [column.align === "right" ? "th right" : "th", at === 0 ? "first" : ""].filter(Boolean).join(" "), text: column.heading }),
     );
     for (const row of fields.rows) {
       if (isNote(row)) {
         nodes.push(el("div", { class: "td span", text: row.note }));
       } else {
-        row.forEach((cell, column) => nodes.push(cellFor(cell, fields.columns[column]?.align ?? "left")));
+        row.forEach((cell, column) => nodes.push(cellFor(cell, fields.columns[column]?.align ?? "left", column === 0)));
       }
     }
     this.element.replaceChildren(...nodes);
   }
 }
 
-function cellFor(cell: Cell, align: "left" | "right"): HTMLElement {
+function cellFor(cell: Cell, align: "left" | "right", first: boolean): HTMLElement {
   const classes = ["td"];
+  if (first) {
+    classes.push("first");
+  }
   if (align === "right") {
     classes.push("right");
   }

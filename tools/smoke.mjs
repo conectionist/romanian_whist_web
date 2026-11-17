@@ -117,6 +117,21 @@ export async function checkPage(baseUrl, profileName, { serverCommit, timeoutMs 
     await expectOk("/fonts/alegreya-sans/AlegreyaSans-Regular.woff2", profile.woff2);
   });
 
+  await check("the manifest and its icons, which the page names", async () => {
+    const link = /<link rel="manifest" href="([^"]+)"/.exec(index.body.toString("utf8"))?.[1];
+    if (link === undefined) {
+      throw new Error("the page names no manifest");
+    }
+    const manifest = await expectOk(link, ["application/json", "application/manifest+json"]);
+    const icons = JSON.parse(manifest.body.toString("utf8")).icons ?? [];
+    if (icons.length === 0) {
+      throw new Error("the manifest has no icons");
+    }
+    for (const icon of icons) {
+      await expectOk(icon.src, ["image/png"]);
+    }
+  });
+
   await check("compression of the script", async () => {
     const response = await get(baseUrl, script, { "accept-encoding": "gzip" });
     const encoding = response.headers.get("content-encoding");

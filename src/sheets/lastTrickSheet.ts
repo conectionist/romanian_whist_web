@@ -87,13 +87,35 @@ class Mini {
   }
 }
 
+// The row of a trick's cards, each over its player's name: what the last trick's sheet shows, and the
+// scoreboard's tab of the same name.
+export class LastTrickCards {
+  readonly element = el("div", { class: "mini-row" });
+  private readonly minis: Mini[] = [];
+
+  update(cards: readonly MiniCard[]): void {
+    while (this.minis.length < cards.length) {
+      const mini = new Mini();
+      this.minis.push(mini);
+      this.element.append(mini.element);
+    }
+    this.minis.forEach((mini, index) => {
+      const card = cards[index];
+      mini.element.hidden = card === undefined;
+      if (card !== undefined) {
+        mini.update(card);
+      }
+    });
+    this.element.hidden = cards.length === 0;
+  }
+}
+
 export class LastTrickSheet implements Sheet {
   readonly element: HTMLElement;
   private readonly title = el("h2", { class: "sheet-title sheet-center", attrs: { id: "sheet-last-trick-title" } });
   private readonly meta = el("div", { class: "sheet-meta sheet-center" });
-  private readonly row = el("div", { class: "mini-row" });
+  private readonly cards = new LastTrickCards();
   private readonly close = new SheetButton(t("lasttrick", "Close"), "primary", "close");
-  private readonly minis: Mini[] = [];
 
   constructor(handlers: LastTrickActions) {
     const buttons = actions(this.close);
@@ -103,7 +125,7 @@ export class LastTrickSheet implements Sheet {
       { class: "sheet fit", data: { sheet: "last-trick" }, attrs: { role: "dialog", "aria-modal": "true", "aria-labelledby": "sheet-last-trick-title" } },
       this.title,
       this.meta,
-      this.row,
+      this.cards.element,
       buttons,
     );
     this.close.onClick(handlers.close);
@@ -112,19 +134,7 @@ export class LastTrickSheet implements Sheet {
   update(fields: LastTrickFields): void {
     setText(this.title, fields.title);
     setText(this.meta, fields.meta);
-    while (this.minis.length < fields.cards.length) {
-      const mini = new Mini();
-      this.minis.push(mini);
-      this.row.append(mini.element);
-    }
-    this.minis.forEach((mini, index) => {
-      const card = fields.cards[index];
-      mini.element.hidden = card === undefined;
-      if (card !== undefined) {
-        mini.update(card);
-      }
-    });
-    this.row.hidden = fields.cards.length === 0;
+    this.cards.update(fields.cards);
   }
 
   focusDefault(): void {

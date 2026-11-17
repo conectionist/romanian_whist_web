@@ -3,8 +3,9 @@
 > **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
 > draws the table and plays a solo game against the server (PR #3). Phase 7, the sheets, the menus
 > and online tables, is complete (2026-11-12, PR #7). Phase 8, Romanian, the keyboard, screen readers
-> and touch, is complete (2026-11-13, PR #8). Phase 8b, the phone layout, is not built. Outside the phases, the page's Docker image is built, has had two reviews,
-> and waits for the owner's approval (PR #5, [§14](#the-docker-image-outcome)).**
+> and touch, is complete (2026-11-13, PR #8). Phase 8b, the phone layout, is complete (2026-11-17,
+> PR #11). Outside the phases, the page's Docker image is built, has had two reviews, and waits
+> for the owner's approval (PR #5, [§14](#the-docker-image-outcome)).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the
@@ -326,7 +327,7 @@ Paths are in the desktop repository.
   - `touch-action: manipulation` on the table.
 - **Small screens:** the table scales to fit, as the desktop client's does (`TableView.cpp`), and
   phones held sideways work. In the first version, a phone held upright gets a "turn your phone"
-  hint. A phone gets a layout of its own in [phase 8b](#phase-8b-the-phone-layout--l): scaled as
+  hint. A phone gets a layout of its own in [phase 8b](#phase-8b-the-phone-layout--l--complete): scaled as
   the desktop's is, the table is too small to read on one.
 
 ---
@@ -1073,7 +1074,7 @@ commit of code `2e100c4`).
   - the owner has reviewed the Romanian;
   - a game can be played with the keyboard alone;
   - a phone held sideways finishes a game. The owner moved this one to
-    [phase 8b](#phase-8b-the-phone-layout--l) on 2026-11-13, after trying the page on a phone: see
+    [phase 8b](#phase-8b-the-phone-layout--l--complete) on 2026-11-13, after trying the page on a phone: see
     the outcome.
 
 **Outcome** (branch `web/phase-8-romanian-keyboard-touch`, PR #8, parent `ccr-209c0806-o444sp`, the last
@@ -1252,7 +1253,7 @@ commit of code `6fc0a0c`).
   - **CI** (Build (Linux) and the Docker image) is green at `6fc0a0c` and `d9e0718`.
   - **The owner approved** the phase on 2026-11-13.
 
-### Phase 8b: the phone layout — L
+### Phase 8b: the phone layout — L ✅ COMPLETE
 
 The owner added this phase on 2026-11-13, after phase 8 showed that the desktop's table, scaled to a
 phone, cannot be read. The Android client's plan had already settled what a small window needs, with
@@ -1328,6 +1329,146 @@ mock-up wins.
     deployed the page.
   - **An iPhone** gets the manifest and no full-screen button: its browser has none. Nothing is
     tested on one.
+
+**Outcome** (branch `web/phase-8b-phone-layout`, PR #11, parent `ccr-209c0806-o444sp`, the last
+commit of code `71713b4`).
+
+- **The branch.**
+  - **The commits,** in the order they were made:
+    - the scaled table, with a solo game by touch: `0081dc8` to `a8c35e8`;
+    - the sheets, the pages, the menu list, full screen and the manifest: `67fd57d` to `c9a9ed1`;
+    - the owner's notes from the phone: `681c9ed` to `c3ee188`, and `5920b26` to `9ed1b9f`;
+    - the review's fixes: `9e21889` to `71713b4`.
+  - **The PR** is against the parent, never `master`. The server and its submodule (`df37bd8`) are
+    untouched.
+  - **Who built it:** one implementing agent at extra-high effort built the phase, in two stretches
+    with a check between them, and made every fix. A fresh read-only agent at extra-high effort
+    reviewed it, as the server plan's §13 says.
+- **The owner's choices.**
+  - **Before the build:** see what was settled, above.
+  - **After the first build on the phone** (checkpoint 1): the short line of the bid wraps inside its
+    panel; Round history and Last trick move to the bottom left, where the desktop has them; the
+    trump leaves the round chip and is drawn as large as a played card.
+  - **After the second** (checkpoint 2): the on-screen keyboard must not close as a field takes the
+    focus; the round history is a page of its own, since its columns cannot be read in a side sheet;
+    the round chip is as wide as the scores panel; the trump goes under the trick's details; a row
+    leaves full screen while the page is in it; two rows of bids where one does not fit; the notice
+    may cover the top plate until it is put away.
+  - **After the third** (checkpoint 3): the trump in a panel of its own, its word and card centred,
+    as wide as the trick's details above it; the short line of a bid right under the strip, over the
+    logo.
+  - **The Romanian review** (2026-11-14), on a private review page with screenshots: of the 18 new
+    strings, 13 are kept and 5 changed: "Pe tot ecranul", "Masa e cam mică așa.", "Pentru o masă
+    mai mare, adaugă pagina pe ecranul principal.", "Un joc online nu poate fi pus pe pauză: ceilalți
+    joacă mai departe cât timp meniul este deschis." and, for a refused bid, "N-ai voie să zici %1.",
+    without the reason. "Ieși de pe tot ecranul" came after the review.
+  - **After the review:** fix all but 5 and 12 (12 is the PR's text, done by hand), and no second
+    review.
+  - **The phone** (2026-11-17): the owner finished a solo game and an online game on a Samsung S24+
+    in full screen.
+- **Built.**
+  - **Choosing a layout** (`layoutChoice.ts`, `layoutWatch.ts`): a mouse gets the desktop layout at
+    every size. A touch screen gets it from 1100 by 740, the scaled table below that down to 0.6 of
+    its size, and below that the page that says the window is too small. While a text field has the
+    focus, a window that only gets shorter is the keyboard and changes nothing; the window is looked
+    at again once the field has lost the focus and the window has been still for 350 ms.
+  - **The scaled table** (`geometry/scaled.ts`): the mock-up's `seatRing`, `trickScale`,
+    `layoutScaled`, `platesClear`, the hand's slots and a played card's place, ported line by line.
+    `tools/mockup_layout.mjs` runs the mock-up's own script and writes its numbers, and the unit
+    tests hold the port to them within 1e-6, at the mock-up's nine windows with 2 to 6 players.
+  - **The corners** (`geometry/page.ts`) are an input of the ported layout: the menu button top left;
+    the round chip top right, as wide as the scores panel under it; Round history and Last trick
+    bottom left; the trump's panel under the trick's details, its card as tall as a played card.
+  - **The bid strip** is one row of bids, or two where one does not fit. When it has no room for its
+    note, the note's short line is a panel right under it.
+  - **Sheets** (`placement.ts`): side sheets, bottom sheets with their actions pinned, and pages with
+    a bar that holds Back, the title and the one action. The scoreboard sheet holds the trick's
+    details, the Scores and Last trick tabs, and a button for the round history, which is a page.
+    The menu is a list that reaches the history, the last trick, settings, rules, full screen and
+    the way out; in an online game the way out asks first, with the leave sheet. A sheet opened
+    from another goes back to it.
+  - **Full screen** (`fullscreen.ts`): a button in a notice over a small table, in the upright hint,
+    on the too-small page, the main menu and the menu list. It asks for full screen and then for the
+    phone to stay sideways, and either may be refused. While in full screen the menu's row and the
+    main menu's button leave it. A browser without full screen is told to add the page to the home
+    screen.
+  - **The manifest** `public/manifest.json`, with icons of 192 and 512 pixels, a maskable one and
+    Apple's, made from the logo by `tools/make_icons.py`.
+- **The comparisons.**
+  - **The scaled table against the Android mock-up:** 21 pairs at 640 by 360, 832 by 384 and 915 by
+    412, in `build/shots/scaled-compare`, made by `tools/pair_scaled.py` from the mock-up's own
+    captures (`tools/mockup_shots.mjs`). The seats, the plates, the hand and the strip are the
+    mock-up's; the corners differ by the owner's choices above.
+  - **The desktop layout against the desktop's pictures** (the desktop's `03a3244`): mean absolute
+    difference, 0 to 255, as in phase 8. None moved through the phase: menu 0.57, table-empty 0.74,
+    language 0.90, sheet-pause 1.13, sheet-game-over 1.18, sheet-history 1.19, sheet-last-trick 1.24,
+    sheet-settings 1.25, sheet-round 1.27, bidding 1.47, hand-4-cards 1.52, sheet-rules 1.54,
+    hand-1-card 1.55, table-5-players 1.68, table-3-players 1.69, hand-8-cards 1.73, table-4-players
+    1.89 and table-6-players 2.00.
+- **Where the build departs from the plan, or found what it did not say:**
+  - **The corners** are the owner's, not the mock-up's: see the owner's choices.
+  - **The round history is a page,** not a side sheet, and the scoreboard has two tabs and a button
+    for it, not three tabs.
+  - **The manifest is `manifest.json`,** not `.webmanifest`: the game server serves no file of that
+    kind.
+  - **44-pixel targets hold in full screen only.** Inside the browser's bars, at 754 by 247, the
+    table is drawn at 0.69 and a bid is about 38 pixels. The owner keeps it so: full screen is the
+    way to play.
+  - **Back from Create a table** goes to Play online, in both layouts.
+  - **The trump's card is drawn shorter** where long names make the trick's details taller than the
+    100 units they are given, so that it never covers the round buttons.
+  - **A desktop bug found on the way:** after leaving an online table, a dealt game left the New Game
+    sheet up. Fixed in `9e21889`.
+  - **The mock-up's flick up to play** and its "tap a dimmed card to hear why" are not ported. A
+    player who is away shows a sign in the pill, without the word.
+  - **Captures that change between runs of the same build:** the Play online sheet's caret and the
+    table's logo in `table-empty`.
+- **Left out:**
+  - **"Add to Home screen"** on a phone, which needs https: tests cover the manifest, and the owner
+    tries it once phase 9 has deployed the page.
+  - **A real phone's full screen and keyboard** in the tests: headless Chromium has neither, so the
+    tests stand in for them, and the owner's games proved them.
+  - **The table inside the scores panel's button** stays: its replacement moved a column by a pixel.
+    The button has a short name for a screen reader.
+  - **A second review,** by the owner's choice.
+- **Tests:** 1140 unit tests in 59 files (742 at the start of the phase), 554 look tests (134) and
+  166 end-to-end tests (69).
+  - **End to end,** against `whist_server`, by touch at 832 by 384: a whole solo game and a whole
+    online game with two phones; every sheet and page and the way back from each; the on-screen
+    keyboard on every text field; full screen, the manifest and the icons.
+  - **Look:** every sheet and page at 832 by 384 and 754 by 247 in both languages; no word leaves its
+    panel at three sizes in both languages; the corners and the trick's details clear of each other
+    with names of 20 letters.
+  - **Mutation checks,** each made and reverted, for every fix and for the corners, the placements,
+    full screen, the keyboard and the history page.
+  - **Unreliable:** "the main menu reaches Settings and Rules" failed once in about 95 runs and not
+    since; "Space closes the round sheet…" fails now and then, as before the phase.
+- **Reviews.**
+  - **The cold review,** of the whole branch at `9ed1b9f`, found 12 problems, none above severity 3.
+    1. Severity 3: in an online game the menu's Leave table left at once, with no word that a robot
+       takes the seat.
+    2. Severity 2: Exit full screen could hide where a browser calls a page in full screen an
+       installed one.
+    3. Severity 2: the language dialog and the too-small page each let the page under them be used
+       again; Esc reached the game under the too-small page.
+    4. Severity 2: the round history was a page, not the plan's side sheet.
+    5. Severity 2: targets under 44 pixels at 754 by 247.
+    6. Severity 2: a screen reader heard the short line of a bid again at every redraw.
+    7. Severity 2: the window could be looked at while the keyboard was still closing.
+    8. Severity 1: the too-small page kept an old size.
+    9. Severity 1: the chip and the side panels were named by every word in them.
+    10. Severity 1: the layout watch kept two listeners after it was put away.
+    11. Severity 1: comments and test titles against `CLAUDE.md`.
+    12. Severity 1: the PR's text was out of date.
+
+    Fixed: 1 (`9e21889`), 2 (`5bf93e0`), 3 (`f9e5c9d`), 6 (`0a9f95d`), 7 and 10 (`ce9b403`), 8
+    (`d338db1`), 9 (`587630f`), 4's way back (`43990a4`), 11 (`71713b4`) and 12 by hand. 4 and 5
+    are the owner's choices. Checking the trick's details, which the review could not, found them
+    taller than counted with long names, fixed in `127458f`.
+- **Builds and CI.**
+  - **`npm run build` and `npm run build:look`** pass at `71713b4`, and the unit, look and end-to-end
+    tests pass: 1140, 554 and 166.
+  - **CI** (Build (Linux) and the Docker image) is green at `71713b4`.
 
 ### Phase 10 (optional): offline solo — M to L
 

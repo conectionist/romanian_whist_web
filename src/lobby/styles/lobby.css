@@ -247,6 +247,56 @@ select.field option {
   justify-content: center;
 }
 
+/* The foot of the main menu: where the source is, and About. */
+.menu-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  margin-top: 28px;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+.menu-source a,
+.menu-source-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.menu-source a:hover,
+.menu-source-btn:hover,
+.menu-source a:focus-visible,
+.menu-source-btn:focus-visible {
+  color: var(--gold-bright);
+}
+
+.menu-source a:focus-visible,
+.menu-source-btn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+@media (pointer: coarse) {
+  .menu-source a,
+  .menu-source-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 6px;
+  }
+}
+
 /* The flag that opens the language dialog again, in the page's top right corner. */
 .menu-lang {
   top: 18px;

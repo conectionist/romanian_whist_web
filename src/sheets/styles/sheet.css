@@ -302,6 +302,88 @@
   background: currentColor;
 }
 
+/* About: the licence, the links to the source, the versions, what the browser keeps and the way to forget it. */
+.about {
+  max-width: 62ch;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.about p {
+  margin: 8px 0 0;
+}
+
+.about .sheet-label {
+  margin: 16px 0 4px;
+}
+
+.about-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-stored li {
+  margin-bottom: 4px;
+}
+
+.about-link {
+  color: var(--gold-bright);
+}
+
+.about-note {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+code.about-note {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.about-versions {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 16px;
+  margin: 0;
+}
+
+.about-versions dt {
+  color: var(--muted);
+}
+
+.about-versions dd {
+  margin: 0;
+}
+
+.about .about-privacy {
+  margin-top: 14px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--muted);
+}
+
+/* A link that looks like a sheet's button, and the question Forget asks in place of the buttons. */
+a.sheet-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.about-confirm {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.about-confirm-text {
+  flex: 1 1 280px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--cream);
+}
+
 /* The settings: two sliders in the columns of one grid, so they start and end together, and the
    wait under them. src/ui/SettingsSheet.cpp, with the sliders drawn as the desktop's style draws
    them from the sheet's dark palette. */

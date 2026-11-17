@@ -24,8 +24,10 @@ import { Notices, connectionText, errorText, presenceNews, restartingText, waiti
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
 import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
+import { versionsOf } from "./about/links";
 import { startIn } from "./i18n/document";
-import { addressForLanguage, currentLanguage, keepLanguage, languageFromSearch, storeLanguage, storedLanguage } from "./i18n/language";
+import { LANGUAGES, addressForLanguage, currentLanguage, keepLanguage, languageFromSearch, storeLanguage, storedLanguage } from "./i18n/language";
+import { forgetBrowser } from "./storage/stored";
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
 import { loadFonts } from "./table/fonts";
@@ -156,6 +158,7 @@ const sheets = new Sheets(
     join: (code, kept) => flow.join(code, kept),
     cancelJoin: () => flow.cancelJoin(),
     back: () => flow.escape(),
+    forgetBrowser: () => forgetEverything(),
     takeSeat: (seat) => flow.takeSeat(seat),
     seat: (seat, choice) => flow.chooseSeat(seat, choice),
     seatCount: (count) => flow.changeSeatCount(count),
@@ -168,6 +171,24 @@ const sheets = new Sheets(
   },
   { setup: () => remembered, profile: () => profile, pace: storedPace },
 );
+
+// What the server said of itself in its welcome, which About and the link to its source read.
+let serverInfo: { version: string; commit: string } | null = null;
+
+// The page forgets what it keeps in this browser and loads anew. The connection is closed first, so that no welcome
+// writes the token again before the page has gone.
+function forgetEverything(): void {
+  connection.close();
+  const storages = { local: null as Storage | null, session: null as Storage | null };
+  try {
+    storages.local = window.localStorage;
+    storages.session = window.sessionStorage;
+  } catch {
+    // What the browser will not show cannot be cleared.
+  }
+  forgetBrowser(storages, LANGUAGES);
+  window.location.reload();
+}
 
 const menuBar = new MenuBar({
   newGame: () => flow.openMenu("new-game"),
@@ -255,7 +276,7 @@ keyboard.install();
 
 const announcer = new Announcer();
 
-const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage, settings: () => flow.openMenu("settings"), rules: () => flow.openMenu("rules") });
+const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage, settings: () => flow.openMenu("settings"), rules: () => flow.openMenu("rules"), about: () => flow.openMenu("about") });
 frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element, rotateHint());
 
 scene.onHistory(() => flow.openMenu("history"));
@@ -354,7 +375,9 @@ function render(): void {
   const noTable = synced && !atTable(state);
   const waiting = state.held === null ? "" : holdNote(state.held.waitingFor, seatingOf(state), secondsLeft());
   const link = state.table === null ? "" : linkFor(state.table.code, window.location.origin);
-  sheets.render(shown, state, { continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking(), scaled: scaledNow, leaving: flow.leaveAsked(), returnedFrom: flow.returnedFrom() });
+  const versions = versionsOf(serverInfo);
+  menuPage.setSource(versions);
+  sheets.render(shown, state, { versions, continued: flow.continuedHold(), joinCode: flow.ui.joinCode, address: link, waiting, asking: flow.asking(), scaled: scaledNow, leaving: flow.leaveAsked(), returnedFrom: flow.returnedFrom() });
   menuBar.update(menuStateFor(state, true));
   menuPage.show(noTable);
   // The table under a sheet or the menu page takes neither clicks nor the keyboard, but for a round
@@ -440,6 +463,10 @@ let soloAsked = false;
 let joinAsked = false;
 
 function handle(message: ServerMessage): void {
+  if (message.type === "welcome") {
+    serverInfo = message.server;
+    render();
+  }
   if (message.type === "restarting") {
     // Not the table's news, so it goes round the queue, which a sync would empty.
     notices.set("restart", restartingText(message.deadline, new Date(), currentLanguage()), { kind: "restart" });

@@ -120,7 +120,7 @@ export class Flow {
         if (message.state === "closed") {
           this.leaving = false;
           this.paused = false;
-          const keeps = this.ui.menu === "rules" || this.ui.menu === "settings" || this.ui.menu === "new-game" || this.ui.menu === "online" || this.ui.menu === "create-table";
+          const keeps = this.ui.menu === "rules" || this.ui.menu === "settings" || this.ui.menu === "new-game" || this.ui.menu === "online" || this.ui.menu === "create-table" || this.ui.menu === "about";
           this.ui = { ...this.ui, menu: keeps ? this.ui.menu : null, pauseMenu: false };
         }
         break;

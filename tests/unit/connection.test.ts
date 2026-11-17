@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BACKOFF_MS, CONNECTIONS_REFUSED_WAIT_MS, Connection, TOKEN_KEY, delayFor, type Status } from "../../src/net/connection";
+import { BACKOFF_MS, CONNECTIONS_REFUSED_WAIT_MS, Connection, delayFor, type Status } from "../../src/net/connection";
+import { TOKEN_KEY } from "../../src/storage/keys";
 import type { Language } from "../../src/i18n/language";
 import type { ServerMessage } from "../../src/net/protocol";
 

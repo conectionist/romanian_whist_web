@@ -109,7 +109,7 @@ async function main(): Promise<void> {
 
   // The sheets, as the live page has them, asking for nothing.
   const sheets = new Sheets(NO_ACTIONS, { setup: () => defaults(seededRandom(1)), profile: () => null, pace: storedPace }, seededRandom(1));
-  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined, settings: () => undefined, rules: () => undefined });
+  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined, settings: () => undefined, rules: () => undefined, about: () => undefined });
   frame.append(menuPage.element, sheets.layer.element);
   let ui: UiState = NOTHING_ASKED;
   let order: readonly string[] | undefined;

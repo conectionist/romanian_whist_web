@@ -1,3 +1,5 @@
+import { versionsOf, type Versions } from "../about/links";
+import { LANGUAGES } from "../i18n/language";
 import { CreateTableSheet } from "../lobby/createTableSheet";
 import { LobbySheet, type LobbyActions } from "../lobby/lobbySheet";
 import { NewGameSheet } from "../lobby/newGameSheet";
@@ -10,6 +12,8 @@ import type { MenuSheet, SheetName } from "../play/sheets";
 import { holdAwaitsYou, isOnline, inLobby, gameOn, scoredRound } from "../play/sheets";
 import { modelOf } from "../play/model";
 import type { StoreState } from "../play/store";
+import { storedItems } from "../storage/stored";
+import { AboutSheet, fieldsFor as aboutFields } from "./aboutSheet";
 import { SettingsSheet, type SettingsValues } from "./settingsSheet";
 import { GameOverSheet, failureFields, fieldsFor as gameOverFields, resultFor } from "./gameOverSheet";
 import { HistorySheet, fieldsFor as historyFields } from "./historySheet";
@@ -41,6 +45,8 @@ export interface SheetActions extends LobbyActions {
   askLeave(): void;
   // The Back button of a page, on the scaled table: what Esc does.
   back(): void;
+  // About's Forget: the page's own storage is cleared and the page loaded anew.
+  forgetBrowser(): void;
 }
 
 const none = () => undefined;
@@ -60,6 +66,7 @@ export const NO_ACTIONS: SheetActions = {
   join: none,
   cancelJoin: none,
   back: none,
+  forgetBrowser: none,
   takeSeat: none,
   seat: none,
   seatCount: none,
@@ -97,6 +104,8 @@ export interface RenderContext {
   leaving?: boolean;
   // The sheet that was closed to come back to this one.
   returnedFrom?: MenuSheet | null;
+  // What About says of the page and the server it is talking to.
+  versions?: Versions;
 }
 
 // The sheets over the layer. Each is made once, and filled from the store when it is shown.
@@ -107,6 +116,7 @@ export class Sheets {
   private readonly lastTrick: LastTrickSheet;
   private readonly gameOver: GameOverSheet;
   private readonly rules: RulesSheet;
+  private readonly about: AboutSheet;
   private readonly settings: SettingsSheet;
   private readonly pause: PauseSheet;
   private readonly leave: LeaveSheet;
@@ -136,6 +146,7 @@ export class Sheets {
       mainMenu: () => actions.mainMenu(),
     });
     this.rules = new RulesSheet({ close: () => actions.closeMenu() });
+    this.about = new AboutSheet({ close: () => actions.closeMenu(), forget: () => actions.forgetBrowser() });
     this.settings = new SettingsSheet({ changed: (values) => actions.settingsChanged(values), done: () => actions.closeMenu() });
     this.pause = new PauseSheet({ resume: () => actions.resume(), mainMenu: () => actions.mainMenu() });
     this.leave = new LeaveSheet({ leave: () => actions.mainMenu(), stay: () => actions.resume() });
@@ -156,6 +167,7 @@ export class Sheets {
       "last-trick": this.lastTrick,
       "game-over": this.gameOver,
       rules: this.rules,
+      about: this.about,
       settings: this.settings,
       pause: this.pause,
       leave: this.leave,
@@ -227,6 +239,9 @@ export class Sheets {
       case "rules":
         this.rules.update(linesFor(state.table === null ? rulesOf(this.memory.setup()) : configOf(state.table.settings)));
         break;
+      case "about":
+        this.about.update(aboutFields(context.versions ?? versionsOf(null), storedItems(LANGUAGES)));
+        break;
       case "leave":
         this.leave.update(!inLobby(state));
         break;
@@ -293,6 +308,9 @@ export class Sheets {
         this.settings.showTable(!isOnline(state));
         break;
       }
+      case "about":
+        this.about.open();
+        break;
       case "new-game":
         this.newGame.open(this.memory.setup());
         break;

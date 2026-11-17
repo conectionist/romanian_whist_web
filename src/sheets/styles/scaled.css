@@ -504,6 +504,11 @@
   gap: 6px;
 }
 
+.window[data-layout="scaled"] .menu-source {
+  margin-top: 0;
+  font-size: 14px;
+}
+
 .menu-foot .menu-foot-btn {
   display: inline-flex;
   align-items: center;

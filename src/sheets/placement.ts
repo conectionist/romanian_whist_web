@@ -10,7 +10,7 @@ export type Placement = "dialog" | "side" | "bottom" | "page";
 export type SheetKey = SheetName | "menu";
 
 const SIDE: readonly SheetKey[] = ["last-trick", "scores"];
-const PAGE: readonly SheetKey[] = ["history", "new-game", "online", "create-table", "lobby"];
+const PAGE: readonly SheetKey[] = ["history", "new-game", "online", "create-table", "lobby", "about"];
 
 export function placementFor(name: SheetKey, scaled: boolean): Placement {
   if (!scaled) {

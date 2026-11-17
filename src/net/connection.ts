@@ -1,5 +1,6 @@
 import type { Language } from "../i18n/language";
 import { DecodeError, decode } from "./decode";
+import { RELOADED_KEY, TOKEN_KEY } from "../storage/keys";
 import { PROTOCOL_VERSION, type ClientMessage, type ServerMessage } from "./protocol";
 
 export type Status = "connecting" | "open" | "closed" | "elsewhere";
@@ -16,8 +17,6 @@ export function delayFor(attempt: number): number {
   return BACKOFF_MS[Math.min(Math.max(attempt, 0), BACKOFF_MS.length - 1)];
 }
 
-export const TOKEN_KEY = "whist.token";
-const RELOADED_KEY = "whist.reloaded";
 
 type Memory = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 

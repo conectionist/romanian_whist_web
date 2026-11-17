@@ -1469,6 +1469,7 @@ commit of code `71713b4`).
   - **`npm run build` and `npm run build:look`** pass at `71713b4`, and the unit, look and end-to-end
     tests pass: 1140, 554 and 166.
   - **CI** (Build (Linux) and the Docker image) is green at `71713b4`.
+  - **The owner approved** the phase on 2026-11-17.
 
 ### Phase 10 (optional): offline solo — M to L
 

@@ -63,6 +63,7 @@ jobs:
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
+      web_commit: ${{ steps.info.outputs.web_commit }}
 
     steps:
       # Recursive: the server's image is built from the submodule, which needs its own.
@@ -70,9 +71,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Find the server's commit and the protocol version
+      # A pull request's run is of a merge commit that is nowhere in the repository; the page's source is its head.
+      - name: Find the page's and the server's commits and the protocol version
         id: info
+        env:
+          WEB_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
+          echo "web_commit=$WEB_COMMIT" >> "$GITHUB_OUTPUT"
           echo "server_commit=$(git -C libs/romanian_whist_server rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
           echo "server_revision=$(git -C libs/romanian_whist_server rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           protocol=$(sed -n 's/^export const PROTOCOL_VERSION = \([0-9][0-9]*\);.*/\1/p' src/net/protocol.ts)
@@ -129,6 +134,7 @@ jobs:
           load: true
           tags: ${{ env.IMAGE }}:ci
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: WHIST_WEB_COMMIT=${{ steps.info.outputs.web_commit }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,scope=web,mode=max
 
@@ -160,13 +166,16 @@ jobs:
           WHIST_SERVER_TAG: ci
           WHIST_WEB_TAG: ci
           SERVER_COMMIT: ${{ steps.info.outputs.server_commit }}
+          WEB_COMMIT: ${{ steps.info.outputs.web_commit }}
         run: |
           compose="docker compose -f libs/romanian_whist_server/deploy/docker-compose.yml"
           $compose up -d --pull never --wait --wait-timeout 120
-          node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT"
+          node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT" --web-commit "$WEB_COMMIT"
           npm ci
           npx playwright install --with-deps chromium
           WHIST_URL=http://127.0.0.1 npx playwright test --config playwright.docker.config.ts
+          # The stop starts the server's drain, which waits for the games someone is at, such as the one just played, until
+          # they end or leave for good; the compose file's grace period is longer than that, so the server leaves by itself.
           $compose stop
           test "$(docker inspect -f '{{.State.ExitCode}}' whist-server-1)" = 0
           $compose down -v
@@ -176,6 +185,7 @@ jobs:
           WHIST_SERVER_TAG: ci
           WHIST_WEB_TAG: ci
           SERVER_COMMIT: ${{ steps.info.outputs.server_commit }}
+          WEB_COMMIT: ${{ steps.info.outputs.web_commit }}
         run: |
           examples=libs/romanian_whist_server/deploy/examples
           compose="docker compose -f libs/romanian_whist_server/deploy/docker-compose.own-proxy.yml"
@@ -183,21 +193,20 @@ jobs:
           $compose up -d --pull never
           healthy
           test "$(docker inspect -f '{{.State.ExitCode}}' whist-page-1)" = 0
-          node tools/smoke.mjs --url http://127.0.0.1:8080 --profile server --server-commit "$SERVER_COMMIT"
+          node tools/smoke.mjs --url http://127.0.0.1:8080 --profile server --server-commit "$SERVER_COMMIT" --web-commit "$WEB_COMMIT"
 
           printf ':8081 {\n\timport /etc/caddy/whist.caddy\n}\n' > "$RUNNER_TEMP/Caddyfile"
           docker run -d --name own-caddy --network host \
               -v "$RUNNER_TEMP/Caddyfile:/etc/caddy/Caddyfile:ro" \
               -v "$PWD/$examples/whist.caddy:/etc/caddy/whist.caddy:ro" caddy:2.11.9-alpine
-          node tools/smoke.mjs --url http://127.0.0.1:8081 --profile proxy --server-commit "$SERVER_COMMIT"
+          node tools/smoke.mjs --url http://127.0.0.1:8081 --profile proxy --server-commit "$SERVER_COMMIT" --web-commit "$WEB_COMMIT"
 
           printf 'events {}\nhttp {\n    include mime.types;\n    server { listen 8082; include snippets/whist.conf; }\n}\n' > "$RUNNER_TEMP/nginx.conf"
           docker run -d --name own-nginx --network host \
               -v "$RUNNER_TEMP/nginx.conf:/etc/nginx/nginx.conf:ro" \
               -v "$PWD/$examples/nginx/whist.conf:/etc/nginx/snippets/whist.conf:ro" \
-              -v "$PWD/$examples/nginx/whist-headers.conf:/etc/nginx/snippets/whist-headers.conf:ro" \
               nginx:1.30.6-alpine
-          node tools/smoke.mjs --url http://127.0.0.1:8082 --profile proxy --server-commit "$SERVER_COMMIT"
+          node tools/smoke.mjs --url http://127.0.0.1:8082 --profile proxy --server-commit "$SERVER_COMMIT" --web-commit "$WEB_COMMIT"
           docker rm -f own-caddy own-nginx
 
           # The page's own compose file reaches the server over the Docker bridge, so the server
@@ -209,13 +218,15 @@ jobs:
           alone="docker compose -f deploy/docker-compose.yml"
           export WHIST_DOMAIN=:80
           WHIST_SERVER_ADDRESS=host.docker.internal:8080 $alone up -d --pull never --wait --wait-timeout 120
-          node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT"
+          node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT" --web-commit "$WEB_COMMIT"
           WHIST_SERVER_ADDRESS=host.docker.internal:8080 $alone down -v
 
           alone="$alone -f $RUNNER_TEMP/join-network.yml"
           WHIST_SERVER_ADDRESS=server:8080 $alone up -d --pull never --wait --wait-timeout 120
-          node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT"
+          node tools/smoke.mjs --url http://127.0.0.1 --profile web --server-commit "$SERVER_COMMIT" --web-commit "$WEB_COMMIT"
           WHIST_SERVER_ADDRESS=server:8080 $alone down -v
+          $compose stop
+          test "$(docker inspect -f '{{.State.ExitCode}}' whist-server-1)" = 0
           $compose down -v
 
       # The one place that exercises Caddy's automatic HTTPS, with its own local certificate, under
@@ -281,4 +292,5 @@ jobs:
           push: true
           tags: ${{ needs.docker.outputs.tags }}
           labels: ${{ needs.docker.outputs.labels }}
+          build-args: WHIST_WEB_COMMIT=${{ needs.docker.outputs.web_commit }}
           cache-from: type=gha,scope=web

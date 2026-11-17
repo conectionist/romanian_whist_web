@@ -28,18 +28,21 @@ export function cspCopies(root = here) {
   });
 }
 
+// The server sends the page's headers and caching rules itself, so every profile is held to them. What differs is
+// what stands in front of it.
 const PROFILES = {
   // Our Caddy in front of the page and the server.
-  web: { headers: true, woff2: ["font/woff2"], compression: "required", errorCache: "none" },
+  web: { woff2: ["font/woff2"], compression: "required" },
   // The server alone, serving the page itself.
-  server: { headers: false, woff2: ["font/woff2", "application/font-woff2"], compression: "reported", errorCache: "short" },
-  // The server behind a proxy that carries the examples' headers.
-  proxy: { headers: true, woff2: ["font/woff2", "application/font-woff2"], compression: "reported", errorCache: "none" },
+  server: { woff2: ["font/woff2", "application/font-woff2"], compression: "reported" },
+  // The server behind a proxy that forwards everything, as the examples do.
+  proxy: { woff2: ["font/woff2", "application/font-woff2"], compression: "reported" },
 };
 
 const TABLE_CODE = "K7QM4P";
-const LONG_CACHE = /immutable|max-age=([1-9]\d{5,})/;
 const KEPT = /public|immutable|max-age=[1-9]|s-maxage=[1-9]/;
+// What the answers about the server itself say, so that no cache keeps one.
+const NOT_STORED = /(^|,\s*)no-store(\s*,|$)/;
 
 async function get(baseUrl, path, headers = {}) {
   const response = await fetch(new URL(path, baseUrl), { headers, redirect: "manual", signal: AbortSignal.timeout(10000) });
@@ -48,7 +51,7 @@ async function get(baseUrl, path, headers = {}) {
 }
 
 // Runs every check, so that one run shows all that is wrong. A check throws to fail.
-export async function checkPage(baseUrl, profileName, { serverCommit, timeoutMs = 10000, log = console.log } = {}) {
+export async function checkPage(baseUrl, profileName, { serverCommit, webCommit, timeoutMs = 10000, log = console.log } = {}) {
   const profile = PROFILES[profileName];
   if (profile === undefined) {
     throw new Error(`unknown profile "${profileName}", expected one of ${Object.keys(PROFILES).join(", ")}`);
@@ -141,46 +144,73 @@ export async function checkPage(baseUrl, profileName, { serverCommit, timeoutMs 
     return `content-encoding: ${encoding ?? "none"}`;
   });
 
-  if (profile.headers) {
-    await check("the content-security-policy is the page's, on every kind of answer", async () => {
-      // /version is the server's answer, which the proxy passes on.
-      for (const path of ["/", `/t/${TABLE_CODE}`, script, "/avatars.json", "/assets/nope.js", "/nope.svg", "/version"]) {
-        const response = await get(baseUrl, path);
-        expectEqual(`the policy of ${path} (${response.status})`, response.headers.get("content-security-policy"), PAGE_CSP);
-        expectEqual(`x-content-type-options of ${path}`, response.headers.get("x-content-type-options"), "nosniff");
-        expectEqual(`referrer-policy of ${path}`, response.headers.get("referrer-policy"), "no-referrer");
-      }
-    });
+  await check("the content-security-policy is the page's, on every kind of answer", async () => {
+    // /version and /health are the server's answers, which a proxy passes on.
+    for (const path of ["/", `/t/${TABLE_CODE}`, script, "/avatars.json", "/assets/nope.js", "/nope.svg", "/version", "/health"]) {
+      const response = await get(baseUrl, path);
+      expectEqual(`the policy of ${path} (${response.status})`, response.headers.get("content-security-policy"), PAGE_CSP);
+      expectEqual(`x-content-type-options of ${path}`, response.headers.get("x-content-type-options"), "nosniff");
+      expectEqual(`referrer-policy of ${path}`, response.headers.get("referrer-policy"), "no-referrer");
+    }
+  });
 
-    await check("the caching rules", async () => {
-      const rules = [
-        ["/", "no-cache"],
-        [`/t/${TABLE_CODE}`, "no-cache"],
-        [script, "public, max-age=31536000, immutable"],
-        ["/avatars.json", "public, max-age=3600"],
-      ];
-      for (const [path, want] of rules) {
-        expectEqual(`cache-control of ${path}`, (await get(baseUrl, path)).headers.get("cache-control"), want);
-      }
-    });
-  }
+  await check("the caching rules", async () => {
+    const rules = [
+      ["/", "no-cache"],
+      [`/t/${TABLE_CODE}`, "no-cache"],
+      [script, "public, max-age=31536000, immutable"],
+      ["/avatars.json", "public, max-age=3600"],
+    ];
+    for (const [path, want] of rules) {
+      expectEqual(`cache-control of ${path}`, (await get(baseUrl, path)).headers.get("cache-control"), want);
+    }
+  });
 
-  // A caching rule on an error would keep a fault in a browser for as long. Where the caching rules
-  // are ours, an error is the server's own: it may say not to cache but never to keep. The server
-  // alone may keep one briefly.
-  const noRule = profile.errorCache === "none";
-  await check(noRule ? "an error answer is not kept by a cache" : "an error answer is never cached for long", async () => {
+  // A caching rule on an error would keep a fault in a browser for as long, so an error is never given one.
+  await check("an error answer is not kept by a cache", async () => {
     for (const path of ["/assets/nope.js", "/nope.svg", `/t/${TABLE_CODE.toLowerCase()}`, "/ws"]) {
       const response = await get(baseUrl, path);
       if (response.status < 400) {
         throw new Error(`${path} gave ${response.status}, expected an error`);
       }
       const cache = response.headers.get("cache-control") ?? "";
-      if ((noRule ? KEPT : LONG_CACHE).test(cache)) {
+      if (KEPT.test(cache)) {
         throw new Error(`${path} (${response.status}) has cache-control: ${cache}`);
       }
     }
   });
+
+  await check("/health says the server is up, and /version what runs, and neither is cached", async () => {
+    const health = await expectOk("/health", ["application/json"]);
+    expectEqual("the health", JSON.stringify(JSON.parse(health.body.toString("utf8"))), JSON.stringify({ status: "ok" }));
+    const version = await expectOk("/version", ["application/json"]);
+    const told = JSON.parse(version.body.toString("utf8"));
+    for (const field of ["version", "commit", "protocol"]) {
+      if (!(field in told)) {
+        throw new Error(`/version has no ${field}`);
+      }
+    }
+    if (serverCommit !== undefined) {
+      expectEqual("the server's commit in /version", told.commit, serverCommit);
+    }
+    for (const [path, response] of [["/health", health], ["/version", version]]) {
+      const cache = response.headers.get("cache-control") ?? "";
+      if (!NOT_STORED.test(cache)) {
+        throw new Error(`${path} has cache-control: ${JSON.stringify(cache)}, expected no-store`);
+      }
+    }
+    return `version ${told.version}, commit ${told.commit || "none"}, protocol ${told.protocol}`;
+  });
+
+  if (webCommit !== undefined) {
+    // The commit is in the page's one script, where the build put it for About and the footer's links.
+    await check("the page was built from the commit it was given", async () => {
+      const text = (await get(baseUrl, script)).body.toString("utf8");
+      if (!text.includes(webCommit)) {
+        throw new Error(`the script does not hold ${webCommit}`);
+      }
+    });
+  }
 
   await check("a solo game is played through /ws", async () => {
     const seen = await smokeGame(baseUrl, { commit: serverCommit, timeoutMs });
@@ -196,6 +226,7 @@ async function main() {
       url: { type: "string", default: "http://127.0.0.1:8000" },
       profile: { type: "string" },
       "server-commit": { type: "string" },
+      "web-commit": { type: "string" },
       timeout: { type: "string", default: "10" },
       copies: { type: "boolean", default: false },
     },
@@ -218,7 +249,7 @@ async function main() {
   if (values.profile === undefined) {
     throw new Error(`--profile is required: ${Object.keys(PROFILES).join(", ")}`);
   }
-  return checkPage(values.url, values.profile, { serverCommit: values["server-commit"], timeoutMs });
+  return checkPage(values.url, values.profile, { serverCommit: values["server-commit"], webCommit: values["web-commit"], timeoutMs });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

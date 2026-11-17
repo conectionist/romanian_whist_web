@@ -340,21 +340,37 @@ sets the rules. The page's share:
 
 - Player-chosen text goes in only through `textContent`.
 - The page works under the strict Content-Security-Policy the server sends: no inline script, and
-  `connect-src 'self'`. Until the server's phase 9 sends it, the policy comes from the image's
-  Caddy, or, behind the user's own proxy, from the server's proxy examples. Every copy is the exact
-  string of `PAGE_CSP` in `tools/smoke.mjs`, which a unit test and the smoke test compare.
+  `connect-src 'self'`. The server sends it, with `nosniff`, the referrer policy and the caching
+  rules, on every answer; its proxy examples add none. The image's Caddy sends it too, since it
+  serves the page. The copies are the image's Caddyfile and the server's `PageHeaders.h`, each the
+  exact string of `PAGE_CSP` in `tools/smoke.mjs`, which a unit test and the smoke test compare.
 - Every asset is served by the server itself, so the page makes no third-party requests. That is
   also a privacy point.
 - The token is kept in the browser's storage and sent only in `hello`, never in a URL or a log.
-- **The footer** links "Source" to the server at the commit `GET /version` gives, and to this
-  repository at the commit the page was built from, which the build writes into the page. In the
-  image, that commit will come from a build argument, since the build context has no `.git`. The
-  AGPL's section 13 needs both (the server plan's
+- **The footer** of the main menu, on the desktop and the phone, reads "Source: server · page ·
+  About". Server links to the server at the commit its welcome gives, which is the commit `GET
+  /version` gives, and page links to this repository at the commit the page was built from, which
+  the build writes into the page: from `WHIST_WEB_COMMIT`, else git, else none. In the image that
+  commit is a build argument, since the build context has no `.git`; CI passes the commit, and a
+  pull request's is its head's. With no commit, the link is to the repository and About says the
+  commit is unknown. The AGPL's section 13 needs both (the server plan's
   [§12](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#12-deployment-and-operations)).
-- **An About page** says what the page keeps: a chosen display name and a random token in the
-  browser's storage, with no accounts and no cookies.
+- **An About sheet,** opened by the footer and placed like the rules on the phone, lists the licence
+  (AGPL-3.0-or-later), both links, both versions and commits, the protocol number, and what the page
+  keeps in the browser, by name: the token, the profile, the last New Game for each language, the
+  pace, the language, and two notes that last for the tab. The names are one registry, which the
+  list and "Forget this browser" both read, and a test holds the source to it. Forget asks first,
+  clears exactly those names and reloads. It says there are no accounts and no cookies, and the
+  page asks no other site for anything. "Report a problem" opens this repository's issues.
+- **A server that restarts** sends `restarting` with the time left, to every page and again right
+  after the welcome of one that comes in during the drain. It is about the server, not the table,
+  so the page takes it before the playback queue and shows it in the strip of notices, as a slim
+  banner over the table and the main menu, with the time of day the games can go on until and that
+  no new game can start. The strip is a live region, so a screen reader says it. It stays until
+  the connection goes. `busy` and each limit of `rateLimited` have words of their own, and a
+  refusal for too many connections waits 30 seconds before the page tries again.
 
-Both are built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
+All of this is built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
 the page is built from the latest commit of this repository whose submodule points at the server
 being deployed, and a server change that no such commit points at gets a submodule update here
 first (the server plan's §12).
@@ -411,6 +427,10 @@ They run against a real server, built from the submodule ([§14](#14-building-an
 - `nice -n 19 npm run e2e -- --workers=1`;
 - one heavy command at a time, and long jobs in the background.
 
+The end-to-end server's limits per address are lifted in `tests/e2e/server.json`, since every test
+connects and makes tables from the one address. The drain test starts a server of its own on port
+8091 with a short `drain_ms`.
+
 **The server for the end-to-end tests** is built from the submodule, by the server's own rules:
 
 ```
@@ -437,7 +457,8 @@ checkout of the server beside this one.
   with `deploy/Caddyfile`. The Linux job and the owner's machine stay on Node 24, where the
   lockfile is made.
   - **Caddyfile.** It serves the page, hides dotfiles, answers `/t/` and six capital letters or digits with
-    `index.html`, and passes `/ws` and `/version` to `WHIST_SERVER_ADDRESS`. It sends the
+    `index.html`, and passes `/ws`, `/version` and `/health` to `WHIST_SERVER_ADDRESS`, whose own
+    answers it never gives a caching rule: the server says `no-store` itself. It sends the
     content-security-policy, `nosniff` and the referrer policy on every answer, errors included,
     and the caching rules on successful ones only: `immutable` under `/assets/`, `no-cache` for
     the page and a table's link, an hour for the rest.
@@ -449,14 +470,19 @@ checkout of the server beside this one.
     `docker compose build web`, then `docker compose up`, on port 8000.
   - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
     page, a table's link, the file types, the policy and caching headers, that an error is not
-    kept by a cache (or not for long, from the server alone), and a solo game through `/ws`,
-    using the server's smoke test. A browser check, `playwright.docker.config.ts`, loads the page
+    kept by a cache, that `/health` says the server is up and `/version` and `/health` are
+    `no-store`, that the page's script holds the commit it was built from (`--web-commit`), and a
+    solo game through `/ws`, using the server's smoke test. The server sends the headers itself, so
+    every profile is held to them. A browser check, `playwright.docker.config.ts`, loads the page
     under the image's policy, and fails if the page arrives without it.
   - **CI.** The `docker` job checks that this repository's compose files and the override its
     README gives parse, builds both images, and runs the full stack with our Caddy, the own-proxy
     setup directly and through the server's Caddy and nginx examples, this repository's compose
     file pointed at that server over the Docker bridge and, with the README's override, over the
-    server's network, and the same file over HTTPS under its hardening. It holds the page's image
+    server's network, and the same file over HTTPS under its hardening. It stops the server's stack
+    and the own-proxy setup, which starts the drain, and expects the server to leave with exit code
+    0; the compose files' grace period is longer than the drain. It builds the page's image with the
+    commit as a build argument. It holds the page's image
     to its size budget. The `publish` job pushes the page's image from `master` and version tags,
     never from a pull request.
   - **Versioning.** The image's tag is the version in `package.json`; its labels carry the

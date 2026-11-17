@@ -25,7 +25,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 FONT = ROOT / 'public' / 'fonts' / 'cinzel-decorative' / 'CinzelDecorative-Bold.woff2'
 OUT = ROOT / 'public' / 'icons'
 
-# The table's colours, src/table/styles/theme.css.
+# The table's colours.
 ROOM = (28, 17, 10)
 DISC_CENTRE = (42, 97, 66)
 DISC_MIDDLE = (23, 64, 42)

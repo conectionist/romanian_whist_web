@@ -32,7 +32,7 @@ test.describe("a mouse in a phone's window", () => {
 test.describe("a touch screen of 1280 by 800", () => {
   test.use({ viewport: { width: 1280, height: 800 }, ...touch });
 
-  test("keeps the desktop's table, with phase 8's enlargements and the menu bar", async ({ page }) => {
+  test("keeps the desktop's table, with the touch enlargements and the menu bar", async ({ page }) => {
     await page.goto("/?solo=4&seed=7&speed=4");
     await stripUp(page);
     expect(await layoutOf(page)).toBe("desktop");
@@ -78,8 +78,7 @@ test.describe("a touch screen too small for the table", () => {
   });
 });
 
-// The windows the scaled table is tested at: the mock-up's, and the owner's phone in full screen and inside a
-// browser's bars.
+// The windows the scaled table is tested at: the mock-up's, and a phone in full screen and inside a browser's bars.
 const WINDOWS = [
   [640, 360],
   [915, 412],

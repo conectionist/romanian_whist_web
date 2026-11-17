@@ -376,10 +376,8 @@ test.describe("under a mouse", () => {
   });
 });
 
-// The smallest windows a mouse is asked to work in, and every sheet and page that does not need a
-// server: nothing runs off the side, nothing is placed off the top, and every control is within
-// reach, by scrolling the sheet to it if the sheet is taller than the window. A finger has the scaled
-// table's sheets in these windows, which sheets.spec.ts measures.
+// The smallest windows a mouse works in, and every sheet that needs no server: nothing runs off the side or the top, and
+// every control is within reach, by scrolling the sheet to it. A finger has the scaled table's sheets here.
 for (const [width, height] of [
   [844, 390],
   [832, 384],
@@ -413,8 +411,7 @@ for (const [width, height] of [
     }
 
     test("the main menu fits between the bar and the foot, and the language dialog fits the window", async ({ page }) => {
-      // A mouse has the desktop's menu page and its bar at any size, and below 360 tall they do not fit; a finger has the
-      // scaled menu page there, which sheets.spec.ts measures.
+      // A mouse has the desktop's menu page and its bar at any size, and below 360 tall they do not fit.
       test.skip(height < 360, "the desktop's main menu is for windows 360 tall or more");
       await page.goto("/look.html?shot=menu");
       await page.waitForSelector("body[data-ready]");

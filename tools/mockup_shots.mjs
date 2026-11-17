@@ -1,18 +1,7 @@
 #!/usr/bin/env node
-// Takes the Android mock-up's table screens at a phone's size, for comparing the page's scaled table with them.
-//
-//     node tools/mockup_shots.mjs [--android DIR] [--out DIR] [--sizes 640x360,915x412,832x384]
-//
-// --android is the checkout of romanian_whist_android (default ../romanian_whist_android) and --out where
-// the pictures go (default build/shots/mockup). Each size gets a folder, <width>x<height>, with
-//
-//     table-2-players.png to table-6-players.png   the mock-up's "2 to 6 players" screen
-//     bidding.png                                  its bidding screen
-//     play.png                                     its screen for your turn
-//
-// at twice the density, as the page's captures are. The mock-up is built to be opened with a connection,
-// for its fonts. Where they cannot be fetched, its three families are replaced by the page's own copies of
-// the same fonts, and this says so; nothing else of the mock-up is changed.
+// Takes the Android mock-up's table, bidding and play screens at a phone's size, at twice the density, for comparing with the page's.
+// Takes --android DIR (default ../romanian_whist_android), --out DIR and --sizes 640x360,....
+// Where the mock-up's fonts cannot be fetched, its three families are replaced by the page's copies, and this says so.
 
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";

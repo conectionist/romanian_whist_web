@@ -1,13 +1,7 @@
 #!/usr/bin/env node
-// Writes what the Android mock-up's own layout code returns, so that the page's port of it can be
-// compared with the numbers and not with a copy of them.
-//
-//     node tools/mockup_layout.mjs [--android DIR] [--out FILE]
-//
-// --android is the checkout of romanian_whist_android (default ../romanian_whist_android) and --out
-// the file written (default tests/unit/fixtures/mockup-layout.json). The functions are cut out of
-// docs/android-client-mockup/source/mockup.js by name and run in a vm context, so nothing in the
-// mock-up's file is changed or copied by hand. The unit tests read the JSON and never run this.
+// Writes what the Android mock-up's own layout code returns, so the page's port is compared with its numbers, not a copy.
+// Takes --android DIR (default ../romanian_whist_android) and --out FILE.
+// The functions are cut out of the mock-up's source by name and run in a vm; the unit tests read the JSON and never run this.
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";

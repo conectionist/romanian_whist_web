@@ -1,7 +1,6 @@
-/* The scaled table, drawn for a window of at least 640 by 360 and scaled up whole: the stage is that window,
-   in its own units, and everything in it is sized in them. The wood, the racks and the played cards are in
-   the table's own units, set by the scene, and the panels, the hand, the bid strip and the controls are
-   here. None of the desktop's touch enlargements (touch.css) reach into it: it has its own sizes. */
+/* The scaled table: the stage is a window of at least 640 by 360 in its own units, scaled up whole, and everything in it is
+   sized in them. The wood, the racks and the played cards are in the table's units, set by the scene. The desktop's touch
+   enlargements do not reach into it. */
 
 .stage {
   position: absolute;
@@ -162,10 +161,8 @@
   color: var(--muted);
 }
 
-/* The column at the left: the trick's details, and the trump under them in a panel of the same kind, or, with no room for
-   the details, the trump's panel alone under the menu button. The trump is the word and then the card as large as one
-   played on the felt, or the words that stand in its place, in the middle of the panel. The card's size and the column's
-   width are the layout's. */
+/* The column at the left: the trick's details, and the trump in a panel of the same kind under them, or alone under the menu
+   button where there is no room for the details. The card's size and the column's width are the layout's. */
 .stage .left-column {
   position: absolute;
   left: 8px;

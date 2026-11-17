@@ -305,7 +305,7 @@ describe("the web app manifest", () => {
   });
 });
 
-describe("the Romanian the owner chose", () => {
+describe("the Romanian of the strings for full screen, the small table, the online menu and a refused bid", () => {
   const entries = (JSON.parse(readFileSync(join(ROOT, "src/i18n/ro.page.json"), "utf8")) as { entries: { context: string; source: string; translation?: string }[] }).entries;
   const said = (context: string, source: string) => entries.find((each) => each.context === context && each.source === source)?.translation;
 

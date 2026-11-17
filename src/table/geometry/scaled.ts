@@ -1,11 +1,9 @@
 import { centre, woodRadius, type Placement, type Point, type Size } from "../space";
 import { panelRect } from "./seats";
 
-// The scaled table's geometry, ported from the Android mock-up's layoutScaled(): the table is drawn
-// for a window of at least 640 by 360 and scaled up whole, so every number here is in the window's
-// own units once it is divided by the scale. The plates, the hand and the corner controls are placed
-// in those units. The wood, the racks and the played cards stay in the table's own 1020 units, drawn
-// at `2 * R / BOX`.
+// The scaled table's geometry, a port of the Android mock-up's layoutScaled(). The table is drawn for a window of at least
+// 640 by 360 and scaled up whole, so numbers are in the window's units; the wood, the racks and the played cards keep the
+// table's own 1020 units, drawn at 2 * R / BOX.
 
 // The wood's box in table units, the logo's rim, and where the racks and the lead mark stand on the
 // desktop's table.
@@ -88,10 +86,8 @@ export interface HandFan {
   liftSel: number;
 }
 
-// What the four corners of the window hold, which the seats, the hand and the side panels keep clear of. Each box is
-// the room a corner's controls take from the corner, in the window's units, with the least space round them: the
-// top ones are measured down from the top bar. `handLeft` and `handRight` are how far from each edge the hand's fan
-// stays, and `sideTop` where the side panels start.
+// What the four corners hold, which the seats, the hand and the side panels keep clear of: the room each takes from its
+// corner (the top ones down from the top bar), how far from each edge the hand stays, and where the side panels start.
 export interface Corners {
   topLeft: { w: number; h: number };
   topRight: { w: number; h: number };
@@ -190,10 +186,9 @@ export interface Ring {
   angles: number[];
 }
 
-// The seats in the desktop's directions, each one's nearest edge on one circle round the table's
-// centre, that circle as large as the area allows. The wood is then drawn as large as fits, from the
-// desktop's clearance (seats outside it) to SEAT_INSET (seats over it). cardMax is the lowest your
-// played card may reach, seatMax the lowest any seat may, woodBelow the lowest the wood may run.
+// The seats in the desktop's directions, each one's nearest edge on one circle round the table's centre, as large as the
+// area allows; the wood is then drawn as large as fits, from the desktop's clearance to SEAT_INSET. cardMax, seatMax and
+// woodBelow are the lowest your played card, any seat and the wood may reach.
 export function seatRing(area: RingArea): Ring {
   const { x0, x1, y0, bw, bh, woodTop, woodMaxR, woodBelow, cardMax, seatMax, avoid } = area;
   const cx = (x0 + x1) / 2;
@@ -259,10 +254,9 @@ export interface TrickScale {
   boost: number;
 }
 
-// Where the racks stand, how large the played cards are and how large the logo, in the wood's 1020
-// units. A rack keeps 30 units under its seat. The cards stop short of the lead mark and are never
-// taller than `capPx`, the hand's cards. The logo they touch stays at least LOGO_SHARE of their
-// height, near the desktop's proportion, so they gather round it instead of crowding into a cross.
+// Where racks stand, how large the played cards and the logo are, in the wood's units. A rack keeps 30 units under its seat;
+// cards stop short of the lead mark and are at most `capPx` tall; the logo stays at least LOGO_SHARE of their height, so
+// they gather round it and do not crowd into a cross.
 export function trickScale(R: number, rIn: number, angles: readonly number[], seatCount: number, capPx: number): TrickScale {
   const s = (2 * R) / BOX;
   const rackR = Math.min(RIM_RADIUS, rIn / s - 30);
@@ -369,10 +363,8 @@ export function layoutScaled(window: ScaledWindow, seatCount: number, corners: C
     w: Math.min(side === null ? w - 48 : w - 2 * (side.w + 16), 600),
   };
 
-  // The hand spreads as far as the corner buttons and the seats beside it let it, a lifted card
-  // included, so a wide window shows more of each card; it never closes up beyond 240, which still
-  // shows a third of each of eight cards. The outer cards lean by up to 3.5 turns of the fan, and their
-  // corners swing out with it.
+  // The hand spreads as far as the corner buttons and the seats beside it let it, never closing up beyond 240, which shows a
+  // third of each of eight cards. The outer cards lean by up to 3.5 turns of the fan, and their corners swing out with it.
   const lean = (ch / 2) * Math.sin((3.5 * FAN_TURN * Math.PI) / 180);
   let handHalf = Math.min(cx - corners.handLeft, w - corners.handRight - cx);
   for (const seat of ring.seats) {

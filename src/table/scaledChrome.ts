@@ -14,10 +14,9 @@ import { rowsFor, tensionFor, trumpFor } from "./scoreboard";
 import { fieldsFor as trickFields } from "./trickPanel";
 import { z } from "./space";
 
-// What the scaled table draws in place of the desktop's menu bar and corner panels: the pause button top left, the
-// round chip top right, the two round buttons bottom left, the trick's details with the trump under them in a column at
-// the left, the scores in the gap at the right, and the line above your hand. Each is made once and filled from the
-// model.
+// What the scaled table draws in place of the desktop's menu bar and corner panels: the pause button, the round chip, the
+// round buttons, the trick's details with the trump under them, the scores, and the line above your hand. Each is made once
+// and filled from the model.
 
 export interface ChromeActions {
   menu(): void;

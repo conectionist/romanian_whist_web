@@ -1,10 +1,8 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { sheet } from "./online";
 
-// The on-screen keyboard of a phone takes more than half of the window's height. A browser that resizes the layout
-// viewport for it makes the page see a window too short for the table, which must change nothing: the field being
-// typed in keeps the keyboard and is shown above it. Chromium here has no keyboard, so the window is made as short as
-// the keyboard makes it.
+// A phone's keyboard takes over half the window's height and may shrink the layout viewport, which must change nothing: the
+// field typed in keeps the keyboard and is shown above it. Chromium has no keyboard, so the window is made as short.
 const touch = { hasTouch: true, isMobile: true, deviceScaleFactor: 2 } as const;
 const KEYBOARD = 0.45;
 

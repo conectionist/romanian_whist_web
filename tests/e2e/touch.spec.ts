@@ -79,8 +79,8 @@ async function playWithTwoTaps(page: Page, done: Checked): Promise<Checked> {
   return { ...done, cleared: true };
 }
 
-// The windows a game is played in by touch: a touch screen that has the desktop's table, and three phones' that
-// have the scaled one, the last the owner's inside a browser's bars.
+// The windows a game is played in by touch: a touch screen that has the desktop's table, and three phones' that have the
+// scaled one, the last inside a browser's bars.
 for (const [width, height, layout] of [
   [1280, 800, "desktop"],
   [844, 390, "scaled"],

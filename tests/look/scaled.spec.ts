@@ -5,8 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { flightStart } from "./flight";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
-// The scaled table as a phone gets it, one folder for each size and language. Paired with the Android
-// mock-up's own pictures of the same screens by tools/pair_scaled.py.
+// The scaled table as a phone gets it, one folder for each size and language, for pairing with the Android mock-up's pictures.
 const OUT = join(ROOT, "build/shots/scaled");
 const OUT_RO = join(ROOT, "build/shots/scaled-ro");
 

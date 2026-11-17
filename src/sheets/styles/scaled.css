@@ -1,6 +1,5 @@
-/* The sheets and the main menu on the scaled table. The layer, like the table, is the window in its own units, from 640
-   by 360 up, scaled by --scale, so a sheet is drawn at the sizes it has and grows with the window. A sheet is a side
-   sheet, a bottom sheet or a page by what it is (sheets/placement.ts); the desktop's dialogs are in sheet.css. */
+/* The sheets and the main menu on the scaled table. The layer, like the table, is the window in its own units, from 640 by
+   360 up, scaled by --scale, so a sheet is drawn at the sizes it has and grows with the window. */
 
 .window[data-layout="scaled"] .sheet-layer {
   left: 0;

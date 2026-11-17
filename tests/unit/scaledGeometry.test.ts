@@ -29,7 +29,7 @@ import {
 import { DESIGN, DESKTOP_FROM } from "../../src/table/layoutChoice";
 import { centre, woodRadius } from "../../src/table/space";
 
-// What the Android mock-up's own layout functions returned, written by tools/mockup_layout.mjs.
+// What the Android mock-up's own layout functions returned.
 interface Table {
   layout: ScaledLayout & { mode: string };
   played: unknown[];
@@ -104,7 +104,7 @@ describe("the fixture", () => {
     }
   });
 
-  it("draws the owner's phone inside a browser's bars at 0.686, in a design window 1099 wide", () => {
+  it("draws a phone inside a browser's bars at 0.686, in a design window 1099 wide", () => {
     const phone = fixture.windows.find((each) => each.name === "754x247");
     expect(phone?.scale).toBeCloseTo(0.686, 3);
     expect(phone?.design.w).toBeCloseTo(1098.95, 2);

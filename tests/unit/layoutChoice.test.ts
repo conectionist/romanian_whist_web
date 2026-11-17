@@ -51,7 +51,7 @@ describe("which table a window gets", () => {
     expect(touch(832, 384)).toEqual({ kind: "scaled", scale: 384 / 360 });
   });
 
-  it("draws the owner's phone inside a browser's bars smaller than designed, and still draws it", () => {
+  it("draws a phone inside a browser's bars smaller than designed, and still draws it", () => {
     const choice = touch(754, 247);
     expect(choice.kind).toBe("scaled");
     expect(choice.kind === "scaled" ? choice.scale : 0).toBeCloseTo(0.686, 3);

@@ -1,9 +1,8 @@
 import type { SheetName } from "../play/sheets";
 
-// Where a sheet is placed on the scaled table, as the Android plan sets out: a side sheet for a quick look at
-// the table's records, a bottom sheet for what ends or pauses the game and for settings, a page of its own with
-// its action in a bar for what is filled in before a table. The round history is a page too, with no action: its
-// table needs the whole window. The desktop's table has the centred dialog for all.
+// Where a sheet is placed on the scaled table: a side sheet for a quick look at the table's records, a bottom sheet for what
+// ends or pauses the game and for settings, a page for what is filled in before a table and for the history, whose table
+// needs the whole window. The desktop's table has the centred dialog for all.
 export type Placement = "dialog" | "side" | "bottom" | "page";
 
 // What the layer calls a sheet: the sheets the flow names, and the menu list that replaces the pause and the

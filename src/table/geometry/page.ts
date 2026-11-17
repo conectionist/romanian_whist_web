@@ -1,10 +1,8 @@
 import { CHIP_WIDTH, CORNER_INSET, FAN_TURN, layoutScaled, playedPlace, tableScale, type Box, type Corners, type ScaledLayout, type ScaledWindow } from "./scaled";
 
-// The scaled table as the page draws it. The mock-up keeps its bottom right corner for the two round buttons and
-// holds the trump in the round chip. The page has the buttons bottom left, where the desktop has them, and the trump
-// in the column at the left under the trick's details, or under the menu button where there is no room for them,
-// drawn as large as a card played on the felt. The corners are what the seats, the hand and the side panels keep clear
-// of, so they are inputs of layoutScaled and its own numbers stay the mock-up's.
+// The scaled table as the page draws it: the round buttons bottom left, where the desktop has them, and the trump in the column
+// at the left under the trick's details, or under the menu button with no room for them, as large as a played card. The corners
+// are inputs of layoutScaled, whose own numbers stay the mock-up's.
 
 // A round button, and the gap between the two at the foot of the window.
 export const BUTTON = 48;
@@ -14,10 +12,9 @@ export const BUTTON_GAP = 10;
 // there is one, and as wide as its words, and no wider than CHIP_WIDTH, where there is not.
 export const PAGE_CHIP_HEIGHT = 52;
 
-// The trump is in a panel like the trick's details: its word over its card, both in the middle, in the padding and border
-// of a panel. The word with the gap under it is TRUMP_LABEL tall, and the room inside the panel for the card is as wide
-// as TRUMP_WIDTH or the card, for the words that stand in the place of a card in a round with no trump. The panel's
-// border and padding are PANEL_X at each side and PANEL_Y over and under.
+// The trump is in a panel like the trick's details, its word over its card in the middle. TRUMP_LABEL is the word with the gap
+// under it, TRUMP_WIDTH the room for the card or for the words of a round with no trump, PANEL_X and PANEL_Y the panel's
+// border and padding.
 export const TRUMP_LABEL = 14;
 export const TRUMP_WIDTH = 58;
 export const PANEL_X = 11;

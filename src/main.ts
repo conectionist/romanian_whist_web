@@ -20,7 +20,7 @@ import { seatingOf } from "./sheets/seating";
 import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
 import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
-import { Notices, connectionText, errorText, presenceNews, waitingText } from "./lobby/notices";
+import { Notices, connectionText, errorText, presenceNews, restartingText, waitingText } from "./lobby/notices";
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
 import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
@@ -85,6 +85,10 @@ const connection: Connection = new Connection({
     status(value === "open" ? "connected" : value);
     lastStatus = value;
     wasConnected = wasConnected || value === "open";
+    if (value !== "open") {
+      // A restart is told again, right after the welcome, to a page that comes back during it.
+      notices.clear("restart");
+    }
     render();
   },
   onUnreadable: (error: DecodeError) => console.error(`The server sent what the page cannot read: ${error.message}`),
@@ -436,6 +440,11 @@ let soloAsked = false;
 let joinAsked = false;
 
 function handle(message: ServerMessage): void {
+  if (message.type === "restarting") {
+    // Not the table's news, so it goes round the queue, which a sync would empty.
+    notices.set("restart", restartingText(message.deadline, new Date(), currentLanguage()), { kind: "restart" });
+    return;
+  }
   // Making a solo table is answered with its state, and a closed table is the last word from it.
   if (message.type === "tableState") {
     status(message.state === "closed" ? "at no table" : "at a table");

@@ -406,7 +406,8 @@ select.field option {
 }
 
 .notice[data-kind="warn"],
-.notice[data-kind="wait"] {
+.notice[data-kind="wait"],
+.notice[data-kind="restart"] {
   border-color: var(--warn);
 }
 

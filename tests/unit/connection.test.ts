@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKOFF_MS, Connection, TOKEN_KEY, delayFor, type Status } from "../../src/net/connection";
+import { BACKOFF_MS, CONNECTIONS_REFUSED_WAIT_MS, Connection, TOKEN_KEY, delayFor, type Status } from "../../src/net/connection";
 import type { Language } from "../../src/i18n/language";
 import type { ServerMessage } from "../../src/net/protocol";
 
@@ -128,6 +128,24 @@ describe("the connection", () => {
     socket().fire("message", { data: welcome });
     socket().close();
     expect(timers.map((timer) => timer.ms)).toEqual([1000, 2000, 1000]);
+  });
+
+  it("waits 30 seconds after a refusal for too many connections, once, and then goes back to the back-off", () => {
+    const { socket, timers } = setup();
+    socket().fire("message", { data: JSON.stringify({ type: "error", seq: 1, code: "rateLimited", detail: "connections" }) });
+    socket().close();
+    expect(timers.map((timer) => timer.ms)).toEqual([CONNECTIONS_REFUSED_WAIT_MS]);
+    timers[0].run();
+    socket().close();
+    expect(timers.map((timer) => timer.ms)).toEqual([CONNECTIONS_REFUSED_WAIT_MS, 2000]);
+  });
+
+  it("does not wait longer than the back-off for the other limits, or for a message rate", () => {
+    const { socket, timers } = setup();
+    socket().fire("message", { data: JSON.stringify({ type: "error", seq: 1, code: "rateLimited", detail: "joins" }) });
+    socket().fire("message", { data: JSON.stringify({ type: "error", seq: 2, code: "rateLimited" }) });
+    socket().close();
+    expect(timers.map((timer) => timer.ms)).toEqual([1000]);
   });
 
   it("does not reconnect once another tab has taken the member over", () => {

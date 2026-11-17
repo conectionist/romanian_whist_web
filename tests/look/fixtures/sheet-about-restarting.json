@@ -1,0 +1,12 @@
+{
+  "page": "menu",
+  "restarting": 900000,
+  "sheet": "about",
+  "shot": {
+    "file": "sheet-about-restarting.png",
+    "height": 1080,
+    "view": "window",
+    "width": 1920
+  },
+  "state": null
+}

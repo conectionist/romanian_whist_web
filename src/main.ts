@@ -20,6 +20,7 @@ import { seatingOf } from "./sheets/seating";
 import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
 import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
+import { BannerRoom } from "./lobby/bannerRoom";
 import { Notices, connectionText, errorText, presenceNews, restartingText, waitingText } from "./lobby/notices";
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
 import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
@@ -90,6 +91,7 @@ const connection: Connection = new Connection({
     if (value !== "open") {
       // A restart is told again, right after the welcome, to a page that comes back during it.
       notices.clear("restart");
+      bannerRoom.update();
     }
     render();
   },
@@ -127,6 +129,7 @@ const memory: Memory = {
 };
 
 const notices = new Notices();
+const bannerRoom = new BannerRoom(frame, notices.element);
 // Whether the page has been told yet that it is at a table or at none: until then it shows neither.
 let synced = false;
 let wasConnected = false;
@@ -470,6 +473,7 @@ function handle(message: ServerMessage): void {
   if (message.type === "restarting") {
     // Not the table's news, so it goes round the queue, which a sync would empty.
     notices.set("restart", restartingText(message.deadline, new Date(), currentLanguage()), { kind: "restart" });
+    bannerRoom.update();
     return;
   }
   // Making a solo table is answered with its state, and a closed table is the last word from it.

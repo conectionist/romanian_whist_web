@@ -12,6 +12,7 @@ import { MenuBar, menuStateFor } from "../menu/menuBar";
 import { NO_ACTIONS, Sheets } from "../sheets/host";
 import { LanguageDialog } from "../lobby/languageDialog";
 import { MenuPage } from "../lobby/menuPage";
+import { BannerRoom } from "../lobby/bannerRoom";
 import { Notices, restartingText } from "../lobby/notices";
 import { defaults } from "../lobby/setup";
 import { seededRandom } from "../lobby/catalogue";
@@ -126,6 +127,7 @@ async function main(): Promise<void> {
   const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined, settings: () => undefined, rules: () => undefined, about: () => undefined });
   menuPage.setSource(VERSIONS);
   const notices = new Notices();
+  const bannerRoom = new BannerRoom(frame, notices.element);
   frame.append(menuPage.element, sheets.layer.element, notices.element);
   let ui: UiState = NOTHING_ASKED;
   let order: readonly string[] | undefined;
@@ -171,6 +173,7 @@ async function main(): Promise<void> {
     ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null, backAtTable: false, dismissedRound: null };
     drawSheet();
     notices.set("restart", fixture.restarting === undefined ? null : restartingText(fixture.restarting, BANNER_NOW, currentLanguage()), { kind: "restart" });
+    bannerRoom.update();
     menuPage.show(fixture.page === "menu");
     bar?.update(menuStateFor(store.state, true));
   };

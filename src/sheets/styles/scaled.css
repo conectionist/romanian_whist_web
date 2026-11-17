@@ -3,11 +3,11 @@
 
 .window[data-layout="scaled"] .sheet-layer {
   left: 0;
-  top: 0;
+  top: var(--banner-room, 0px);
   right: auto;
   bottom: auto;
   width: calc(100% / var(--scale, 1));
-  height: calc(100% / var(--scale, 1));
+  height: calc((100% - var(--banner-room, 0px)) / var(--scale, 1));
   transform: scale(var(--scale, 1));
   transform-origin: 0 0;
 }

@@ -472,9 +472,19 @@ select.field option {
   text-align: center;
 }
 
+/* The banner keeps clear of the language flag at the page's top right corner, which is 76 wide, and the flag goes
+   below the banner, under the sheet layer, which starts there. */
+.window:has(.notice[data-kind="restart"]) .notices {
+  max-width: calc(100% - 2 * 86px);
+}
+
+.window:has(.notice[data-kind="restart"]) .menu-lang {
+  top: calc(18px + var(--banner-room, 0px));
+}
+
 /* The main menu and the small-table offer, which share the top with the banner, make room for it. */
 .window:has(.notice[data-kind="restart"]) .menu-page {
-  padding-top: 40px;
+  padding-top: var(--banner-room, 40px);
 }
 
 .notice-btn {

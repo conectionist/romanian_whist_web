@@ -229,6 +229,9 @@ for (const [width, height] of SIZES) {
   });
 }
 
+// Fixtures of sheets and pages with the banner up, which must start below it.
+const BANNER_SHEETS = ["sheet-new-game-restarting", "sheet-about-restarting", "sheet-lobby-restarting", "sheet-rules-restarting"];
+
 // The server's restart is told in a slim banner over the table and the main menu, in the words of both languages: inside
 // the window, with the time of day, and clear of every control a finger has to reach.
 for (const [width, height] of SIZES) {
@@ -236,8 +239,8 @@ for (const [width, height] of SIZES) {
     test.use({ viewport: { width, height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 
     for (const [language, suffix] of LANGUAGES) {
-      for (const name of ["menu-restarting", "notice-restarting"]) {
-        test(`over ${name} in ${language} stays inside the window and clear of the controls`, async ({ page }) => {
+      for (const name of ["menu-restarting", "notice-restarting", ...BANNER_SHEETS]) {
+        test(`over ${name} in ${language} stays inside the window, and clear of the controls and of any sheet`, async ({ page }) => {
           await page.goto(`/look.html?shot=${name}&lang=${language}`);
           await page.waitForSelector(READY);
           await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
@@ -264,6 +267,17 @@ for (const [width, height] of SIZES) {
             return touches.map((node) => `${node.className || node.tagName}: ${node.textContent}`);
           });
           expect(covered, "controls under the banner").toEqual([]);
+          // Nor does a sheet start under it: its title and its bar are what the banner would hide.
+          const sheetUnder = await page.evaluate(() => {
+            const banner = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();
+            const open = document.querySelector<HTMLElement>(".sheet:not([hidden])");
+            if (open === null) {
+              return false;
+            }
+            const box = open.getBoundingClientRect();
+            return box.left < banner.right && box.right > banner.left && box.top < banner.bottom && box.bottom > banner.top;
+          });
+          expect(sheetUnder, "a sheet under the banner").toBe(false);
           expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         });
       }

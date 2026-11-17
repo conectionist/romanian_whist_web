@@ -438,6 +438,52 @@ for (const [width, height] of [
   });
 }
 
+// The restart banner stays up, and a sheet opened under it starts below it, in any window a mouse works in: its title
+// is never covered, and the language flag of the main menu is not either.
+for (const [width, height] of [
+  [844, 390],
+  [832, 384],
+  [740, 360],
+  [754, 247],
+]) {
+  test.describe(`the restart banner in a window of ${width} by ${height} under a mouse`, () => {
+    test.use({ viewport: { width, height }, hasTouch: false, isMobile: false });
+
+    for (const language of ["en", "ro"]) {
+      for (const name of ["sheet-new-game-restarting", "sheet-about-restarting", "sheet-lobby-restarting", "sheet-rules-restarting"]) {
+        test(`${name} in ${language} has its sheet clear of the banner, which is inside the window`, async ({ page }) => {
+          await page.goto(`/look.html?shot=${name}&lang=${language}`);
+          await page.waitForSelector("body[data-ready]");
+          const banner = page.locator('.notice[data-kind="restart"]');
+          await expect(banner).toBeVisible();
+          await expect(banner).toContainText("18:45");
+          const found = await page.evaluate(() => {
+            const note = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();
+            const sheet = document.querySelector<HTMLElement>(".sheet:not([hidden])")!.getBoundingClientRect();
+            const title = document.querySelector<HTMLElement>(".sheet:not([hidden]) .sheet-title")!.getBoundingClientRect();
+            const meets = (a: DOMRect, b: DOMRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+            return { sheet: meets(note, sheet), title: meets(note, title), inside: note.left >= 0 && note.right <= window.innerWidth && note.top >= 0 && note.bottom <= window.innerHeight };
+          });
+          expect(found).toEqual({ sheet: false, title: false, inside: true });
+        });
+      }
+
+      // A mouse has the desktop's main menu from 360 tall, and the flag is the one thing at the corner the banner could reach.
+      test(`menu-restarting in ${language} keeps the banner off the language flag`, async ({ page }) => {
+        test.skip(height < 360, "the desktop's main menu is for windows 360 tall or more");
+        await page.goto(`/look.html?shot=menu-restarting&lang=${language}`);
+        await page.waitForSelector("body[data-ready]");
+        const meets = await page.evaluate(() => {
+          const note = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();
+          const flag = document.querySelector('[data-menu-page="language"]')!.getBoundingClientRect();
+          return note.left < flag.right && note.right > flag.left && note.top < flag.bottom && note.bottom > flag.top;
+        });
+        expect(meets).toBe(false);
+      });
+    }
+  });
+}
+
 // The seats stand where the table has them, at the table's own scale, under a finger as under a mouse: the
 // panels and the racks are at the places the layout gives them in a window of any size.
 for (const [touch, pointer] of [

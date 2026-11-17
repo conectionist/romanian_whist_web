@@ -67,7 +67,7 @@ function fixtureNamed(name: string): Fixture {
 
 // What About says, fixed, so that a picture does not change with the commit it was made from.
 const VERSIONS: Versions = {
-  page: { version: "1.0.0", commit: "0123456789abcdef0123456789abcdef01234567" },
+  page: { version: "1.0.0", commit: "0123456789abcdef0123456789abcdef01234567", dirty: false },
   server: { version: "1.0.0", commit: "89abcde" },
   protocol: 2,
 };

@@ -23,15 +23,24 @@ export function shortCommit(commit: string | null | undefined): string | null {
   return isCommit(commit) ? commit.slice(0, 7).toLowerCase() : null;
 }
 
-// What the build knows of itself, and what the server said in its welcome; the server's is null until it has.
+// What the build knows of itself, and what the server said in its welcome; the server's is null until it has. A build
+// of a tree with changes has no commit to name, and says so.
 export interface Versions {
-  page: { version: string; commit: string | null };
+  page: { version: string; commit: string | null; dirty: boolean };
   server: { version: string; commit: string | null } | null;
   protocol: number;
 }
 
+export const DIRTY = "-dirty";
+
+// What the build wrote: a commit, a commit with "-dirty" after it for a tree with changes, or nothing.
+export function pageOf(version: string, written: string): Versions["page"] {
+  const dirty = written.endsWith(DIRTY);
+  return { version, commit: !dirty && isCommit(written) ? written : null, dirty };
+}
+
 export function pageBuild(): Versions["page"] {
-  return { version: __WHIST_WEB_VERSION__, commit: isCommit(__WHIST_WEB_COMMIT__) ? __WHIST_WEB_COMMIT__ : null };
+  return pageOf(__WHIST_WEB_VERSION__, __WHIST_WEB_COMMIT__);
 }
 
 export function versionsOf(server: { version: string; commit: string } | null): Versions {

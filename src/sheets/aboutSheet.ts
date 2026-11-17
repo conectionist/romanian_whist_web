@@ -27,8 +27,11 @@ export interface AboutFields {
   privacy: string;
 }
 
-function build(version: string, commit: string | null): string {
+function build(version: string, commit: string | null, dirty = false): string {
   const short = shortCommit(commit);
+  if (dirty) {
+    return t("about", "%1, with local changes", [version]);
+  }
   return short === null ? t("about", "%1, commit unknown", [version]) : t("about", "%1, commit %2", [version, short]);
 }
 
@@ -55,12 +58,16 @@ export function fieldsFor(versions: Versions, items: readonly StoredItem[]): Abo
       {
         label: t("about", "Page source code"),
         href: pageSourceUrl(versions),
-        note: pageCommit === null ? t("about", "this build's commit is unknown, so the link is to the repository") : t("about", "commit %1", [pageCommit]),
+        note: page.dirty
+          ? t("about", "this build has local changes, so the link is to the repository")
+          : pageCommit === null
+            ? t("about", "this build's commit is unknown, so the link is to the repository")
+            : t("about", "commit %1", [pageCommit]),
       },
     ],
     versionHeading: t("about", "Versions"),
     versions: [
-      { label: t("about", "Page"), value: build(page.version, page.commit) },
+      { label: t("about", "Page"), value: build(page.version, page.commit, page.dirty) },
       { label: t("about", "Server"), value: server === null ? t("about", "not connected yet") : build(server.version, server.commit) },
       { label: t("about", "Protocol"), value: String(versions.protocol) },
     ],

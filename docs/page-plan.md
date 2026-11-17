@@ -350,10 +350,12 @@ sets the rules. The page's share:
 - **The footer** of the main menu, on the desktop and the phone, reads "Source: server · page ·
   About". Server links to the server at the commit its welcome gives, which is the commit `GET
   /version` gives, and page links to this repository at the commit the page was built from, which
-  the build writes into the page: from `WHIST_WEB_COMMIT`, else git, else none. In the image that
+  the build writes into the page: from `WHIST_WEB_COMMIT`, else the head of the repository that is
+  this folder, marked dirty when the tree has changes, else none. In the image that
   commit is a build argument, since the build context has no `.git`; CI passes the commit, and a
-  pull request's is its head's. With no commit, the link is to the repository and About says the
-  commit is unknown. The AGPL's section 13 needs both (the server plan's
+  pull request's is its head's. With no commit, or a dirty one, the link is to the repository and
+  About says the commit is unknown or that the build has local changes. The AGPL's section 13 needs
+  both (the server plan's
   [§12](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#12-deployment-and-operations)).
 - **An About sheet,** opened by the footer and placed like the rules on the phone, lists the licence
   (AGPL-3.0-or-later), both links, both versions and commits, the protocol number, and what the page

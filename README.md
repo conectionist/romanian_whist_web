@@ -144,10 +144,11 @@ source, and this is how they do. Before the server has answered, and for a serve
 link is to the repository itself.
 
 The page's commit is written into the built page. `npm run build` takes it from `WHIST_WEB_COMMIT`, else from
-`git rev-parse HEAD`, else it has none. The image's build has no git history, so the commit is a build
+`git rev-parse HEAD` run in this folder, when the repository is this folder and not one that holds it, else
+it has none. A tree with changes is marked, and About says the build has local changes. The image's build has no git history, so the commit is a build
 argument: CI gives it the commit, and a local image build is given it as
-`WHIST_WEB_COMMIT=$(git rev-parse HEAD) docker compose build web`. A page built with none links to the
-repository and says in About that its commit is unknown.
+`WHIST_WEB_COMMIT=$(git rev-parse HEAD) docker compose build web`. A page built with none, or of a tree with changes,
+links to the repository, and About says that its commit is unknown or that it has local changes.
 
 About lists the licence (AGPL-3.0-or-later), both links, the versions and commits of the page and the
 server, the protocol, and everything the page keeps in the browser, by name: your player token, your name

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { ISSUES_URL, PAGE_REPOSITORY, SERVER_REPOSITORY, isCommit, pageSourceUrl, serverSourceUrl, shortCommit, sourceUrl, versionsOf, type Versions } from "../../src/about/links";
+import { ISSUES_URL, PAGE_REPOSITORY, pageOf, SERVER_REPOSITORY, isCommit, pageSourceUrl, serverSourceUrl, shortCommit, sourceUrl, versionsOf, type Versions } from "../../src/about/links";
 import { LANGUAGES, setLanguage } from "../../src/i18n/language";
 import { PROTOCOL_VERSION } from "../../src/net/protocol";
 import { fieldsFor } from "../../src/sheets/aboutSheet";
@@ -10,7 +10,7 @@ afterEach(() => setLanguage("en"));
 const WHOLE = "0123456789abcdef0123456789abcdef01234567";
 
 function versions(changes: Partial<Versions> = {}): Versions {
-  return { page: { version: "1.0.0", commit: WHOLE }, server: { version: "1.0.0", commit: "89abcde" }, protocol: 2, ...changes };
+  return { page: { version: "1.0.0", commit: WHOLE, dirty: false }, server: { version: "1.0.0", commit: "89abcde" }, protocol: 2, ...changes };
 }
 
 describe("the links to the source", () => {
@@ -39,7 +39,7 @@ describe("the links to the source", () => {
     expect(serverSourceUrl(versions({ server: null }))).toBe(SERVER_REPOSITORY);
     expect(serverSourceUrl(versions({ server: { version: "1.0.0", commit: null } }))).toBe(SERVER_REPOSITORY);
     expect(pageSourceUrl(versions())).toBe(`${PAGE_REPOSITORY}/tree/${WHOLE}`);
-    expect(pageSourceUrl(versions({ page: { version: "1.0.0", commit: null } }))).toBe(PAGE_REPOSITORY);
+    expect(pageSourceUrl(versions({ page: { version: "1.0.0", commit: null, dirty: false } }))).toBe(PAGE_REPOSITORY);
   });
 
   it("are the owner's two repositories, and the problems go to the page's tracker", () => {
@@ -72,10 +72,30 @@ describe("About", () => {
   });
 
   it("says that the page's commit is unknown, and links to the repository, for a build with none", () => {
-    const fields = fieldsFor(versions({ page: { version: "1.0.0", commit: null } }), items());
+    const fields = fieldsFor(versions({ page: { version: "1.0.0", commit: null, dirty: false } }), items());
     expect(fields.sources[1].href).toBe(PAGE_REPOSITORY);
     expect(fields.sources[1].note).toContain("commit is unknown");
     expect(fields.versions[0].value).toBe("1.0.0, commit unknown");
+  });
+
+  it("says a build of a tree with changes has local changes, and links the repository without a commit", () => {
+    const dirty = pageOf("1.0.0", `${WHOLE}-dirty`);
+    expect(dirty).toEqual({ version: "1.0.0", commit: null, dirty: true });
+    const fields = fieldsFor(versions({ page: dirty }), items());
+    expect(fields.sources[1].href).toBe(PAGE_REPOSITORY);
+    expect(fields.sources[1].note).toBe("this build has local changes, so the link is to the repository");
+    expect(fields.versions[0].value).toBe("1.0.0, with local changes");
+    setLanguage("ro");
+    const romanian = fieldsFor(versions({ page: dirty }), items());
+    expect(romanian.versions[0].value).toBe("1.0.0, cu modificări locale");
+    expect(romanian.sources[1].note).toContain("modificări locale");
+  });
+
+  it("reads what the build wrote: a commit, a dirty one, or nothing", () => {
+    expect(pageOf("1.0.0", WHOLE)).toEqual({ version: "1.0.0", commit: WHOLE, dirty: false });
+    expect(pageOf("1.0.0", "")).toEqual({ version: "1.0.0", commit: null, dirty: false });
+    expect(pageOf("1.0.0", "unknown")).toEqual({ version: "1.0.0", commit: null, dirty: false });
+    expect(pageOf("1.0.0", "-dirty")).toEqual({ version: "1.0.0", commit: null, dirty: true });
   });
 
   it("says the server is not connected yet before its welcome, and that its commit is unknown when it says none", () => {

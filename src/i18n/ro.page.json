@@ -1032,6 +1032,16 @@
       "context": "about",
       "source": "Remove everything listed above from this browser? You will not be able to return to a game you are at. The page reloads.",
       "translation": "Ștergi din acest browser tot ce e listat mai sus? Nu te vei mai putea întoarce la un joc la care ești. Pagina se reîncarcă."
+    },
+    {
+      "context": "about",
+      "source": "%1, with local changes",
+      "translation": "%1, cu modificări locale"
+    },
+    {
+      "context": "about",
+      "source": "this build has local changes, so the link is to the repository",
+      "translation": "această versiune are modificări locale, așa că linkul duce la depozit"
     }
   ]
 }

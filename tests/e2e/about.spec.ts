@@ -1,6 +1,6 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { buildCommit } from "../../tools/buildCommit.mjs";
 import { sheet } from "./online";
 
 const PAGE_REPOSITORY = "https://github.com/conectionist/romanian_whist_web";
@@ -8,8 +8,13 @@ const SERVER_REPOSITORY = "https://github.com/conectionist/romanian_whist_server
 
 const PAGE_VERSION = (JSON.parse(readFileSync("package.json", "utf8")) as { version: string }).version;
 
-// The commit the page was built from: the one the build was told, else the checkout's.
-const pageCommit = (process.env.WHIST_WEB_COMMIT ?? "").trim() || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+// What the build wrote for the commit, as the build works it out: the one it was told, else the checkout's head, with
+// -dirty after it while the tree has changes, else none. A dirty or unknown build links the repository itself.
+const written = buildCommit(process.cwd(), process.env);
+const pageCommit = /^[0-9a-f]{7,40}$/i.test(written) ? written.toLowerCase() : null;
+const pageDirty = written.endsWith("-dirty");
+const pageHref = pageCommit === null ? PAGE_REPOSITORY : `${PAGE_REPOSITORY}/tree/${pageCommit}`;
+const pageBuilt = pageDirty ? `${PAGE_VERSION}, with local changes` : pageCommit === null ? `${PAGE_VERSION}, commit unknown` : `${PAGE_VERSION}, commit ${pageCommit.slice(0, 7)}`;
 
 async function menu(page: Page): Promise<void> {
   await page.goto("/");
@@ -27,7 +32,7 @@ test("the main menu's foot links to the source of the server and the page at the
   // A server built with no git history says no commit, and then the link is to the repository itself.
   const named = /^[0-9a-f]{7,40}$/i.test(version.commit);
   await expect(server).toHaveAttribute("href", named ? `${SERVER_REPOSITORY}/tree/${version.commit.toLowerCase()}` : SERVER_REPOSITORY);
-  await expect(source).toHaveAttribute("href", `${PAGE_REPOSITORY}/tree/${pageCommit.toLowerCase()}`);
+  await expect(source).toHaveAttribute("href", pageHref);
   // Each opens in a tab of its own, which cannot reach back into the page.
   for (const link of [server, source]) {
     await expect(link).toHaveAttribute("target", "_blank");
@@ -51,11 +56,11 @@ test("About tells the licence, the sources, the versions and what is kept, and E
   await expect(sheetNow.locator(".sheet-title")).toHaveText("About this page");
   await expect(sheetNow).toContainText("AGPL-3.0-or-later");
   await expect(sheetNow.locator(".about-link").first()).toHaveAttribute("href", /^https:\/\/github\.com\/conectionist\/romanian_whist_server/);
-  await expect(sheetNow.locator(".about-link").nth(1)).toHaveAttribute("href", `${PAGE_REPOSITORY}/tree/${pageCommit.toLowerCase()}`);
+  await expect(sheetNow.locator(".about-link").nth(1)).toHaveAttribute("href", pageHref);
   const serverBuild = /^[0-9a-f]{7,40}$/i.test(version.commit) ? `commit ${version.commit.slice(0, 7).toLowerCase()}` : "commit unknown";
   const versions = sheetNow.locator(".about-versions");
   await expect(versions.locator("dt")).toHaveText(["Page", "Server", "Protocol"]);
-  await expect(versions.locator("dd")).toHaveText([`${PAGE_VERSION}, commit ${pageCommit.slice(0, 7).toLowerCase()}`, `${version.version}, ${serverBuild}`, String(version.protocol)]);
+  await expect(versions.locator("dd")).toHaveText([pageBuilt, `${version.version}, ${serverBuild}`, String(version.protocol)]);
   // Everything the page keeps, by name, and the words that nothing else is.
   for (const key of ["whist.token", "whist.profile", "whist.setup.en", "whist.setup.ro", "whist.pace", "whist.language", "whist.reloaded", "whist.fullscreenNoticeDismissed"]) {
     await expect(sheetNow.locator(".about-stored")).toContainText(key);
@@ -134,7 +139,7 @@ test("Tab goes round About through both source links and Report a problem, and s
   // From Close it wraps to the first link, and goes on to the second, Report a problem, Forget and Close again.
   expect(visited.every((stop) => stop.startsWith("in:"))).toBe(true);
   expect(visited[0]).toMatch(/^in:https:\/\/github\.com\/conectionist\/romanian_whist_server/);
-  expect(visited[1]).toBe(`in:${PAGE_REPOSITORY}/tree/${pageCommit.toLowerCase()}`);
+  expect(visited[1]).toBe(`in:${pageHref}`);
   expect(visited[2]).toBe("in:https://github.com/conectionist/romanian_whist_web/issues");
   expect(visited[3]).toBe("in:forget");
   expect(visited[4]).toBe("in:close");

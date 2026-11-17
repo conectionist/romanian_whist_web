@@ -113,3 +113,30 @@ test("Forget this browser asks first, and then clears exactly what the page keep
   expect(left.local).toEqual(["other.site.key"]);
   expect(left.session).toEqual(["other.session.key", "seeded"]);
 });
+
+test("Tab goes round About through both source links and Report a problem, and stays in the sheet", async ({ page }) => {
+  await menu(page);
+  await page.locator('[data-menu-page="about"]').click();
+  const about = sheet(page, "about");
+  await expect(about.locator('[data-action="close"]')).toBeFocused();
+
+  const visited: string[] = [];
+  for (let press = 0; press < 8; press++) {
+    await page.keyboard.press("Tab");
+    visited.push(
+      await page.evaluate(() => {
+        const node = document.activeElement as HTMLElement | null;
+        const inside = node?.closest('.sheet[data-sheet="about"]') !== null && node?.closest('.sheet[data-sheet="about"]') !== undefined;
+        return `${inside ? "in" : "out"}:${node?.getAttribute("href") ?? node?.dataset.action ?? node?.tagName}`;
+      }),
+    );
+  }
+  // From Close it wraps to the first link, and goes on to the second, Report a problem, Forget and Close again.
+  expect(visited.every((stop) => stop.startsWith("in:"))).toBe(true);
+  expect(visited[0]).toMatch(/^in:https:\/\/github\.com\/conectionist\/romanian_whist_server/);
+  expect(visited[1]).toBe(`in:${PAGE_REPOSITORY}/tree/${pageCommit.toLowerCase()}`);
+  expect(visited[2]).toBe("in:https://github.com/conectionist/romanian_whist_web/issues");
+  expect(visited[3]).toBe("in:forget");
+  expect(visited[4]).toBe("in:close");
+  expect(visited[5]).toBe(visited[0]);
+});

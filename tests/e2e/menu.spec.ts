@@ -14,6 +14,20 @@ async function menu(page: Page): Promise<void> {
   await expect(page.locator(".menu-page")).toBeVisible();
 }
 
+test("Tab in New Game reaches the opponents' level selects", async ({ page }) => {
+  await menu(page);
+  await page.locator('[data-menu-page="new-game"]').click();
+  const game = sheet(page, "new-game");
+  await expect(game.locator('select[name="botLevel0"]')).toBeVisible();
+  await game.locator('input[name="opponents"]').focus();
+  const reached = new Set<string>();
+  for (let press = 0; press < 14; press++) {
+    await page.keyboard.press("Tab");
+    reached.add(await page.evaluate(() => (document.activeElement as HTMLSelectElement | null)?.name ?? ""));
+  }
+  expect(reached.has("botLevel0")).toBe(true);
+});
+
 test.describe("New Game", () => {
   test("is opened from the main menu on the desktop's defaults, and has its fields, bounds and validation", async ({ page }) => {
     const problems: string[] = [];

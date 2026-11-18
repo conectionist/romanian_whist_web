@@ -96,9 +96,12 @@ enough for the stack. Elsewhere:
 
 - A server built by hand, reached through `host.docker.internal`, sees the page at the bridge's address:
   add its range to the server's `trusted_proxies`, such as `"172.16.0.0/12"`.
-- A remote server behind its own proxy sees the page at the page host's public address. That proxy must trust
-  it, so that it passes the header on and does not write its own (for Caddy, `trusted_proxies static
-  <the page host's address>` under `servers` in its global options), and the server must trust that proxy.
+- A remote server behind its own proxy: that proxy appends the page host's address to `X-Forwarded-For`, after
+  the visitor's, as Caddy and nginx's `$proxy_add_x_forwarded_for` do. The server must trust the page host's
+  address as well as its own proxy: with only the proxy trusted, the rightmost entry it does not trust is the
+  page host, and every visitor counts as that one address. Caddy as the remote proxy must also trust the page
+  host, so that it keeps the visitor's entry and does not replace the header (`trusted_proxies static <the page
+  host's address>` under `servers` in its global options). nginx keeps it with no step of its own.
 
 Then `docker compose pull && docker compose up -d`. Updating is the same two commands, and the
 certificates stay in the `caddy_data` volume. The container has a read-only root and only the right

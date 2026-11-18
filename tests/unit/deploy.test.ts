@@ -47,6 +47,14 @@ describe("the commit the page names", () => {
   });
 });
 
+describe("the compose file that builds from the checkout", () => {
+  it("gives the server a stop grace period that outlasts its drain, as the deploy files do", () => {
+    const compose = read("compose.yaml");
+    expect(compose).toMatch(/stop_grace_period: 16m/);
+    expect(read("libs/romanian_whist_server/deploy/docker-compose.yml")).toMatch(/stop_grace_period: 16m/);
+  });
+});
+
 describe("the proxy examples in CI", () => {
   it("are the server's as they are: the nginx file that once added the headers is gone", () => {
     expect(read(".github/workflows/ci.yml")).not.toContain("whist-headers.conf");

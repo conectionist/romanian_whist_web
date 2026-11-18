@@ -38,7 +38,7 @@ async function start(more: Record<string, number> = {}): Promise<Running> {
   // The limits per address are lifted, as in server.json: every page here is the one address.
   writeFileSync(
     config,
-    JSON.stringify({ port: PORT, document_root: "dist", log_level: "warn", drain_ms: DRAIN_MS, max_connections_per_ip: 1000, tables_per_ip_per_hour: 100000, failed_joins_per_ip: 100000, messages_per_second: 1000, message_burst: 2000, ...more }),
+    JSON.stringify({ port: PORT, document_root: "dist", log_level: "warn", drain_ms: DRAIN_MS, max_connections_per_ip: 1000, tables_per_ip_per_hour: 100000, failed_joins_per_ip: 100000, max_tables: 100000, messages_per_second: 1000, message_burst: 2000, ...more }),
   );
   const child = spawn(SERVER, ["--config", config], { stdio: ["ignore", "pipe", "pipe"] });
   let text = "";

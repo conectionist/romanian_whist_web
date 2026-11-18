@@ -28,7 +28,7 @@ import { loadProfile, saveProfile } from "./lobby/profile";
 import { versionsOf } from "./about/links";
 import { startIn } from "./i18n/document";
 import { LANGUAGES, addressForLanguage, currentLanguage, keepLanguage, languageFromSearch, storeLanguage, storedLanguage } from "./i18n/language";
-import { tokenForgotten } from "./net/forgotten";
+import { forgetHeard } from "./net/forgotten";
 import { forgetBrowser } from "./storage/stored";
 import { t } from "./i18n/t";
 import { Sheets } from "./sheets/host";
@@ -195,7 +195,7 @@ function forgetEverything(): void {
 }
 
 // Another tab forgot this browser: this one lets go of its connection and loads anew, so that it does not write what
-// was forgotten back.
+// was forgotten back. A token dropped on its own, because the server refused it, is no reason to.
 window.addEventListener("storage", (event) => {
   let local: Storage | null = null;
   try {
@@ -203,7 +203,7 @@ window.addEventListener("storage", (event) => {
   } catch {
     // Without storage there is nothing another tab could have forgotten.
   }
-  if (tokenForgotten(event, local)) {
+  if (forgetHeard(event, local)) {
     connection.close();
     window.location.reload();
   }

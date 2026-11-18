@@ -17,12 +17,19 @@ function sources(directory: string): string[] {
 
 function memory(initial: Record<string, string>, refuses: readonly string[] = []) {
   const values = new Map(Object.entries(initial));
+  const calls: string[] = [];
   return {
     values,
+    calls,
+    setItem: (key: string, value: string) => {
+      calls.push(`set ${key}`);
+      values.set(key, value);
+    },
     removeItem: (key: string) => {
       if (refuses.includes(key)) {
         throw new Error("refused");
       }
+      calls.push(`remove ${key}`);
       values.delete(key);
     },
   };
@@ -72,7 +79,7 @@ describe("what the page keeps in the browser", () => {
 
   it("is what Forget clears, with the older name of the last New Game too", () => {
     expect(keysToForget("local", LANGUAGES).sort()).toEqual(
-      ["whist.token", "whist.profile", "whist.pace", "whist.language", "whist.setup", "whist.setup.en", "whist.setup.ro"].sort(),
+      ["whist.token", "whist.profile", "whist.pace", "whist.language", "whist.setup", "whist.setup.en", "whist.setup.ro", "whist.forget"].sort(),
     );
     expect(keysToForget("session", LANGUAGES).sort()).toEqual(["whist.fullscreenNoticeDismissed", "whist.reloaded"]);
   });
@@ -87,6 +94,20 @@ describe("forgetting the browser", () => {
     forgetBrowser({ local, session }, LANGUAGES);
     expect([...local.values.keys()].sort()).toEqual(["other.key", "token", "whist", "whist.setup.fr"].sort());
     expect([...session.values.keys()]).toEqual(["other.session"]);
+  });
+
+  it("tells the other tabs first, with a key that it sets and then removes with the rest, so that none is left", () => {
+    const local = memory(ours);
+    forgetBrowser({ local, session: null }, LANGUAGES);
+    expect(local.calls[0]).toBe("set whist.forget");
+    expect(local.calls.indexOf("remove whist.forget")).toBeGreaterThan(0);
+    expect([...local.values.keys()]).toEqual([]);
+  });
+
+  it("forgets the rest where it cannot write the signal", () => {
+    const local = { ...memory(ours), setItem: () => { throw new Error("full"); } };
+    forgetBrowser({ local, session: null }, LANGUAGES);
+    expect([...local.values.keys()]).toEqual([]);
   });
 
   it("goes on past a key the browser will not let go of", () => {

@@ -1,5 +1,5 @@
 import { t } from "../i18n/t";
-import { DISMISSED_KEY, LANGUAGE_KEY, PACE_KEY, PROFILE_KEY, RELOADED_KEY, SETUP_KEY, TOKEN_KEY, setupKeyFor } from "./keys";
+import { DISMISSED_KEY, FORGET_SIGNAL, LANGUAGE_KEY, PACE_KEY, PROFILE_KEY, RELOADED_KEY, SETUP_KEY, TOKEN_KEY, setupKeyFor } from "./keys";
 
 // What the page keeps in the browser, as About lists it and Forget clears it. Both read this one list.
 
@@ -31,14 +31,20 @@ export function keysToForget(area: StorageArea, languages: readonly string[]): s
   const listed = storedItems(languages)
     .filter((item) => item.area === area)
     .flatMap((item) => item.keys);
-  return area === "local" ? [...listed, SETUP_KEY] : listed;
+  return area === "local" ? [...listed, SETUP_KEY, FORGET_SIGNAL] : listed;
 }
 
 // Removes them from the two storages given, each key on its own: one that cannot be removed does not stop the rest.
+// The other tabs are told first, by a key that is set and then removed with the rest.
 export function forgetBrowser(
-  storages: { local: Pick<Storage, "removeItem"> | null; session: Pick<Storage, "removeItem"> | null },
+  storages: { local: Pick<Storage, "setItem" | "removeItem"> | null; session: Pick<Storage, "removeItem"> | null },
   languages: readonly string[],
 ): void {
+  try {
+    storages.local?.setItem(FORGET_SIGNAL, String(Date.now()));
+  } catch {
+    // Without room to write, the other tabs are not told, and the rest is forgotten all the same.
+  }
   for (const area of ["local", "session"] as const) {
     for (const key of keysToForget(area, languages)) {
       try {

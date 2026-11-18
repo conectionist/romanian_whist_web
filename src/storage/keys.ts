@@ -10,6 +10,10 @@ export const LANGUAGE_KEY = "whist.language";
 // language is never written now, and is still cleared.
 export const SETUP_KEY = "whist.setup";
 
+// Set for a moment by Forget, so that the page's other tabs hear of it: a token removed on its own is no sign, since
+// a page drops a token the server refuses. Forget clears it with the rest.
+export const FORGET_SIGNAL = "whist.forget";
+
 // Session storage, which lasts until the tab is closed.
 export const RELOADED_KEY = "whist.reloaded";
 export const DISMISSED_KEY = "whist.fullscreenNoticeDismissed";

@@ -171,3 +171,19 @@ test("Forget in one tab makes the others let go and load anew, so that none writ
     expect(await page.evaluate(() => Object.keys(window.localStorage).filter((key) => key.startsWith("whist.")))).toEqual([]);
   }
 });
+
+test("A tab that drops a token the server refuses does not make the others load anew, as Forget does", async ({ context }) => {
+  const settled = await context.newPage();
+  await menu(settled);
+  await settled.evaluate(() => ((window as unknown as { stayed: boolean }).stayed = true));
+
+  // A second tab starts with a token the server cannot read, drops it, and is given another.
+  const refused = await context.newPage();
+  await refused.addInitScript(() => window.localStorage.setItem("whist.token", "not a token"));
+  await menu(refused);
+  expect(await refused.evaluate(() => window.localStorage.getItem("whist.token"))).toMatch(/^[A-Za-z0-9_-]{22}$/);
+
+  // The first was not loaded again: what it set on its window is still there.
+  await settled.waitForTimeout(500);
+  expect(await settled.evaluate(() => (window as unknown as { stayed?: boolean }).stayed)).toBe(true);
+});

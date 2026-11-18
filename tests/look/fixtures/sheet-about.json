@@ -1,0 +1,11 @@
+{
+  "page": "menu",
+  "sheet": "about",
+  "shot": {
+    "file": "sheet-about.png",
+    "height": 1080,
+    "view": "window",
+    "width": 1920
+  },
+  "state": null
+}

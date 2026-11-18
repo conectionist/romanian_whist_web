@@ -85,6 +85,18 @@ describe("decode", () => {
     expect("hand" in blind).toBe(false);
   });
 
+  it("keeps how long a restart leaves, and the busy refusal", () => {
+    expect(decode(read("fixtures", "restarting.json"))).toEqual({ type: "restarting", seq: 3, deadline: 900000 });
+    expect(decode(read("fixtures", "error.busy.json"))).toMatchObject({ type: "error", code: "busy" });
+    expect(decode(read("fixtures", "error.rateLimited.json"))).toMatchObject({ type: "error", code: "rateLimited" });
+  });
+
+  it("refuses a restart whose deadline is not a count", () => {
+    const restarting = JSON.parse(read("fixtures", "restarting.json"));
+    expect(failure(JSON.stringify({ ...restarting, deadline: "soon" })).field).toBe("deadline");
+    expect(failure(JSON.stringify({ ...restarting, deadline: -1 })).field).toBe("deadline");
+  });
+
   it("refuses text that is not JSON", () => {
     expect(failure("not json").field).toBe("");
   });

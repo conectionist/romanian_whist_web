@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { setLanguage } from "../../src/i18n/language";
-import { connectionText, errorText, presenceNews, waitingText } from "../../src/lobby/notices";
+import { connectionText, errorText, presenceNews, restartingText, waitingText } from "../../src/lobby/notices";
 import type { ErrorCode } from "../../src/net/protocol";
 import { decode } from "../../src/net/decode";
 import { serverFixture } from "./support/sheetState";
@@ -17,7 +17,7 @@ function table(name: string) {
 afterEach(() => setLanguage("en"));
 
 describe("the server's refusals in words", () => {
-  const codes: ErrorCode[] = ["badMessage", "version", "notFound", "tableFull", "nameTaken", "notHost", "notYourTurn", "stalePrompt", "illegal", "rateLimited", "draining", "openElsewhere"];
+  const codes: ErrorCode[] = ["badMessage", "version", "notFound", "tableFull", "nameTaken", "notHost", "notYourTurn", "stalePrompt", "illegal", "rateLimited", "draining", "busy", "openElsewhere"];
 
   it("have a sentence for every code, and none is the code itself", () => {
     for (const code of codes) {
@@ -37,8 +37,53 @@ describe("the server's refusals in words", () => {
     expect(errorText("badMessage", "seats")).not.toContain("name");
   });
 
+  it("tells each limit of an address apart, and a message rate from them", () => {
+    const texts = [undefined, "connections", "tables", "joins"].map((detail) => errorText("rateLimited", detail));
+    expect(new Set(texts).size).toBe(4);
+    expect(errorText("rateLimited", "connections")).toContain("30 seconds");
+    // Both name the network, which is what the limit is on, and not the person who happened to be told.
+    expect(errorText("rateLimited", "connections")).toContain("your network");
+    expect(errorText("rateLimited", "tables")).toBe("Too many tables were made from your network this hour. Try again later.");
+    expect(errorText("rateLimited", "something new")).toBe(errorText("rateLimited"));
+  });
+
+  it("says a busy server is full, and asks for no more than a wait", () => {
+    expect(errorText("busy")).toBe("The server has as many games or tables as it can take. Try again in a few minutes.");
+    expect(errorText("busy")).not.toBe(errorText("draining"));
+  });
+
   it("reads a late answer the same whichever code the race gives", () => {
     expect(errorText("stalePrompt")).toBe(errorText("notYourTurn"));
+  });
+});
+
+describe("the restart banner", () => {
+  // 10:00 UTC; the formatter works in the viewer's zone, so the test pins it to one.
+  const now = new Date(Date.UTC(2026, 10, 17, 10, 0, 0));
+  const zone = process.env.TZ;
+
+  afterEach(() => {
+    if (zone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = zone;
+    }
+  });
+
+  it("names the time of day the games may go on until, and that no new one can start", () => {
+    process.env.TZ = "UTC";
+    expect(restartingText(15 * 60_000, now, "en")).toBe("The server is restarting. Games in progress can go on until 10:15. No new game can start.");
+  });
+
+  it("is the same in Romanian, with the time in 24 hours", () => {
+    process.env.TZ = "UTC";
+    setLanguage("ro");
+    expect(restartingText(75 * 60_000, now, "ro")).toBe("Serverul repornește. Jocurile în desfășurare pot continua până la 11:15. Nu mai poate începe niciun joc nou.");
+  });
+
+  it("counts from the page's own clock, so a stale deadline is not stretched", () => {
+    process.env.TZ = "UTC";
+    expect(restartingText(0, now, "en")).toContain("until 10:00");
   });
 });
 

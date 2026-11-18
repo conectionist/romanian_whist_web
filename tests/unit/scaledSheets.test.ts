@@ -31,7 +31,7 @@ function flowFor(name: string, change?: (sync: any) => void) {
 describe("where a sheet is placed", () => {
   const sides: SheetKey[] = ["last-trick", "scores"];
   const bottoms: SheetKey[] = ["round", "settings", "rules", "pause", "leave", "game-over", "menu"];
-  const pages: SheetKey[] = ["history", "new-game", "online", "create-table", "lobby"];
+  const pages: SheetKey[] = ["history", "new-game", "online", "create-table", "lobby", "about"];
 
   it("is the centred dialog for every sheet on the desktop's table", () => {
     for (const name of [...sides, ...bottoms, ...pages]) {
@@ -66,6 +66,7 @@ describe("where a sheet is placed", () => {
       pause: true,
       leave: true,
       lobby: true,
+      about: true,
     };
     for (const name of Object.keys(names) as SheetName[]) {
       expect(["side", "bottom", "page"]).toContain(placementFor(name, true));
@@ -73,8 +74,8 @@ describe("where a sheet is placed", () => {
   });
 
   it("gives a page the action that does what it is for", () => {
-    // The history has Back and no action.
-    expect(Object.keys(PAGE_ACTION).sort()).toEqual(pages.filter((each) => each !== "history").sort());
+    // The history and About have Back and no action.
+    expect(Object.keys(PAGE_ACTION).sort()).toEqual(pages.filter((each) => each !== "history" && each !== "about").sort());
     expect(PAGE_ACTION).toMatchObject({ "new-game": "deal", online: "join", "create-table": "create", lobby: "start" });
   });
 

@@ -1,6 +1,8 @@
 // The language the page runs in. It is chosen once, before the page is built, so that every string
 // is made in it from the start and nothing has to be translated again while the page runs.
 
+import { LANGUAGE_KEY } from "../storage/keys";
+
 export type Language = "en" | "ro";
 
 // The order the language dialog offers them in: Romanian first, which is the one lit to start.
@@ -8,8 +10,6 @@ export const LANGUAGES: readonly Language[] = ["ro", "en"];
 
 // A language's name in itself, which is how the dialog names it.
 export const NATIVE_NAMES: Record<Language, string> = { ro: "Română", en: "English" };
-
-export const LANGUAGE_KEY = "whist.language";
 
 // A code as the address gives it: "en" or "ro", in any case, with or without a country ("ro_RO",
 // "en-GB"). Anything else is none.

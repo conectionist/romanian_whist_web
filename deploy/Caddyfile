@@ -11,7 +11,7 @@
 #   SITE_ADDRESS          a domain name gets HTTPS by itself; :80 serves plain HTTP
 #   WHIST_SERVER_ADDRESS  the game server: host:port on the same network, or https://host
 {$SITE_ADDRESS::80} {
-	@server path /ws /version
+	@server path /ws /version /health
 	handle @server {
 		reverse_proxy {$WHIST_SERVER_ADDRESS:server:8080} {
 			header_up Host {upstream_hostport}
@@ -36,7 +36,8 @@
 		import page_headers
 	}
 
-	# The caching headers go on successful answers only, so that an error is never cached for long.
+	# The caching headers go on successful answers only, so that an error is never cached for long. The server's
+	# own answers, /version and /health, are never given one here: it says no-store itself.
 	@hashed path /assets/*
 	header @hashed {
 		Cache-Control "public, max-age=31536000, immutable"
@@ -47,7 +48,7 @@
 		Cache-Control no-cache
 		match status 2xx 304
 	}
-	@other not path /assets/* / /index.html /t/* /ws /version
+	@other not path /assets/* / /index.html /t/* /ws /version /health
 	header @other {
 		Cache-Control "public, max-age=3600"
 		match status 2xx 304

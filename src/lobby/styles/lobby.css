@@ -164,27 +164,27 @@ select.field option {
   margin: auto;
 }
 
-/* The plaque and the two buttons are 462 tall, and a landscape phone leaves the page 344: drawn smaller
+/* The plaque, the two buttons and the foot are 510 tall, and a landscape phone leaves the page 344: drawn smaller
    in steps until they, and the margin to the bar, fit. */
-@media (max-height: 523px) {
+@media (max-height: 571px) {
   .menu-column {
     zoom: 0.85;
   }
 }
 
-@media (max-height: 453px) {
+@media (max-height: 495px) {
   .menu-column {
     zoom: 0.7;
   }
 }
 
-@media (max-height: 384px) {
+@media (max-height: 418px) {
   .menu-column {
     zoom: 0.62;
   }
 }
 
-@media (max-height: 347px) {
+@media (max-height: 378px) {
   .menu-column {
     zoom: 0.52;
   }
@@ -245,6 +245,58 @@ select.field option {
 /* Both as wide as the wider, and not stretched to the window. */
 .menu-btn {
   justify-content: center;
+}
+
+/* The foot of the main menu: where the source is, and About. */
+.menu-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  margin-top: 28px;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+.menu-source a,
+.menu-source-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.menu-source a:hover,
+.menu-source-btn:hover,
+.menu-source a:focus-visible,
+.menu-source-btn:focus-visible {
+  color: var(--gold-bright);
+}
+
+.menu-source a:focus-visible,
+.menu-source-btn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+@media (pointer: coarse) {
+  .menu-source a,
+  .menu-source-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 6px;
+  }
 }
 
 /* The flag that opens the language dialog again, in the page's top right corner. */
@@ -406,8 +458,34 @@ select.field option {
 }
 
 .notice[data-kind="warn"],
-.notice[data-kind="wait"] {
+.notice[data-kind="wait"],
+.notice[data-kind="restart"] {
   border-color: var(--warn);
+}
+
+/* A banner that stays up for minutes is slim and sits high, clear of the top player's plate. */
+.notice[data-kind="restart"] {
+  margin-top: -6px;
+  padding: 3px 14px;
+  font-size: 15px;
+  line-height: 21px;
+  text-align: center;
+}
+
+/* On the desktop layout the banner keeps clear of the language flag at the page's top right corner, which is 76
+   wide; the scaled layout clears its own corner controls. The flag goes below the banner, under the sheet layer,
+   which starts there. */
+.window[data-layout="desktop"]:has(.notice[data-kind="restart"]) .notices {
+  max-width: calc(100% - 2 * 86px);
+}
+
+.window:has(.notice[data-kind="restart"]) .menu-lang {
+  top: calc(18px + var(--banner-room, 0px));
+}
+
+/* The main menu and the small-table offer, which share the top with the banner, make room for it. */
+.window:has(.notice[data-kind="restart"]) .menu-page {
+  padding-top: var(--banner-room, 40px);
 }
 
 .notice-btn {

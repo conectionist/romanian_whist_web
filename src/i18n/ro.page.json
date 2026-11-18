@@ -827,6 +827,236 @@
       "context": "fullscreen",
       "source": "Add the page to the home screen for a bigger table.",
       "translation": "Pentru o masă mai mare, adaugă pagina pe ecranul principal."
+    },
+    {
+      "context": "errors",
+      "source": "There are too many connections from your network. The page tries again in 30 seconds.",
+      "translation": "Sunt prea multe conexiuni din rețeaua ta. Pagina încearcă din nou peste 30 de secunde."
+    },
+    {
+      "context": "errors",
+      "source": "Too many tables were made from your network this hour. Try again later.",
+      "translation": "Prea multe mese au fost create din rețeaua ta în ultima oră. Încearcă din nou mai târziu."
+    },
+    {
+      "context": "errors",
+      "source": "Too many table codes that do not exist were tried. Try again in a few minutes.",
+      "translation": "Au fost încercate prea multe coduri de masă care nu există. Încearcă din nou peste câteva minute."
+    },
+    {
+      "context": "errors",
+      "source": "The server has as many games or tables as it can take. Try again in a few minutes.",
+      "translation": "Serverul are acum numărul maxim de jocuri sau de mese. Încearcă din nou peste câteva minute."
+    },
+    {
+      "context": "errors",
+      "source": "The server is restarting. Games in progress can go on until %1. No new game can start.",
+      "translation": "Serverul repornește. Jocurile în desfășurare pot continua până la %1. Nu mai poate începe niciun joc nou."
+    },
+    {
+      "context": "footer",
+      "source": "server",
+      "translation": "server"
+    },
+    {
+      "context": "footer",
+      "source": "page",
+      "translation": "pagina"
+    },
+    {
+      "context": "footer",
+      "source": "About",
+      "translation": "Despre"
+    },
+    {
+      "context": "footer",
+      "source": "Source code and about",
+      "translation": "Cod sursă și informații despre pagină"
+    },
+    {
+      "context": "footer",
+      "source": "Source:",
+      "translation": "Cod sursă:"
+    },
+    {
+      "context": "about",
+      "source": "Who you are to the server, so that you can come back to a game you are at.",
+      "translation": "Cine ești pentru server, ca să te poți întoarce la jocul la care participi."
+    },
+    {
+      "context": "about",
+      "source": "Your name, gender and portrait for online tables.",
+      "translation": "Numele, genul și portretul tău pentru mesele online."
+    },
+    {
+      "context": "about",
+      "source": "The last New Game you set up, once for each language.",
+      "translation": "Ultimul Joc nou pe care l-ai pregătit, câte unul pentru fiecare limbă."
+    },
+    {
+      "context": "about",
+      "source": "How fast the table moves.",
+      "translation": "Cât de repede se joacă."
+    },
+    {
+      "context": "about",
+      "source": "The language you chose.",
+      "translation": "Limba pe care ai ales-o."
+    },
+    {
+      "context": "about",
+      "source": "That the page reloaded for a new version, until the tab is closed.",
+      "translation": "Faptul că pagina s-a reîncărcat pentru o versiune nouă, până se închide fila."
+    },
+    {
+      "context": "about",
+      "source": "That you put away the note about a small table, until the tab is closed.",
+      "translation": "Faptul că ai închis nota despre masa mică, până se închide fila."
+    },
+    {
+      "context": "about",
+      "source": "%1, commit unknown",
+      "translation": "%1, revizie necunoscută"
+    },
+    {
+      "context": "about",
+      "source": "%1, commit %2",
+      "translation": "%1, revizia %2"
+    },
+    {
+      "context": "about",
+      "source": "About this page",
+      "translation": "Despre această pagină"
+    },
+    {
+      "context": "about",
+      "source": "Romanian Whist online is free software under the %1. Anyone may read, run and change its source.",
+      "translation": "Whist online este software liber, sub licența %1: oricine îi poate citi și modifica codul sursă și îl poate rula."
+    },
+    {
+      "context": "about",
+      "source": "Source code",
+      "translation": "Cod sursă"
+    },
+    {
+      "context": "about",
+      "source": "Server source code",
+      "translation": "Codul sursă al serverului"
+    },
+    {
+      "context": "about",
+      "source": "not connected yet, so the link is to the repository",
+      "translation": "încă nu e conectat, așa că linkul duce la pagina proiectului"
+    },
+    {
+      "context": "about",
+      "source": "its commit is unknown, so the link is to the repository",
+      "translation": "nu se știe din ce revizie e făcut, așa că linkul duce la pagina proiectului"
+    },
+    {
+      "context": "about",
+      "source": "commit %1",
+      "translation": "revizia %1"
+    },
+    {
+      "context": "about",
+      "source": "Page source code",
+      "translation": "Codul sursă al paginii"
+    },
+    {
+      "context": "about",
+      "source": "this build's commit is unknown, so the link is to the repository",
+      "translation": "nu se știe din ce revizie e făcută această versiune, așa că linkul duce la pagina proiectului"
+    },
+    {
+      "context": "about",
+      "source": "Versions",
+      "translation": "Versiuni"
+    },
+    {
+      "context": "about",
+      "source": "Page",
+      "translation": "Pagina"
+    },
+    {
+      "context": "about",
+      "source": "Server",
+      "translation": "Serverul"
+    },
+    {
+      "context": "about",
+      "source": "not connected yet",
+      "translation": "încă nu e conectat"
+    },
+    {
+      "context": "about",
+      "source": "Protocol",
+      "translation": "Protocol"
+    },
+    {
+      "context": "about",
+      "source": "What this page keeps in your browser",
+      "translation": "Ce păstrează pagina în browserul tău"
+    },
+    {
+      "context": "about",
+      "source": "There are no accounts and no cookies, and the page asks no other site for anything.",
+      "translation": "Nu există conturi și nu se folosesc cookie-uri, iar pagina nu cere nimic altor site-uri."
+    },
+    {
+      "context": "about",
+      "source": "Close",
+      "translation": "Închide"
+    },
+    {
+      "context": "about",
+      "source": "Forget this browser",
+      "translation": "Șterge datele din acest browser"
+    },
+    {
+      "context": "about",
+      "source": "Forget",
+      "translation": "Șterge"
+    },
+    {
+      "context": "about",
+      "source": "Keep",
+      "translation": "Păstrează"
+    },
+    {
+      "context": "about",
+      "source": "Report a problem",
+      "translation": "Raportează o problemă"
+    },
+    {
+      "context": "about",
+      "source": "Remove everything listed above from this browser? You will not be able to return to a game you are at. The page reloads.",
+      "translation": "Ștergi din acest browser tot ce e listat mai sus? Nu vei mai putea reveni la jocul tău. Pagina se reîncarcă."
+    },
+    {
+      "context": "about",
+      "source": "%1, with local changes",
+      "translation": "%1, cu modificări locale"
+    },
+    {
+      "context": "about",
+      "source": "this build has local changes, so the link is to the repository",
+      "translation": "această versiune are modificări locale, așa că linkul duce la pagina proiectului"
+    },
+    {
+      "context": "links",
+      "source": "%1 (opens in a new tab)",
+      "translation": "%1 (se deschide într-o filă nouă)"
+    },
+    {
+      "context": "footer",
+      "source": "Server source code",
+      "translation": "Serverul: codul sursă"
+    },
+    {
+      "context": "footer",
+      "source": "Page source code",
+      "translation": "Pagina: codul sursă"
     }
   ]
 }

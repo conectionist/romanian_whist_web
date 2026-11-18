@@ -1,5 +1,6 @@
 import { el } from "../dom/el";
 import { t } from "../i18n/t";
+import { DISMISSED_KEY } from "../storage/keys";
 import { touched } from "./pointer";
 
 // Full screen on a touch screen, which takes the browser's bars away and holds the phone sideways where the
@@ -129,13 +130,11 @@ export function watchFullscreen(changed: () => void): void {
   }
 }
 
-const DISMISSED = "whist.fullscreenNoticeDismissed";
-
 // Whether the notice about a small table was put away in this visit. Kept for the visit only, in the session's
 // storage, which a private window may refuse.
 export function smallNoticeDismissed(): boolean {
   try {
-    return window.sessionStorage.getItem(DISMISSED) === "1";
+    return window.sessionStorage.getItem(DISMISSED_KEY) === "1";
   } catch {
     return dismissedHere;
   }
@@ -146,7 +145,7 @@ let dismissedHere = false;
 export function dismissSmallNotice(): void {
   dismissedHere = true;
   try {
-    window.sessionStorage.setItem(DISMISSED, "1");
+    window.sessionStorage.setItem(DISMISSED_KEY, "1");
   } catch {
     // Kept in memory for the visit.
   }

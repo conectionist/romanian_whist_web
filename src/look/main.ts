@@ -1,6 +1,7 @@
+import type { Versions } from "../about/links";
 import { el } from "../dom/el";
 import { startIn } from "../i18n/document";
-import { languageFromCode } from "../i18n/language";
+import { currentLanguage, languageFromCode } from "../i18n/language";
 import { decode } from "../net/decode";
 import type { Card, ServerMessage } from "../net/protocol";
 import { modelOf, type TableModel } from "../play/model";
@@ -11,6 +12,8 @@ import { MenuBar, menuStateFor } from "../menu/menuBar";
 import { NO_ACTIONS, Sheets } from "../sheets/host";
 import { LanguageDialog } from "../lobby/languageDialog";
 import { MenuPage } from "../lobby/menuPage";
+import { BannerRoom } from "../lobby/bannerRoom";
+import { Notices, restartingText } from "../lobby/notices";
 import { defaults } from "../lobby/setup";
 import { seededRandom } from "../lobby/catalogue";
 import { loadFonts } from "../table/fonts";
@@ -43,6 +46,8 @@ interface Fixture {
   // nothing under it.
   page?: "menu" | "language";
   messages?: unknown[];
+  // The banner for a server that is restarting, with this many milliseconds left.
+  restarting?: number;
 }
 
 // The server's, which are real games, and the page's own, which are built by hand.
@@ -59,6 +64,16 @@ function fixtureNamed(name: string): Fixture {
   }
   throw new Error(`There is no look fixture named ${name}`);
 }
+
+// What About says, fixed, so that a picture does not change with the commit it was made from.
+const VERSIONS: Versions = {
+  page: { version: "1.0.0", commit: "0123456789abcdef0123456789abcdef01234567", dirty: false },
+  server: { version: "1.0.0", commit: "89abcde" },
+  protocol: 2,
+};
+
+// The time the restart banner counts from, which the config's UTC makes the same on any machine.
+const BANNER_NOW = new Date(Date.UTC(2026, 10, 17, 18, 30));
 
 // The menu bar is 46 px high in the desktop's window.
 const MENU_BAR = 46;
@@ -109,13 +124,16 @@ async function main(): Promise<void> {
 
   // The sheets, as the live page has them, asking for nothing.
   const sheets = new Sheets(NO_ACTIONS, { setup: () => defaults(seededRandom(1)), profile: () => null, pace: storedPace }, seededRandom(1));
-  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined, settings: () => undefined, rules: () => undefined });
-  frame.append(menuPage.element, sheets.layer.element);
+  const menuPage = new MenuPage({ newGame: () => undefined, playOnline: () => undefined, language: () => undefined, settings: () => undefined, rules: () => undefined, about: () => undefined });
+  menuPage.setSource(VERSIONS);
+  const notices = new Notices();
+  const bannerRoom = new BannerRoom(frame, notices.element);
+  frame.append(menuPage.element, sheets.layer.element, notices.element);
   let ui: UiState = NOTHING_ASKED;
   let order: readonly string[] | undefined;
   let scaledNow = false;
   // What is open over the table, drawn again where the layout changes.
-  const drawSheet = () => sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", asking: false, scaled: scaledNow });
+  const drawSheet = () => sheets.render(sheetFor(store.state, ui), store.state, { continued: false, joinCode: null, address: "", waiting: "", asking: false, scaled: scaledNow, versions: VERSIONS });
 
   const draw = (change: Parameters<typeof scene.relayout>[1]) => {
     const model = modelOf(store.state);
@@ -137,8 +155,8 @@ async function main(): Promise<void> {
     sheets.setScaled(scaledNow);
     if (store.state.snapshot !== null) {
       void draw(NO_CHANGE);
-      drawSheet();
     }
+    drawSheet();
   });
 
   // Draws the state a fixture holds, as a sync would, at once, and what it says is open over it.
@@ -150,10 +168,12 @@ async function main(): Promise<void> {
       for (const [index, text] of (fixture.messages ?? []).entries()) {
         await draw(store.apply(decode(JSON.stringify({ seq: index + 1, ...(text as object) })), 0));
       }
-      const asked = fixture.sheet;
-      ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null, backAtTable: false, dismissedRound: null };
-      drawSheet();
     }
+    const asked = fixture.sheet;
+    ui = asked === undefined ? NOTHING_ASKED : { menu: asked === "pause" ? null : asked, pauseMenu: asked === "pause", joinCode: null, backAtTable: false, dismissedRound: null };
+    drawSheet();
+    notices.set("restart", fixture.restarting === undefined ? null : restartingText(fixture.restarting, BANNER_NOW, currentLanguage()), { kind: "restart" });
+    bannerRoom.update();
     menuPage.show(fixture.page === "menu");
     bar?.update(menuStateFor(store.state, true));
   };

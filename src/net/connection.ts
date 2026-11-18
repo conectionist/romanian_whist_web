@@ -1,5 +1,6 @@
 import type { Language } from "../i18n/language";
 import { DecodeError, decode } from "./decode";
+import { RELOADED_KEY, TOKEN_KEY } from "../storage/keys";
 import { PROTOCOL_VERSION, type ClientMessage, type ServerMessage } from "./protocol";
 
 export type Status = "connecting" | "open" | "closed" | "elsewhere";
@@ -8,12 +9,13 @@ export type Status = "connecting" | "open" | "closed" | "elsewhere";
 // 8 and then 15 seconds for as long as it takes.
 export const BACKOFF_MS = [1000, 2000, 4000, 8000, 15000];
 
+// How long to stay away after the server refuses a connection for too many from one address: the
+// ones already open do not close sooner, so trying again at the back-off's pace only adds to them.
+export const CONNECTIONS_REFUSED_WAIT_MS = 30000;
+
 export function delayFor(attempt: number): number {
   return BACKOFF_MS[Math.min(Math.max(attempt, 0), BACKOFF_MS.length - 1)];
 }
-
-export const TOKEN_KEY = "whist.token";
-const RELOADED_KEY = "whist.reloaded";
 
 type Memory = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
@@ -76,6 +78,8 @@ export class Connection {
   // Whether the token has been dropped since the last welcome: a refusal after that is not for the
   // page to answer at once, or a token that cannot be removed would be sent again with no pause.
   private droppedToken = false;
+  // The least to wait before the next attempt, set by a refusal that asks for more than the back-off.
+  private waitAtLeast = 0;
   private readonly storage: Memory;
   private readonly session: Memory;
 
@@ -112,7 +116,7 @@ export class Connection {
     });
 
     socket.addEventListener("message", (event) => {
-      if (this.socket !== socket) {
+      if (this.socket !== socket || this.stopped) {
         return;
       }
       this.receive(String(event.data));
@@ -127,7 +131,8 @@ export class Connection {
         return;
       }
       this.options.onStatus("closed");
-      const wait = delayFor(this.attempt);
+      const wait = Math.max(delayFor(this.attempt), this.waitAtLeast);
+      this.waitAtLeast = 0;
       this.attempt += 1;
       this.timer = (this.options.setTimer ?? ((run, ms) => window.setTimeout(run, ms)))(() => this.open(), wait);
     });
@@ -157,6 +162,8 @@ export class Connection {
     } else if (message.type === "error" && message.code === "badMessage" && message.detail === "token" && !this.welcomed) {
       // The stored token is not one the server reads, so no welcome will come: ask again without it.
       this.restartWithoutToken();
+    } else if (message.type === "error" && message.code === "rateLimited" && message.detail === "connections") {
+      this.waitAtLeast = CONNECTIONS_REFUSED_WAIT_MS;
     } else if (message.type === "error" && message.code === "version") {
       // This page is of another version than the server: load the current one, once.
       this.stopped = true;
@@ -198,6 +205,9 @@ export class Connection {
       (this.options.clearTimer ?? ((id) => window.clearTimeout(id)))(this.timer);
       this.timer = null;
     }
-    this.socket?.close();
+    // Let go of the socket first, so that nothing it says after this, a welcome included, is taken in.
+    const socket = this.socket;
+    this.socket = null;
+    socket?.close();
   }
 }

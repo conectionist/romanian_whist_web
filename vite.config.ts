@@ -1,6 +1,15 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+import { buildCommit } from "./tools/buildCommit.mjs";
+
+const version = (JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string }).version;
 
 export default defineConfig(({ mode }) => ({
+  define: {
+    __WHIST_WEB_COMMIT__: JSON.stringify(buildCommit(fileURLToPath(new URL(".", import.meta.url)))),
+    __WHIST_WEB_VERSION__: JSON.stringify(version),
+  },
   server: {
     port: 5173,
     // The server's submodule holds Drogon, the engine and their builds: files the page never uses.

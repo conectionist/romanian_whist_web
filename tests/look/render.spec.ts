@@ -387,7 +387,7 @@ for (const [width, height] of [
   test.describe(`a window of ${width} by ${height} under a mouse`, () => {
     test.use({ viewport: { width, height }, hasTouch: false, isMobile: false });
 
-    for (const name of ["sheet-round", "sheet-history", "sheet-last-trick", "sheet-game-over", "sheet-rules", "sheet-settings", "sheet-pause"]) {
+    for (const name of ["sheet-round", "sheet-history", "sheet-last-trick", "sheet-game-over", "sheet-rules", "sheet-settings", "sheet-pause", "sheet-about"]) {
       test(`${name} fits, and every one of its controls can be reached`, async ({ page }) => {
         await page.goto(`/look.html?shot=${name}`);
         await page.waitForSelector("body[data-ready]");
@@ -400,6 +400,10 @@ for (const [width, height] of [
         expect(box.y + box.height).toBeLessThanOrEqual(height);
         // A page's Back button is for the scaled table, and is not there for a mouse.
         for (const button of await sheet.locator("button:not(:disabled):not(.page-back), input:not(:disabled)").all()) {
+          // About's question, which stands in place of its buttons, is hidden until Forget asks it.
+          if (!(await button.isVisible())) {
+            continue;
+          }
           await button.scrollIntoViewIfNeeded();
           const at = (await button.boundingBox())!;
           expect(at.x, "left").toBeGreaterThanOrEqual(0);
@@ -419,9 +423,10 @@ for (const [width, height] of [
         const bar = document.querySelector(".menu-band")!.getBoundingClientRect().bottom;
         const logo = document.querySelector(".menu-logo")!.getBoundingClientRect();
         const last = document.querySelector('[data-menu-page="online"]')!.getBoundingClientRect();
-        return { top: logo.top >= bar, foot: last.bottom <= window.innerHeight, across: document.documentElement.scrollWidth <= window.innerWidth };
+        const source = document.querySelector(".menu-source")!.getBoundingClientRect();
+        return { top: logo.top >= bar, foot: last.bottom <= window.innerHeight, source: source.top >= last.bottom && source.bottom <= window.innerHeight, across: document.documentElement.scrollWidth <= window.innerWidth };
       });
-      expect(menu).toEqual({ top: true, foot: true, across: true });
+      expect(menu).toEqual({ top: true, foot: true, source: true, across: true });
 
       await page.goto("/look.html?shot=language");
       await page.waitForSelector("body[data-ready]");
@@ -430,6 +435,59 @@ for (const [width, height] of [
       expect(dialog.y + dialog.height).toBeLessThanOrEqual(height + 0.5);
       expect(dialog.x + dialog.width).toBeLessThanOrEqual(width + 0.5);
     });
+  });
+}
+
+// The restart banner stays up, and a sheet opened under it starts below it, in any window a mouse works in: its title
+// is never covered, and the language flag of the main menu is not either.
+for (const [width, height] of [
+  [844, 390],
+  [832, 384],
+  [740, 360],
+  [754, 247],
+]) {
+  test.describe(`the restart banner in a window of ${width} by ${height} under a mouse`, () => {
+    test.use({ viewport: { width, height }, hasTouch: false, isMobile: false });
+
+    for (const language of ["en", "ro"]) {
+      for (const name of ["sheet-new-game-restarting", "sheet-about-restarting", "sheet-lobby-restarting", "sheet-rules-restarting"]) {
+        test(`${name} in ${language} has its sheet clear of the banner, which is inside the window`, async ({ page }) => {
+          await page.goto(`/look.html?shot=${name}&lang=${language}`);
+          await page.waitForSelector("body[data-ready]");
+          const banner = page.locator('.notice[data-kind="restart"]');
+          await expect(banner).toBeVisible();
+          await expect(banner).toContainText("18:45");
+          const found = await page.evaluate(() => {
+            const note = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();
+            const sheet = document.querySelector<HTMLElement>(".sheet:not([hidden])")!.getBoundingClientRect();
+            const title = document.querySelector<HTMLElement>(".sheet:not([hidden]) .sheet-title")!.getBoundingClientRect();
+            const meets = (a: DOMRect, b: DOMRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+            return { sheet: meets(note, sheet), title: meets(note, title), inside: note.left >= 0 && note.right <= window.innerWidth && note.top >= 0 && note.bottom <= window.innerHeight };
+          });
+          expect(found).toEqual({ sheet: false, title: false, inside: true });
+          // The strip the banner stands in is dimmed like the rest of what the sheet is over: what is at its edge is the layer.
+          const dimmed = await page.evaluate(() => {
+            const room = parseFloat(getComputedStyle(document.querySelector(".window")!).getPropertyValue("--banner-room"));
+            const band = document.querySelector<HTMLElement>(".menu-band")?.getBoundingClientRect().bottom ?? 0;
+            return document.elementFromPoint(4, band + room / 2)?.classList.contains("sheet-layer") === true;
+          });
+          expect(dimmed, "the strip beside the banner is dimmed").toBe(true);
+        });
+      }
+
+      // A mouse has the desktop's main menu from 360 tall, and the flag is the one thing at the corner the banner could reach.
+      test(`menu-restarting in ${language} keeps the banner off the language flag`, async ({ page }) => {
+        test.skip(height < 360, "the desktop's main menu is for windows 360 tall or more");
+        await page.goto(`/look.html?shot=menu-restarting&lang=${language}`);
+        await page.waitForSelector("body[data-ready]");
+        const meets = await page.evaluate(() => {
+          const note = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();
+          const flag = document.querySelector('[data-menu-page="language"]')!.getBoundingClientRect();
+          return note.left < flag.right && note.right > flag.left && note.top < flag.bottom && note.bottom > flag.top;
+        });
+        expect(meets).toBe(false);
+      });
+    }
   });
 }
 

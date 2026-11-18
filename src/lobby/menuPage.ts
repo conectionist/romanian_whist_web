@@ -1,11 +1,13 @@
 import { el } from "../dom/el";
 import { icon, type IconName } from "../dom/icons";
+import { opensInNewTab } from "../dom/newTab";
 import { currentLanguage } from "../i18n/language";
 import { t } from "../i18n/t";
 import { fullscreenButton } from "../table/fullscreen";
 import { logoLines, plaqueFor } from "../table/tableTop";
 import { flagFor } from "./flags";
 import { languageButtonName } from "./languageDialog";
+import { pageSourceUrl, serverSourceUrl, type Versions } from "../about/links";
 
 // The page the client opens on, src/ui/MainMenuPage.cpp. Its second button is Play online where the
 // desktop's is Quit, which a page cannot do.
@@ -18,6 +20,8 @@ export interface MenuPageActions {
   // The settings and the rules, which the scaled table's main menu has at its foot in place of the menu bar.
   settings(): void;
   rules(): void;
+  // The About sheet, which the foot of the page opens beside the links to the source.
+  about(): void;
 }
 
 function button(label: string, picture: IconName, action: string): HTMLButtonElement {
@@ -44,6 +48,20 @@ export class MenuPage {
     flagFor(currentLanguage()),
   );
 
+  // The links to the source of the server and of the page, at the commits that run: set when the page learns them.
+  // Short on the page, and named in full for a screen reader, which reads a link out of its place.
+  readonly serverLink = el("a", {
+    attrs: { href: "", target: "_blank", rel: "noopener noreferrer", "aria-label": opensInNewTab(t("footer", "Server source code")) },
+    data: { menuPage: "server-source" },
+    text: t("footer", "server"),
+  });
+  readonly pageLink = el("a", {
+    attrs: { href: "", target: "_blank", rel: "noopener noreferrer", "aria-label": opensInNewTab(t("footer", "Page source code")) },
+    data: { menuPage: "page-source" },
+    text: t("footer", "page"),
+  });
+  readonly about = el("button", { class: "menu-source-btn", attrs: { type: "button" }, data: { menuPage: "about" }, text: t("footer", "About") });
+
   constructor(actions: MenuPageActions) {
     const lines = logoLines();
     const plaque = plaqueFor(lines);
@@ -53,6 +71,17 @@ export class MenuPage {
     full.prepend(icon("fullscreen"));
     settings.addEventListener("click", () => actions.settings());
     rules.addEventListener("click", () => actions.rules());
+    const separator = () => el("span", { class: "menu-source-dot", attrs: { "aria-hidden": "true" }, text: "·" });
+    const source = el(
+      "nav",
+      { class: "menu-source", attrs: { "aria-label": t("footer", "Source code and about") } },
+      el("span", { text: t("footer", "Source:") }),
+      this.serverLink,
+      separator(),
+      this.pageLink,
+      separator(),
+      this.about,
+    );
     this.element = el(
       "div",
       { class: "menu-page" },
@@ -60,7 +89,7 @@ export class MenuPage {
         "div",
         { class: "menu-column" },
         el("div", { class: "menu-logo", attrs: { role: "img", "aria-label": lines.join(" ") } }, plaque),
-        el("div", { class: "menu-actions" }, el("div", { class: "menu-buttons" }, this.newGame, this.online), el("div", { class: "menu-foot" }, settings, rules, full)),
+        el("div", { class: "menu-actions" }, el("div", { class: "menu-buttons" }, this.newGame, this.online), el("div", { class: "menu-foot" }, settings, rules, full), source),
       ),
       this.language,
     );
@@ -68,6 +97,13 @@ export class MenuPage {
     this.newGame.addEventListener("click", () => actions.newGame());
     this.online.addEventListener("click", () => actions.playOnline());
     this.language.addEventListener("click", () => actions.language());
+    this.about.addEventListener("click", () => actions.about());
+  }
+
+  // The links to the source as the commits that run say.
+  setSource(versions: Versions): void {
+    this.serverLink.href = serverSourceUrl(versions);
+    this.pageLink.href = pageSourceUrl(versions);
   }
 
   show(shown: boolean): void {

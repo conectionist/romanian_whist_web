@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BACKOFF_MS, Connection, TOKEN_KEY, delayFor, type Status } from "../../src/net/connection";
+import { BACKOFF_MS, CONNECTIONS_REFUSED_WAIT_MS, Connection, delayFor, type Status } from "../../src/net/connection";
+import { TOKEN_KEY } from "../../src/storage/keys";
 import type { Language } from "../../src/i18n/language";
 import type { ServerMessage } from "../../src/net/protocol";
 
@@ -91,7 +92,7 @@ describe("the connection", () => {
     const { socket, statuses } = setup();
     socket().readyState = 1;
     socket().fire("open", {});
-    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en" });
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 2, lang: "en" });
     expect(statuses).toEqual(["connecting", "open"]);
   });
 
@@ -99,14 +100,14 @@ describe("the connection", () => {
     const { socket } = setup({}, false, "ro");
     socket().readyState = 1;
     socket().fire("open", {});
-    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "ro" });
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 2, lang: "ro" });
   });
 
   it("sends the token it keeps, only in hello", () => {
     const { socket } = setup({ [TOKEN_KEY]: "LXF33D9tR1EIzH3GPvWDpw" });
     socket().readyState = 1;
     socket().fire("open", {});
-    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en", token: "LXF33D9tR1EIzH3GPvWDpw" });
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 2, lang: "en", token: "LXF33D9tR1EIzH3GPvWDpw" });
   });
 
   it("keeps the token the welcome gives, whichever it is", () => {
@@ -128,6 +129,55 @@ describe("the connection", () => {
     socket().fire("message", { data: welcome });
     socket().close();
     expect(timers.map((timer) => timer.ms)).toEqual([1000, 2000, 1000]);
+  });
+
+  it("waits 30 seconds after a refusal for too many connections, once, and then goes back to the back-off", () => {
+    const { socket, timers } = setup();
+    socket().fire("message", { data: JSON.stringify({ type: "error", seq: 1, code: "rateLimited", detail: "connections" }) });
+    socket().close();
+    expect(timers.map((timer) => timer.ms)).toEqual([CONNECTIONS_REFUSED_WAIT_MS]);
+    timers[0].run();
+    socket().close();
+    expect(timers.map((timer) => timer.ms)).toEqual([CONNECTIONS_REFUSED_WAIT_MS, 2000]);
+  });
+
+  it("does not wait longer than the back-off for the other limits, or for a message rate", () => {
+    const { socket, timers } = setup();
+    socket().fire("message", { data: JSON.stringify({ type: "error", seq: 1, code: "rateLimited", detail: "joins" }) });
+    socket().fire("message", { data: JSON.stringify({ type: "error", seq: 2, code: "rateLimited" }) });
+    socket().close();
+    expect(timers.map((timer) => timer.ms)).toEqual([1000]);
+  });
+
+  it("takes in nothing after close, a welcome that was on its way included, and does not write the token back", () => {
+    const { connection, socket, storage, messages, statuses, timers } = setup();
+    const closing = socket();
+    // A browser's socket closes a little later, and what is already on its way still arrives.
+    closing.close = () => undefined;
+    connection.close();
+    closing.fire("message", { data: welcome });
+    closing.fire("open", {});
+    expect(storage.values.has(TOKEN_KEY)).toBe(false);
+    expect(messages).toEqual([]);
+    // It said so once, when it connected, and nothing since; and nothing is tried again.
+    expect(statuses).toEqual(["connecting"]);
+    expect(timers).toEqual([]);
+    expect(closing.sent).toEqual([]);
+    expect(connection.send({ type: "pause" })).toBe(false);
+  });
+
+  it("takes in nothing once it has stopped for another tab or a new version, and keeps no token from it", () => {
+    const { socket, storage, messages } = setup();
+    socket().fire("message", { data: error("openElsewhere") });
+    socket().fire("message", { data: welcome });
+    expect(storage.values.has(TOKEN_KEY)).toBe(false);
+    expect(messages.map((message) => message.type)).toEqual(["error"]);
+
+    const reloaded = setup();
+    reloaded.socket().fire("message", { data: error("version") });
+    reloaded.socket().fire("message", { data: welcome });
+    expect(reloaded.storage.values.has(TOKEN_KEY)).toBe(false);
+    expect(reloaded.messages.map((message) => message.type)).toEqual(["error"]);
   });
 
   it("does not reconnect once another tab has taken the member over", () => {
@@ -165,7 +215,7 @@ describe("the connection", () => {
     expect(socket()).not.toBe(refused);
     socket().readyState = 1;
     socket().fire("open", {});
-    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 1, lang: "en" });
+    expect(JSON.parse(socket().sent[0])).toEqual({ type: "hello", protocol: 2, lang: "en" });
     expect(statuses[statuses.length - 1]).toBe("open");
     // The refused socket closing on its own is not a lost connection: nothing is waited for, the
     // new socket is still the connection, and it sends.

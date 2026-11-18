@@ -5,7 +5,8 @@
 > and online tables, is complete (2026-11-12, PR #7). Phase 8, Romanian, the keyboard, screen readers
 > and touch, is complete (2026-11-13, PR #8). Phase 8b, the phone layout, is complete (2026-11-17,
 > PR #11). Outside the phases, the page's Docker image is built, reviewed twice and merged
-> (2026-11-11, PR #5, [§14](#the-docker-image-outcome)). Phase 9, deployment, is next.**
+> (2026-11-11, PR #5, [§14](#the-docker-image-outcome)). Phase 9's share, the footer, About and the
+> page deployed with its server, is complete (2026-11-18, PR #13, with the server's PR #18).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the
@@ -340,21 +341,39 @@ sets the rules. The page's share:
 
 - Player-chosen text goes in only through `textContent`.
 - The page works under the strict Content-Security-Policy the server sends: no inline script, and
-  `connect-src 'self'`. Until the server's phase 9 sends it, the policy comes from the image's
-  Caddy, or, behind the user's own proxy, from the server's proxy examples. Every copy is the exact
-  string of `PAGE_CSP` in `tools/smoke.mjs`, which a unit test and the smoke test compare.
+  `connect-src 'self'`. The server sends it, with `nosniff`, the referrer policy and the caching
+  rules, on every answer; its proxy examples add none. The image's Caddy sends it too, since it
+  serves the page. The copies are the image's Caddyfile and the server's `PageHeaders.h`, each the
+  exact string of `PAGE_CSP` in `tools/smoke.mjs`, which a unit test and the smoke test compare.
 - Every asset is served by the server itself, so the page makes no third-party requests. That is
   also a privacy point.
 - The token is kept in the browser's storage and sent only in `hello`, never in a URL or a log.
-- **The footer** links "Source" to the server at the commit `GET /version` gives, and to this
-  repository at the commit the page was built from, which the build writes into the page. In the
-  image, that commit will come from a build argument, since the build context has no `.git`. The
-  AGPL's section 13 needs both (the server plan's
+- **The footer** of the main menu, on the desktop and the phone, reads "Source: server · page ·
+  About". Server links to the server at the commit its welcome gives, which is the commit `GET
+  /version` gives, and page links to this repository at the commit the page was built from, which
+  the build writes into the page: from `WHIST_WEB_COMMIT`, else the head of the repository that is
+  this folder, marked dirty when the tree has changes, else none. In the image that
+  commit is a build argument, since the build context has no `.git`; CI passes the commit, and a
+  pull request's is its head's. With no commit, or a dirty one, the link is to the repository and
+  About says the commit is unknown or that the build has local changes. The AGPL's section 13 needs
+  both (the server plan's
   [§12](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#12-deployment-and-operations)).
-- **An About page** says what the page keeps: a chosen display name and a random token in the
-  browser's storage, with no accounts and no cookies.
+- **An About sheet,** opened by the footer and placed like the rules on the phone, lists the licence
+  (AGPL-3.0-or-later), both links, both versions and commits, the protocol number, and what the page
+  keeps in the browser, by name: the token, the profile, the last New Game for each language, the
+  pace, the language, and two notes that last for the tab. The names are one registry, which the
+  list and "Forget this browser" both read, and a test holds the source to it. Forget asks first,
+  clears exactly those names and reloads. It says there are no accounts and no cookies, and the
+  page asks no other site for anything. "Report a problem" opens this repository's issues.
+- **A server that restarts** sends `restarting` with the time left, to every page and again right
+  after the welcome of one that comes in during the drain. It is about the server, not the table,
+  so the page takes it before the playback queue and shows it in the strip of notices, as a slim
+  banner over the table and the main menu, with the time of day the games can go on until and that
+  no new game can start. The strip is a live region, so a screen reader says it. It stays until
+  the connection goes. `busy` and each limit of `rateLimited` have words of their own, and a
+  refusal for too many connections waits 30 seconds before the page tries again.
 
-Both are built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
+All of this is built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
 the page is built from the latest commit of this repository whose submodule points at the server
 being deployed, and a server change that no such commit points at gets a submodule update here
 first (the server plan's §12).
@@ -411,6 +430,10 @@ They run against a real server, built from the submodule ([§14](#14-building-an
 - `nice -n 19 npm run e2e -- --workers=1`;
 - one heavy command at a time, and long jobs in the background.
 
+The end-to-end server's limits per address are lifted in `tests/e2e/server.json`, since every test
+connects and makes tables from the one address. The drain test starts a server of its own on port
+8091 with a short `drain_ms`.
+
 **The server for the end-to-end tests** is built from the submodule, by the server's own rules:
 
 ```
@@ -437,7 +460,8 @@ checkout of the server beside this one.
   with `deploy/Caddyfile`. The Linux job and the owner's machine stay on Node 24, where the
   lockfile is made.
   - **Caddyfile.** It serves the page, hides dotfiles, answers `/t/` and six capital letters or digits with
-    `index.html`, and passes `/ws` and `/version` to `WHIST_SERVER_ADDRESS`. It sends the
+    `index.html`, and passes `/ws`, `/version` and `/health` to `WHIST_SERVER_ADDRESS`, whose own
+    answers it never gives a caching rule: the server says `no-store` itself. It sends the
     content-security-policy, `nosniff` and the referrer policy on every answer, errors included,
     and the caching rules on successful ones only: `immutable` under `/assets/`, `no-cache` for
     the page and a table's link, an hour for the rest.
@@ -449,14 +473,19 @@ checkout of the server beside this one.
     `docker compose build web`, then `docker compose up`, on port 8000.
   - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
     page, a table's link, the file types, the policy and caching headers, that an error is not
-    kept by a cache (or not for long, from the server alone), and a solo game through `/ws`,
-    using the server's smoke test. A browser check, `playwright.docker.config.ts`, loads the page
+    kept by a cache, that `/ws` carries the headers too, with the handshake and without, that `/health` says the server is up and `/version` and `/health` are
+    `no-store`, that the page's script holds the commit it was built from (`--web-commit`), and a
+    solo game through `/ws`, using the server's smoke test. The server sends the headers itself, so
+    every profile is held to them. A browser check, `playwright.docker.config.ts`, loads the page
     under the image's policy, and fails if the page arrives without it.
   - **CI.** The `docker` job checks that this repository's compose files and the override its
     README gives parse, builds both images, and runs the full stack with our Caddy, the own-proxy
     setup directly and through the server's Caddy and nginx examples, this repository's compose
     file pointed at that server over the Docker bridge and, with the README's override, over the
-    server's network, and the same file over HTTPS under its hardening. It holds the page's image
+    server's network, and the same file over HTTPS under its hardening. It stops the server's stack
+    and the own-proxy setup, which starts the drain, and expects the server to leave with exit code
+    0; the compose files' grace period is longer than the drain. It builds the page's image with the
+    commit as a build argument. It holds the page's image
     to its size budget. The `publish` job pushes the page's image from `master` and version tags,
     never from a pull request.
   - **Versioning.** The image's tag is the version in `package.json`; its labels carry the
@@ -1470,6 +1499,85 @@ commit of code `71713b4`).
     tests pass: 1140, 554 and 166.
   - **CI** (Build (Linux) and the Docker image) is green at `71713b4`.
   - **The owner approved** the phase on 2026-11-17.
+
+### Phase 9's share: the footer, About and the page deployed — M ✅ COMPLETE
+
+The phase is the server plan's
+[phase 9](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#phase-9-hardening-and-deployment--m--complete),
+whose outcome holds the owner's choices, the deploy, the load test and the server's reviews. This
+is the page's share of it, from §12 and "Left for the server's phase 9" in §14.
+
+**Outcome** (branch `web/phase-9-deployment`, PR #13, parent `ccr-209c0806-o444sp`, the last commit
+`377e771`, with the submodule at the server's `69c4663`).
+
+- **The branch.**
+  - **The commits,** in the order they were made:
+    - protocol 2, the banner, the footer, About and the deploy: `2af52f0` to `f2e6ba8`;
+    - the first review's fixes: `19c0081` to `8d81198`;
+    - the second review's fixes: `1601694` to `9c90812`;
+    - the owner's Romanian wording, `fcc2bc7`, and the submodule at the cap of 40, `377e771`.
+  - **Who built it:** the server phase's implementing agent, at extra-high effort.
+- **The owner's choices,** besides the server plan's:
+  - **About:** privacy (what the browser keeps, no accounts, cookies or third parties), the
+    licence, both repositories at their commits, the versions and the protocol, "Report a problem"
+    on this repository's issues, and "Forget this browser".
+  - **The footer:** a small line on the main menu, "Source: server · page · About".
+  - **The Romanian review** (2026-11-18), on a private review page with a screenshot of each string:
+    of 46 strings, 31 are kept and 15 changed. "Revizie" stands for a commit and "pagina
+    proiectului" for the repository; Forget is "Șterge datele din acest browser", its button
+    "Șterge"; the banner says "Nu mai poate începe niciun joc nou."
+- **Built.**
+  - **Protocol 2:** `restarting` and `busy`, and the detail of `rateLimited`. A banner over the menu
+    and the table says the server is restarting, until when games can go on, and that no new one
+    can start. Each refusal has its own words; one for too many connections waits 30 s before the
+    page tries again.
+  - **The footer and About,** as above. The links go to the server's repository at the commit
+    `/version` gives, and to this one at the build's commit; without one, to the repository.
+  - **Storage** is listed once (`src/storage/keys.ts`, `stored.ts`), and About and Forget both read
+    that list. Forget tells the page's other tabs by a key it sets and clears, and they let go of
+    their connection and reload.
+  - **The build's commit:** `WHIST_WEB_COMMIT`, or git in this folder's own repository, with
+    `-dirty` after a tree with changes; `node tools/buildCommit.mjs` prints it for an image's build.
+    The image takes it as a build argument, which CI passes.
+  - **Deploy:** the Caddyfile passes `/health` on; `compose.yaml` stops in 16 minutes; the smoke
+    test holds every profile to the server's headers, `/ws` included, checks that no `Server` header
+    is sent where none should be, and matches the commit exactly.
+  - **1.0.0** in `package.json`.
+- **Left from the Docker image's outcome, now done:** `/version` is in no proxy example's cache
+  rule, and the headers on `/ws` come from the server, so the nginx example needs none and the smoke
+  test checks `/ws` too. The footer's commit is a build argument. Both packages on GHCR are public.
+- **On the owner's phone,** with the deployed page: "Add to Home screen" works in Chrome and
+  DuckDuckGo. Two problems found there are open: #14, the side panels go in full screen, where the
+  window is taller and the table takes their room; and #15, the restart banner covers the top seat's
+  name plate.
+- **Reviews.**
+  - **The first,** of the page's commits up to `f2e6ba8`, found 12 problems (one in two parts), none
+    above severity 3: Tab never reached a sheet's links or selects; in the README's setups with the
+    page alone, every visitor counted as one address; the banner was drawn over the sheets; the
+    build's commit came from git in the current folder and missed a tree with changes; the drain test
+    was tight; Forget did not reach other tabs; and smaller matters of the smoke test, comments, dead
+    code and the footer links' names. All fixed, in `19c0081` to `8d81198`. The Docker image's
+    outcome is left as it was written; its open items are listed as done above.
+  - **The second,** one reviewer for both repositories' fix commits, found 13, none above severity 3.
+    The page's eight: the README's remote server must trust the page host too (severity 3); the
+    banner's width rule beat the scaled layout's; the build's `git status` could take the index's
+    lock; a tab dropping a refused token made the others reload; the end-to-end server's
+    `max_tables`; the strip beside the banner was not dimmed; the local image hints and the smoke
+    test let a build with changes pass as clean; and a comment. All fixed, in `1601694` to `9c90812`.
+- **Tests:** 1206 unit tests in 66 files (1140 at the start of the phase), 652 look tests (554) and
+  175 end-to-end tests (166).
+  - **End to end:** a drain with a short `drain_ms` and its banner; Forget, in one tab and across
+    two, and a refused token that is not taken for it; Tab through About.
+  - **Look:** About and the banner at the desktop and phone sizes in both languages, a sheet under the
+    banner, and the banner on a 1024 by 600 touch screen.
+  - **Unreliable:** "full screen entering and leaving it redraws…" (`scaledSheets.spec.ts:558`)
+    failed twice and "Space closes the round sheet…" (`keyboard.spec.ts:177`) once more; each passed
+    again on a rerun.
+- **Builds and CI.** `npm run build` passes, and CI (Build (Linux) and the Docker image) is green at
+  `fcc2bc7`. The manual run that published `sha-fcc2bc7` passed, and the owner's computer and phone
+  checked the footer, About, the headers and a drain with images built from this branch. The run
+  that published `sha-377e771` passed too.
+- **The owner approved** the phase on 2026-11-18.
 
 ### Phase 10 (optional): offline solo — M to L
 

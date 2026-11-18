@@ -25,6 +25,7 @@ const SHEETS: readonly (readonly [string, Placement])[] = [
   ["sheet-online", "page"],
   ["sheet-create-table", "page"],
   ["sheet-lobby", "page"],
+  ["sheet-about", "page"],
 ];
 
 const SIZES = [
@@ -38,7 +39,7 @@ const LANGUAGES = [
 ] as const;
 
 const READY = "body[data-ready]";
-const CONTROLS = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), [role="tab"]';
+const CONTROLS = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), [role="tab"], a[href]';
 
 async function open(page: Page, name: string, language: string): Promise<void> {
   await page.goto(`/look.html?shot=${name}&lang=${language}`);
@@ -224,6 +225,78 @@ for (const [width, height] of SIZES) {
         }
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       });
+    }
+  });
+}
+
+// Fixtures of sheets and pages with the banner up, which must start below it.
+const BANNER_SHEETS = ["sheet-new-game-restarting", "sheet-about-restarting", "sheet-lobby-restarting", "sheet-rules-restarting"];
+
+// The server's restart is told in a slim banner over the table and the main menu, in the words of both languages: inside
+// the window, with the time of day, and clear of every control a finger has to reach. A touch window of 1024 by 600 is
+// scaled too, and wider than the two phone sizes, where a rule for the desktop layout would show.
+for (const [width, height] of [...SIZES, [1024, 600]] as const) {
+  test.describe(`the restart banner at ${width} by ${height} under a finger`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+
+    for (const [language, suffix] of LANGUAGES) {
+      for (const name of ["menu-restarting", "notice-restarting", ...BANNER_SHEETS]) {
+        test(`over ${name} in ${language} stays inside the window, and clear of the controls and of any sheet`, async ({ page }) => {
+          await page.goto(`/look.html?shot=${name}&lang=${language}`);
+          await page.waitForSelector(READY);
+          await expect(page.locator(".window")).toHaveAttribute("data-layout", "scaled");
+          const folder = join(OUT, `${width}x${height}${suffix}`);
+          mkdirSync(folder, { recursive: true });
+          const banner = page.locator('.notice[data-kind="restart"]');
+          await expect(banner).toBeVisible();
+          await expect(banner).toContainText("18:45");
+          await page.screenshot({ path: join(folder, `${name}.png`), animations: "disabled" });
+          const at = (await banner.boundingBox())!;
+          expect(at.x, "left").toBeGreaterThanOrEqual(-0.5);
+          expect(at.x + at.width, "right").toBeLessThanOrEqual(width + 0.5);
+          expect(at.y, "top").toBeGreaterThanOrEqual(-0.5);
+          expect(at.y + at.height, "bottom").toBeLessThanOrEqual(height + 0.5);
+          const covered = await page.evaluate(() => {
+            const banner = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();
+            const touches = Array.from(document.querySelectorAll<HTMLElement>("button, a[href]"))
+              .filter((node) => !node.closest("[hidden]") && node.getBoundingClientRect().width > 0)
+              .filter((node) => !node.closest(".notices"))
+              .filter((node) => {
+                const box = node.getBoundingClientRect();
+                return box.left < banner.right && box.right > banner.left && box.top < banner.bottom && box.bottom > banner.top;
+              });
+            return touches.map((node) => `${node.className || node.tagName}: ${node.textContent}`);
+          });
+          expect(covered, "controls under the banner").toEqual([]);
+          // The scaled layout keeps the notices clear of its corner controls, which the banner's own width must not undo.
+          const room = await page.evaluate(() => {
+            const scale = parseFloat(getComputedStyle(document.querySelector(".window")!).getPropertyValue("--scale"));
+            return { allowed: window.innerWidth - 2 * 190 * scale, width: document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect().width };
+          });
+          expect(room.width, "the banner's width").toBeLessThanOrEqual(room.allowed + 1);
+          // Nor does a sheet start under it: its title and its bar are what the banner would hide.
+          const sheetUnder = await page.evaluate(() => {
+            const banner = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();
+            const open = document.querySelector<HTMLElement>(".sheet:not([hidden])");
+            if (open === null) {
+              return false;
+            }
+            const box = open.getBoundingClientRect();
+            return box.left < banner.right && box.right > banner.left && box.top < banner.bottom && box.bottom > banner.top;
+          });
+          expect(sheetUnder, "a sheet under the banner").toBe(false);
+          // With a sheet up, the strip the banner stands in is dimmed like the rest: what is at its edge is the layer.
+          if (BANNER_SHEETS.includes(name)) {
+            const dimmed = await page.evaluate(() => {
+              const room = parseFloat(getComputedStyle(document.querySelector(".window")!).getPropertyValue("--banner-room"));
+              const band = document.querySelector<HTMLElement>(".menu-band")?.getBoundingClientRect().bottom ?? 0;
+              return document.elementFromPoint(4, band + room / 2)?.classList.contains("sheet-layer") === true;
+            });
+            expect(dimmed, "the strip beside the banner is dimmed").toBe(true);
+          }
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+        });
+      }
     }
   });
 }

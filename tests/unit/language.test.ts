@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  LANGUAGE_KEY,
   LANGUAGES,
   NATIVE_NAMES,
   addressForLanguage,
@@ -12,6 +11,7 @@ import {
   storeLanguage,
   storedLanguage,
 } from "../../src/i18n/language";
+import { LANGUAGE_KEY } from "../../src/storage/keys";
 
 afterEach(() => setLanguage("en"));
 

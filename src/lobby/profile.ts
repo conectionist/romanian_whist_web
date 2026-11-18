@@ -1,12 +1,11 @@
 import { t } from "../i18n/t";
 import type { Gender, Profile } from "../net/protocol";
+import { PROFILE_KEY } from "../storage/keys";
 import { MAX_NAME_LENGTH, isReservedName, nameError, reservedError } from "./setup";
 import { avatarCatalogue, facesFor } from "./catalogue";
 
 // Who you are at an online table: a name, a gender and a portrait, kept in the browser so the next
 // table finds them as they were left. The server cleans the name and refuses what it cannot show.
-
-const STORAGE_KEY = "whist.profile";
 
 export function defaultProfile(random: () => number = Math.random): Profile {
   const faces = facesFor("male");
@@ -41,7 +40,7 @@ function storage(): Storage | null {
 
 export function loadProfile(from: Pick<Storage, "getItem"> | null = storage()): Profile | null {
   try {
-    const text = from?.getItem(STORAGE_KEY);
+    const text = from?.getItem(PROFILE_KEY);
     const parsed: unknown = text === null || text === undefined ? null : JSON.parse(text);
     return isProfile(parsed) ? parsed : null;
   } catch {
@@ -51,7 +50,7 @@ export function loadProfile(from: Pick<Storage, "getItem"> | null = storage()): 
 
 export function saveProfile(profile: Profile, into: Pick<Storage, "setItem"> | null = storage()): void {
   try {
-    into?.setItem(STORAGE_KEY, JSON.stringify(profile));
+    into?.setItem(PROFILE_KEY, JSON.stringify(profile));
   } catch {
     // The profile lasts until the page is closed.
   }

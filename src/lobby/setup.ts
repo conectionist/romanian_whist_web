@@ -4,6 +4,7 @@ import type { Gender, Level, Settings, SettingsSeat, Structure } from "../net/pr
 import { LEVELS } from "../net/protocol";
 import { roundCount as roundsFor } from "../sheets/rulesSheet";
 import { DEFAULT_BOT_SPEED, FASTEST_SPEED } from "../sheets/settingsSheet";
+import { SETUP_KEY } from "../storage/keys";
 import { assignFaces, avatarCatalogue, drawName, nameCatalogue, seededRandom, type Random } from "./catalogue";
 
 // New Game's settings, src/ui/NewGameDialog.cpp: what a game is dealt from, and the rules about it.
@@ -311,8 +312,6 @@ export function settingsFor(setup: Setup, random: Random = Math.random): Setting
   return settings;
 }
 
-const STORAGE_KEY = "whist.setup";
-
 function isSetup(value: unknown): value is Setup {
   const found = value as Partial<Setup> | null;
   return (
@@ -337,13 +336,13 @@ function isSetup(value: unknown): value is Setup {
 // Where the last New Game is kept for a language: its names were drawn, or are the defaults, in that
 // language, so each language has a setup of its own and one does not overwrite the other's.
 function keyFor(language: Language): string {
-  return `${STORAGE_KEY}.${language}`;
+  return `${SETUP_KEY}.${language}`;
 }
 
 // What was kept in one slot for every language, with the language beside it, is moved to its language's
 // slot, unless that has one already. Anything else in the old slot, which names no language, is dropped.
 function migrate(storage: Pick<Storage, "getItem" | "setItem" | "removeItem">): void {
-  const text = storage.getItem(STORAGE_KEY);
+  const text = storage.getItem(SETUP_KEY);
   if (text === null) {
     return;
   }
@@ -356,7 +355,7 @@ function migrate(storage: Pick<Storage, "getItem" | "setItem" | "removeItem">): 
   } catch {
     // What cannot be read is not kept.
   }
-  storage.removeItem(STORAGE_KEY);
+  storage.removeItem(SETUP_KEY);
 }
 
 // The last New Game in the language the page speaks, which the next one opens on. Wrapped: storage can be

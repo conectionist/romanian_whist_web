@@ -212,6 +212,9 @@ export function apply(state: StoreState, message: ServerMessage, receivedAt: num
       return { state: applyError(state, message.code, message.detail), change: { kind: "error", event: null, fresh: false } };
     case "welcome":
       return { state, change: { kind: "welcome", event: null, fresh: false } };
+    case "restarting":
+      // About the server, not the table: the page takes it before the queue and keeps it itself.
+      return { state, change: { kind: "restarting", event: null, fresh: false } };
   }
 }
 

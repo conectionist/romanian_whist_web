@@ -10,8 +10,9 @@ fields, bounds and defaults, and on Play online, which makes a table or joins on
 link (`/t/` and the code), waits in a lobby, and plays it. The round, history, last trick, game over,
 rules, settings and pause sheets are the desktop's. The page is in Romanian and English: it asks which
 the first time, with the desktop's language dialog, and keeps the answer in the browser; the flag at
-the top right of the main menu opens the dialog again. [`docs/page-plan.md`](docs/page-plan.md) is the
-plan for it.
+the top right of the main menu opens the dialog again. The foot of the main menu links to the source
+of the server and of the page, and opens About. [`docs/page-plan.md`](docs/page-plan.md) is the plan
+for it.
 
 For a game the tests and a look at the page can start without the menu, `/?solo=4` starts a solo game
 against the computer players. `&seed=42` fixes the deal, `&speed=0` to `4` sets how fast they move (2 is
@@ -23,12 +24,16 @@ without asking and without keeping it.
 ## Deploy with Docker (recommended)
 
 The page is an image for linux/amd64, `ghcr.io/conectionist/romanian_whist_web`: Caddy serving the
-built page with automatic HTTPS, passing `/ws` and `/version` on to a game server, and answering
+built page with automatic HTTPS, passing `/ws`, `/version` and `/health` on to a game server, and answering
 a table's link, `/t/` and six capital letters or digits, with the page. Its tags are `latest` (the newest
-`master`), a release such as `0.1.0` or `0.1`, and `sha-<commit>`.
+`master`), a release such as `1.0.0` or `1.0`, and `sha-<commit>`.
 
-**Not for the public internet yet.** The server has no limits on connections, tables or message
-rates, which come with its phase 9.
+**On the public internet.** The server limits what one address can do: connections, tables made in an
+hour, failed joins and messages a second. It sends the page's security headers and caching rules itself.
+When it is asked to stop, it stops giving out new games and lets the games someone is at end, for as long as
+its `drain_ms` says (15 minutes by default); a person at one sees a banner that says until when. The
+server's README has the settings and the restart, and what to monitor: `/health` answers 200, and 503 while
+it drains.
 
 - **With its server, in one stack:** the server's repository has the compose file that runs both
   images, with this image's Caddy getting the certificate. See "Deploy with Docker" in
@@ -83,6 +88,21 @@ trial), and `WHIST_SERVER_ADDRESS` is the server, as one of
 
 - `https://whist.example.org`, for a remote server behind its own TLS.
 
+**The server must trust the page.** The page's Caddy tells the server the visitor's address in
+`X-Forwarded-For`, and the server believes that only from the addresses in its `trusted_proxies`. From any
+other it counts the address the request came from, so every visitor would count as one address for the limits
+per address, and the first few would use them up. The server in the image trusts the private ranges, which is
+enough for the stack. Elsewhere:
+
+- A server built by hand, reached through `host.docker.internal`, sees the page at the bridge's address:
+  add its range to the server's `trusted_proxies`, such as `"172.16.0.0/12"`.
+- A remote server behind its own proxy: that proxy appends the page host's address to `X-Forwarded-For`, after
+  the visitor's, as Caddy and nginx's `$proxy_add_x_forwarded_for` do. The server must trust the page host's
+  address as well as its own proxy: with only the proxy trusted, the rightmost entry it does not trust is the
+  page host, and every visitor counts as that one address. Caddy as the remote proxy must also trust the page
+  host, so that it keeps the visitor's entry and does not replace the header (`trusted_proxies static <the page
+  host's address>` under `servers` in its global options). nginx keeps it with no step of its own.
+
 Then `docker compose pull && docker compose up -d`. Updating is the same two commands, and the
 certificates stay in the `caddy_data` volume. The container has a read-only root and only the right
 to bind ports 80 and 443. At `localhost`, which gets a certificate of Caddy's own, it logs that it
@@ -113,21 +133,48 @@ It exits 0 on a pass and 1 otherwise:
 node tools/smoke.mjs --url http://127.0.0.1:8000 --profile web --server-commit <commit>
 ```
 
-`--profile` says what the address in front of the page is, and so which headers to expect:
+`--profile` says what the address in front of the page is:
 
-- `web`: this image's Caddy. It checks the content-security-policy, the caching rules and gzip too,
-  and that an error answer is not kept by a cache: `no-store` passes, `public` and a `max-age` do
-  not.
-- `proxy`: your own proxy with the server's examples. It checks the same, but gzip is only reported.
-- `server`: the server serving the page itself, with no proxy. It checks neither headers nor gzip,
-  and only that an error answer is not cached for long.
+- `web`: this image's Caddy, which compresses, so it requires gzip.
+- `proxy`: your own proxy with the server's examples, which forward everything and add nothing: gzip is
+  only reported.
+- `server`: the server serving the page itself, with no proxy. Gzip is only reported there too.
 
-Every profile checks the page, a table's link, the file types, and the game through `/ws`. The
-`web` and `proxy` profiles also check the policy on `/version` and on errors. `--server-commit` is
-the commit the server was built from, which its welcome reports; leave it out to skip that check.
-`--timeout` is the seconds to wait for the page, and again for the game (10 by default). `node tools/smoke.mjs --copies` checks, with no
-server, that this image's Caddyfile and the server's two proxy examples all send the same
-content-security-policy; the unit tests check that too.
+The server sends the content-security-policy, `nosniff`, the referrer policy and the caching rules
+itself, so every profile checks them, on the page, the assets, the status pages, errors and `/ws`, with the
+handshake and without, and that an error is not given a rule that keeps it. The `web` and `server` profiles also
+check that no answer sends a `Server` header, which the server and our Caddy leave out; a proxy of your own adds
+one, so `proxy` does not. Every profile also checks the page, a table's link, the file
+types, that `/health` says the server is up, that `/version` and `/health` are `no-store`, and the game
+through `/ws`. `--server-commit` is the commit the server was built from, which `/version` and its welcome
+report; `--web-commit` is the commit the page was built from, which must be in the page's script. Leave
+either out to skip that check: an empty one is refused, since it would match any page. `--timeout` is the seconds to wait for the page, and again for the game
+(10 by default). `node tools/smoke.mjs --copies` checks, with no server, that this image's Caddyfile and
+the server's own header file send the same content-security-policy; the unit tests check that too.
+
+### The footer and About
+
+The foot of the main menu reads "Source: server · page · About". The two links go to the server's
+repository at the commit the server reports, in its welcome and at `/version`, and to this repository at the
+commit the page was built from. The AGPL asks that everyone who uses a program over a network can get its
+source, and this is how they do. Before the server has answered, and for a server that gives no commit, the
+link is to the repository itself.
+
+The page's commit is written into the built page. `npm run build` takes it from `WHIST_WEB_COMMIT`, else from
+`git rev-parse HEAD` run in this folder, when the repository is this folder and not one that holds it, else
+it has none. A tree with changes is marked, and About says the build has local changes. The image's build has no git history, so the commit is a build
+argument: CI gives it the commit, and a local image build is given it as
+`WHIST_WEB_COMMIT=$(node tools/buildCommit.mjs) docker compose build web`, which works the commit out by
+the same rule, so a tree with changes is marked. A page built with none, or of a tree with changes,
+links to the repository, and About says that its commit is unknown or that it has local changes.
+
+About lists the licence (AGPL-3.0-or-later), both links, the versions and commits of the page and the
+server, the protocol, and everything the page keeps in the browser, by name: your player token, your name
+and portrait for online tables, the last New Game, the pace, the language, and two notes that last until
+the tab is closed. There are no accounts and no cookies, and the page asks no other site for anything.
+"Forget this browser" asks first, then removes exactly those names from the browser's storage and loads the
+page again; a game you are at can then no longer be returned to. "Report a problem" opens this repository's
+issues.
 
 ## Getting the code
 
@@ -167,7 +214,8 @@ libs/romanian_whist_server/build/server/app/whist_server --config server.json
 ```
 
 and open http://127.0.0.1:8080/, which shows the main menu, or http://127.0.0.1:8080/?solo=4 for a game
-at once. `server.json` points the server at `dist/`.
+at once. `server.json` points the server at `dist/`, and lifts the limits per address on connections, tables and
+failed joins, since your tabs and tests are all one address.
 
 **An online table on one machine.** Choose Play online, give a name, and Create a table: its lobby shows
 the link, `/t/` and the table's code. Open that link in a private window, or another browser: a page
@@ -194,8 +242,10 @@ Then open http://127.0.0.1:8000/?solo=4. Build one image at a time, the server's
 takes several minutes, and `JOBS`, the number of compile jobs, is 2 unless
 `WHIST_JOBS` says otherwise, so that the machine stays usable. The server reports as its commit what
 `WHIST_SERVER_COMMIT` holds, for example
-`WHIST_SERVER_COMMIT=$(git -C libs/romanian_whist_server rev-parse --short HEAD)`. The page's image
-alone is `docker build -t romanian_whist_web .`.
+`WHIST_SERVER_COMMIT=$(git -C libs/romanian_whist_server rev-parse --short HEAD)`, and the page names what
+`WHIST_WEB_COMMIT` holds, for example `WHIST_WEB_COMMIT=$(node tools/buildCommit.mjs)`, which marks a tree
+with changes as `-dirty` where `git rev-parse HEAD` would call it clean. The page's image alone is
+`docker build --build-arg WHIST_WEB_COMMIT=$(node tools/buildCommit.mjs) -t romanian_whist_web .`.
 
 ## Tests
 
@@ -210,9 +260,12 @@ decisions as pure functions: what a sheet shows, what a click sends, a lobby's s
 names and validation. One reads the source for every string the page translates, and fails on one with
 no Romanian, a translation that loses a placeholder, or a count without its three forms. The
 end-to-end tests start the server built in the submodule, or the one `WHIST_SERVER` names, and play
-through the page: solo games, the sheets, New Game, the language dialog, a game in Romanian, and online
-tables played by three browsers at once, each in a context of its own. They start with English chosen,
-as a browser that has been through the dialog; the tests of the dialog start with nothing. They need
+through the page: solo games, the sheets, New Game, the language dialog, a game in Romanian, the footer and
+About, and online tables played by three browsers at once, each in a context of its own. They start with English chosen,
+as a browser that has been through the dialog; the tests of the dialog start with nothing. One test starts a
+server of its own on port 8091 with a drain of five seconds, stops it with a game in progress, and checks
+the banner, the refusal of a new game, the game cut at the deadline and the exit with no failure. The
+server's limits per address are lifted in `tests/e2e/server.json`, since every test is one address. The tests need
 Playwright's Chromium once: `npx playwright install chromium`.
 
 With the stack above running, one more test loads the page under the image's content-security-policy

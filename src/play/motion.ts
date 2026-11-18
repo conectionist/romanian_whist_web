@@ -2,6 +2,8 @@
 // the animations read. Only numbers and curves, so a test can say what each pace means without a
 // page.
 
+import { PACE_KEY } from "../storage/keys";
+
 // Four stops, as the desktop's slider has them, left to right.
 export const PACES = ["off", "quick", "normal", "slow"] as const;
 export type Pace = (typeof PACES)[number];
@@ -63,13 +65,11 @@ export const BOT_FLIGHT_OPACITY = 0.3;
 // Each swept card ends at the winner's panel at a third of its size, gone.
 export const SWEEP_SCALE = 0.35;
 
-const STORAGE_KEY = "whist.pace";
-
 // The pace the viewer has chosen; Normal until they choose. Wrapped, because storage can be
 // refused or empty.
 export function storedPace(): Pace {
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    const stored = window.localStorage.getItem(PACE_KEY);
     return (PACES as readonly string[]).includes(stored ?? "") ? (stored as Pace) : DEFAULT_PACE;
   } catch {
     return DEFAULT_PACE;
@@ -80,7 +80,7 @@ export function storedPace(): Pace {
 // is closed.
 export function storePace(pace: Pace): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, pace);
+    window.localStorage.setItem(PACE_KEY, pace);
   } catch {
     // Nothing to keep it in.
   }

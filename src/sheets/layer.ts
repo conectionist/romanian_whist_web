@@ -41,7 +41,7 @@ function nameOf(sheet: Sheet): SheetKey {
   return (sheet.element.dataset.sheet ?? "") as SheetKey;
 }
 
-const FOCUSABLE = "button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex='-1'])";
+const FOCUSABLE = "button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href], [tabindex]:not([tabindex='-1'])";
 
 // The dim over the page and the one sheet on it, as MainWindow arranges them: one open at a time,
 // each made once and hidden when another is shown. Over everything but the menu bar, which stays

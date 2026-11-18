@@ -1499,6 +1499,83 @@ commit of code `71713b4`).
   - **CI** (Build (Linux) and the Docker image) is green at `71713b4`.
   - **The owner approved** the phase on 2026-11-17.
 
+### Phase 9's share: the footer, About and the page deployed — M
+
+The phase is the server plan's
+[phase 9](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#phase-9-hardening-and-deployment--m),
+whose outcome holds the owner's choices, the deploy, the load test and the server's reviews. This
+is the page's share of it, from §12 and "Left for the server's phase 9" in §14.
+
+**Outcome** (branch `web/phase-9-deployment`, PR #13, parent `ccr-209c0806-o444sp`, the last commit
+`377e771`, with the submodule at the server's `69c4663`).
+
+- **The branch.**
+  - **The commits,** in the order they were made:
+    - protocol 2, the banner, the footer, About and the deploy: `2af52f0` to `f2e6ba8`;
+    - the first review's fixes: `19c0081` to `8d81198`;
+    - the second review's fixes: `1601694` to `9c90812`;
+    - the owner's Romanian wording, `fcc2bc7`, and the submodule at the cap of 40, `377e771`.
+  - **Who built it:** the server phase's implementing agent, at extra-high effort.
+- **The owner's choices,** besides the server plan's:
+  - **About:** privacy (what the browser keeps, no accounts, cookies or third parties), the
+    licence, both repositories at their commits, the versions and the protocol, "Report a problem"
+    on this repository's issues, and "Forget this browser".
+  - **The footer:** a small line on the main menu, "Source: server · page · About".
+  - **The Romanian review** (2026-11-18), on a private review page with a screenshot of each string:
+    of 46 strings, 31 are kept and 15 changed. "Revizie" stands for a commit and "pagina
+    proiectului" for the repository; Forget is "Șterge datele din acest browser", its button
+    "Șterge"; the banner says "Nu mai poate începe niciun joc nou."
+- **Built.**
+  - **Protocol 2:** `restarting` and `busy`, and the detail of `rateLimited`. A banner over the menu
+    and the table says the server is restarting, until when games can go on, and that no new one
+    can start. Each refusal has its own words; one for too many connections waits 30 s before the
+    page tries again.
+  - **The footer and About,** as above. The links go to the server's repository at the commit
+    `/version` gives, and to this one at the build's commit; without one, to the repository.
+  - **Storage** is listed once (`src/storage/keys.ts`, `stored.ts`), and About and Forget both read
+    that list. Forget tells the page's other tabs by a key it sets and clears, and they let go of
+    their connection and reload.
+  - **The build's commit:** `WHIST_WEB_COMMIT`, or git in this folder's own repository, with
+    `-dirty` after a tree with changes; `node tools/buildCommit.mjs` prints it for an image's build.
+    The image takes it as a build argument, which CI passes.
+  - **Deploy:** the Caddyfile passes `/health` on; `compose.yaml` stops in 16 minutes; the smoke
+    test holds every profile to the server's headers, `/ws` included, checks that no `Server` header
+    is sent where none should be, and matches the commit exactly.
+  - **1.0.0** in `package.json`.
+- **Left from the Docker image's outcome, now done:** `/version` is in no proxy example's cache
+  rule, and the headers on `/ws` come from the server, so the nginx example needs none and the smoke
+  test checks `/ws` too. The footer's commit is a build argument. Both packages on GHCR are public.
+- **On the owner's phone,** with the deployed page: "Add to Home screen" works in Chrome and
+  DuckDuckGo. Two problems found there are open: #14, the side panels go in full screen, where the
+  window is taller and the table takes their room; and #15, the restart banner covers the top seat's
+  name plate.
+- **Reviews.**
+  - **The first,** of the page's commits up to `f2e6ba8`, found 12 problems (one in two parts), none
+    above severity 3: Tab never reached a sheet's links or selects; in the README's setups with the
+    page alone, every visitor counted as one address; the banner was drawn over the sheets; the
+    build's commit came from git in the current folder and missed a tree with changes; the drain test
+    was tight; Forget did not reach other tabs; and smaller matters of the smoke test, comments, dead
+    code and the footer links' names. All fixed, in `19c0081` to `8d81198`. The Docker image's
+    outcome is left as it was written; its open items are listed as done above.
+  - **The second,** one reviewer for both repositories' fix commits, found 13, none above severity 3.
+    The page's eight: the README's remote server must trust the page host too (severity 3); the
+    banner's width rule beat the scaled layout's; the build's `git status` could take the index's
+    lock; a tab dropping a refused token made the others reload; the end-to-end server's
+    `max_tables`; the strip beside the banner was not dimmed; the local image hints and the smoke
+    test let a build with changes pass as clean; and a comment. All fixed, in `1601694` to `9c90812`.
+- **Tests:** 1206 unit tests in 66 files (1140 at the start of the phase), 652 look tests (554) and
+  175 end-to-end tests (166).
+  - **End to end:** a drain with a short `drain_ms` and its banner; Forget, in one tab and across
+    two, and a refused token that is not taken for it; Tab through About.
+  - **Look:** About and the banner at the desktop and phone sizes in both languages, a sheet under the
+    banner, and the banner on a 1024 by 600 touch screen.
+  - **Unreliable:** "full screen entering and leaving it redraws…" (`scaledSheets.spec.ts:558`)
+    failed twice and "Space closes the round sheet…" (`keyboard.spec.ts:177`) once more; each passed
+    again on a rerun.
+- **Builds and CI.** `npm run build` passes, and CI (Build (Linux) and the Docker image) is green at
+  `fcc2bc7`. The manual run that published `sha-fcc2bc7` passed, and the owner's computer and phone
+  checked the footer, About, the headers and a drain with images built from this branch.
+
 ### Phase 10 (optional): offline solo — M to L
 
 - **Work:**

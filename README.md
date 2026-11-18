@@ -88,6 +88,18 @@ trial), and `WHIST_SERVER_ADDRESS` is the server, as one of
 
 - `https://whist.example.org`, for a remote server behind its own TLS.
 
+**The server must trust the page.** The page's Caddy tells the server the visitor's address in
+`X-Forwarded-For`, and the server believes that only from the addresses in its `trusted_proxies`. From any
+other it counts the address the request came from, so every visitor would count as one address for the limits
+per address, and the first few would use them up. The server in the image trusts the private ranges, which is
+enough for the stack. Elsewhere:
+
+- A server built by hand, reached through `host.docker.internal`, sees the page at the bridge's address:
+  add its range to the server's `trusted_proxies`, such as `"172.16.0.0/12"`.
+- A remote server behind its own proxy sees the page at the page host's public address. That proxy must trust
+  it, so that it passes the header on and does not write its own (for Caddy, `trusted_proxies static
+  <the page host's address>` under `servers` in its global options), and the server must trust that proxy.
+
 Then `docker compose pull && docker compose up -d`. Updating is the same two commands, and the
 certificates stay in the `caddy_data` volume. The container has a read-only root and only the right
 to bind ports 80 and 443. At `localhost`, which gets a certificate of Caddy's own, it logs that it

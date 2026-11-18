@@ -149,6 +149,37 @@ describe("the connection", () => {
     expect(timers.map((timer) => timer.ms)).toEqual([1000]);
   });
 
+  it("takes in nothing after close, a welcome that was on its way included, and does not write the token back", () => {
+    const { connection, socket, storage, messages, statuses, timers } = setup();
+    const closing = socket();
+    // A browser's socket closes a little later, and what is already on its way still arrives.
+    closing.close = () => undefined;
+    connection.close();
+    closing.fire("message", { data: welcome });
+    closing.fire("open", {});
+    expect(storage.values.has(TOKEN_KEY)).toBe(false);
+    expect(messages).toEqual([]);
+    // It said so once, when it connected, and nothing since; and nothing is tried again.
+    expect(statuses).toEqual(["connecting"]);
+    expect(timers).toEqual([]);
+    expect(closing.sent).toEqual([]);
+    expect(connection.send({ type: "pause" })).toBe(false);
+  });
+
+  it("takes in nothing once it has stopped for another tab or a new version, and keeps no token from it", () => {
+    const { socket, storage, messages } = setup();
+    socket().fire("message", { data: error("openElsewhere") });
+    socket().fire("message", { data: welcome });
+    expect(storage.values.has(TOKEN_KEY)).toBe(false);
+    expect(messages.map((message) => message.type)).toEqual(["error"]);
+
+    const reloaded = setup();
+    reloaded.socket().fire("message", { data: error("version") });
+    reloaded.socket().fire("message", { data: welcome });
+    expect(reloaded.storage.values.has(TOKEN_KEY)).toBe(false);
+    expect(reloaded.messages.map((message) => message.type)).toEqual(["error"]);
+  });
+
   it("does not reconnect once another tab has taken the member over", () => {
     const { socket, timers, statuses } = setup();
     socket().fire("message", { data: error("openElsewhere") });

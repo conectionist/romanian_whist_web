@@ -117,7 +117,7 @@ export class Connection {
     });
 
     socket.addEventListener("message", (event) => {
-      if (this.socket !== socket) {
+      if (this.socket !== socket || this.stopped) {
         return;
       }
       this.receive(String(event.data));
@@ -206,6 +206,9 @@ export class Connection {
       (this.options.clearTimer ?? ((id) => window.clearTimeout(id)))(this.timer);
       this.timer = null;
     }
-    this.socket?.close();
+    // Let go of the socket first, so that nothing it says after this, a welcome included, is taken in.
+    const socket = this.socket;
+    this.socket = null;
+    socket?.close();
   }
 }

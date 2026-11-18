@@ -145,3 +145,25 @@ test("Tab goes round About through both source links and Report a problem, and s
   expect(visited[4]).toBe("in:close");
   expect(visited[5]).toBe(visited[0]);
 });
+
+test("Forget in one tab makes the others let go and load anew, so that none writes the token back", async ({ context }) => {
+  const forgetting = await context.newPage();
+  const other = await context.newPage();
+  await menu(forgetting);
+  await menu(other);
+  expect(await other.evaluate(() => window.localStorage.getItem("whist.token"))).not.toBeNull();
+
+  const reloaded = other.waitForEvent("load");
+  await forgetting.locator('[data-menu-page="about"]').click();
+  const about = sheet(forgetting, "about");
+  await about.getByRole("button", { name: "Forget this browser" }).click();
+  await about.getByRole("button", { name: "Forget", exact: true }).click();
+
+  // Both ask for the language again, being new, and neither has connected: the browser keeps nothing of the page's.
+  await reloaded;
+  await expect(other.locator(".lang-page")).toBeVisible();
+  await expect(forgetting.locator(".lang-page")).toBeVisible();
+  for (const page of [forgetting, other]) {
+    expect(await page.evaluate(() => Object.keys(window.localStorage).filter((key) => key.startsWith("whist.")))).toEqual([]);
+  }
+});

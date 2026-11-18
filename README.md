@@ -139,11 +139,13 @@ node tools/smoke.mjs --url http://127.0.0.1:8000 --profile web --server-commit <
 
 The server sends the content-security-policy, `nosniff`, the referrer policy and the caching rules
 itself, so every profile checks them, on the page, the assets, the status pages, errors and `/ws`, with the
-handshake and without, and that an error is not given a rule that keeps it. Every profile also checks the page, a table's link, the file
+handshake and without, and that an error is not given a rule that keeps it. The `web` and `server` profiles also
+check that no answer sends a `Server` header, which the server and our Caddy leave out; a proxy of your own adds
+one, so `proxy` does not. Every profile also checks the page, a table's link, the file
 types, that `/health` says the server is up, that `/version` and `/health` are `no-store`, and the game
 through `/ws`. `--server-commit` is the commit the server was built from, which `/version` and its welcome
 report; `--web-commit` is the commit the page was built from, which must be in the page's script. Leave
-either out to skip that check. `--timeout` is the seconds to wait for the page, and again for the game
+either out to skip that check: an empty one is refused, since it would match any page. `--timeout` is the seconds to wait for the page, and again for the game
 (10 by default). `node tools/smoke.mjs --copies` checks, with no server, that this image's Caddyfile and
 the server's own header file send the same content-security-policy; the unit tests check that too.
 

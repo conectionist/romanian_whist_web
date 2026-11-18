@@ -35,11 +35,12 @@ export function cspCopies(root = here) {
 // what stands in front of it.
 const PROFILES = {
   // Our Caddy in front of the page and the server.
-  web: { woff2: ["font/woff2"], compression: "required" },
+  web: { woff2: ["font/woff2"], compression: "required", noServerHeader: true },
   // The server alone, serving the page itself.
-  server: { woff2: ["font/woff2", "application/font-woff2"], compression: "reported" },
-  // The server behind a proxy that forwards everything, as the examples do.
-  proxy: { woff2: ["font/woff2", "application/font-woff2"], compression: "reported" },
+  server: { woff2: ["font/woff2", "application/font-woff2"], compression: "reported", noServerHeader: true },
+  // The server behind a proxy that forwards everything, as the examples do. Caddy and nginx each name themselves in a
+  // Server header of their own, which the examples leave be.
+  proxy: { woff2: ["font/woff2", "application/font-woff2"], compression: "reported", noServerHeader: false },
 };
 
 const TABLE_CODE = "K7QM4P";
@@ -81,6 +82,11 @@ export async function checkPage(baseUrl, profileName, { serverCommit, webCommit,
   const profile = PROFILES[profileName];
   if (profile === undefined) {
     throw new Error(`unknown profile "${profileName}", expected one of ${Object.keys(PROFILES).join(", ")}`);
+  }
+  for (const [name, value] of [["--server-commit", serverCommit], ["--web-commit", webCommit]]) {
+    if (value !== undefined && value.trim() === "") {
+      throw new Error(`${name} is empty, which would match any page: leave it out to skip that check`);
+    }
   }
   let failures = 0;
   const check = async (name, run) => {
@@ -185,6 +191,25 @@ export async function checkPage(baseUrl, profileName, { serverCommit, webCommit,
     const upgraded = await handshake(baseUrl);
     policyOf("the WebSocket's handshake", upgraded.status, upgraded.headers);
   });
+
+  if (profile.noServerHeader) {
+    await check("no answer says what server it is", async () => {
+      const said = [];
+      for (const path of ["/", `/t/${TABLE_CODE}`, script, "/nope.svg", "/version", "/health", "/ws"]) {
+        const server = (await get(baseUrl, path)).headers.get("server");
+        if (server !== null) {
+          said.push(`${path}: ${server}`);
+        }
+      }
+      const upgraded = (await handshake(baseUrl)).headers.get("server");
+      if (upgraded !== null) {
+        said.push(`the WebSocket's handshake: ${upgraded}`);
+      }
+      if (said.length > 0) {
+        throw new Error(`a server header was sent: ${said.join(", ")}`);
+      }
+    });
+  }
 
   await check("the caching rules", async () => {
     const rules = [

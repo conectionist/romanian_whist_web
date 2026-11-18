@@ -285,6 +285,15 @@ for (const [width, height] of [...SIZES, [1024, 600]] as const) {
             return box.left < banner.right && box.right > banner.left && box.top < banner.bottom && box.bottom > banner.top;
           });
           expect(sheetUnder, "a sheet under the banner").toBe(false);
+          // With a sheet up, the strip the banner stands in is dimmed like the rest: what is at its edge is the layer.
+          if (BANNER_SHEETS.includes(name)) {
+            const dimmed = await page.evaluate(() => {
+              const room = parseFloat(getComputedStyle(document.querySelector(".window")!).getPropertyValue("--banner-room"));
+              const band = document.querySelector<HTMLElement>(".menu-band")?.getBoundingClientRect().bottom ?? 0;
+              return document.elementFromPoint(4, band + room / 2)?.classList.contains("sheet-layer") === true;
+            });
+            expect(dimmed, "the strip beside the banner is dimmed").toBe(true);
+          }
           expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         });
       }

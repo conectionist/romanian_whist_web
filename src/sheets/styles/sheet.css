@@ -11,6 +11,17 @@
   background: var(--scrim);
 }
 
+/* The strip the restart banner stands in is above the layer, and is dimmed with the rest while a sheet is up. */
+.sheet-layer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: var(--banner-room, 0px);
+  background: var(--scrim);
+}
+
 /* The panel of src/paint/Panel.cpp, 720 wide with its border, inside a padding of 26 30 24. */
 .sheet {
   /* Placed by layer.ts, on whole pixels: a sheet centred on half a pixel would be drawn blurred. */

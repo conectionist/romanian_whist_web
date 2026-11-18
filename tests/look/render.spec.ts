@@ -465,6 +465,13 @@ for (const [width, height] of [
             return { sheet: meets(note, sheet), title: meets(note, title), inside: note.left >= 0 && note.right <= window.innerWidth && note.top >= 0 && note.bottom <= window.innerHeight };
           });
           expect(found).toEqual({ sheet: false, title: false, inside: true });
+          // The strip the banner stands in is dimmed like the rest of what the sheet is over: what is at its edge is the layer.
+          const dimmed = await page.evaluate(() => {
+            const room = parseFloat(getComputedStyle(document.querySelector(".window")!).getPropertyValue("--banner-room"));
+            const band = document.querySelector<HTMLElement>(".menu-band")?.getBoundingClientRect().bottom ?? 0;
+            return document.elementFromPoint(4, band + room / 2)?.classList.contains("sheet-layer") === true;
+          });
+          expect(dimmed, "the strip beside the banner is dimmed").toBe(true);
         });
       }
 

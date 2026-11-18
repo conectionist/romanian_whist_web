@@ -78,7 +78,7 @@ describe("the restart banner", () => {
   it("is the same in Romanian, with the time in 24 hours", () => {
     process.env.TZ = "UTC";
     setLanguage("ro");
-    expect(restartingText(75 * 60_000, now, "ro")).toBe("Serverul repornește. Jocurile în desfășurare pot continua până la 11:15. Nu poate începe niciun joc nou.");
+    expect(restartingText(75 * 60_000, now, "ro")).toBe("Serverul repornește. Jocurile în desfășurare pot continua până la 11:15. Nu mai poate începe niciun joc nou.");
   });
 
   it("counts from the page's own clock, so a stale deadline is not stretched", () => {

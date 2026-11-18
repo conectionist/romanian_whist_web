@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { ISSUES_URL, PAGE_REPOSITORY, pageOf, SERVER_REPOSITORY, isCommit, pageSourceUrl, serverSourceUrl, shortCommit, sourceUrl, versionsOf, type Versions } from "../../src/about/links";
 import { LANGUAGES, setLanguage } from "../../src/i18n/language";
+import { t } from "../../src/i18n/t";
 import { PROTOCOL_VERSION } from "../../src/net/protocol";
 import { fieldsFor } from "../../src/sheets/aboutSheet";
 import { storedItems } from "../../src/storage/stored";
@@ -122,7 +123,37 @@ describe("About", () => {
     expect(fields.licence).toContain("AGPL-3.0-or-later");
     expect(fields.sources.map((source) => source.label)).toEqual(["Codul sursă al serverului", "Codul sursă al paginii"]);
     expect(fields.versions.map((each) => each.label)).toEqual(["Pagina", "Serverul", "Protocol"]);
-    expect(fields.versions[1].value).toBe("1.0.0, commit 89abcde");
+    expect(fields.versions[1].value).toBe("1.0.0, revizia 89abcde");
     expect(JSON.stringify(fields)).not.toMatch(/\bbot\b/i);
+  });
+
+  it("says in Romanian what the page keeps, and what is not known, as the owner worded it", () => {
+    setLanguage("ro");
+    const fields = fieldsFor(versions(), items());
+    expect(fields.licence).toBe("Whist online este software liber, sub licența AGPL-3.0-or-later: oricine îi poate citi și modifica codul sursă și îl poate rula.");
+    expect(fields.sources.map((source) => source.note)).toEqual(["revizia 89abcde", "revizia 0123456"]);
+    expect(fields.versions[0].value).toBe("1.0.0, revizia 0123456");
+    expect(fields.stored[0].what).toBe("Cine ești pentru server, ca să te poți întoarce la jocul la care participi.");
+    expect(fields.stored[3].what).toBe("Cât de repede se joacă.");
+
+    const unknown = fieldsFor(versions({ server: null, page: { version: "1.0.0", commit: null, dirty: false } }), items());
+    expect(unknown.sources[0].note).toBe("încă nu e conectat, așa că linkul duce la pagina proiectului");
+    expect(unknown.sources[1].note).toBe("nu se știe din ce revizie e făcută această versiune, așa că linkul duce la pagina proiectului");
+    expect(unknown.versions[0].value).toBe("1.0.0, revizie necunoscută");
+    const server = fieldsFor(versions({ server: { version: "1.0.0", commit: null } }), items());
+    expect(server.sources[0].note).toBe("nu se știe din ce revizie e făcut, așa că linkul duce la pagina proiectului");
+    expect(server.versions[1].value).toBe("1.0.0, revizie necunoscută");
+    const dirty = fieldsFor(versions({ page: pageOf("1.0.0", `${WHOLE}-dirty`) }), items());
+    expect(dirty.sources[1].note).toBe("această versiune are modificări locale, așa că linkul duce la pagina proiectului");
+  });
+
+  it("says in Romanian what the buttons and the question of Forget are", () => {
+    setLanguage("ro");
+    expect(t("about", "Forget this browser")).toBe("Șterge datele din acest browser");
+    expect(t("about", "Forget")).toBe("Șterge");
+    expect(t("about", "Remove everything listed above from this browser? You will not be able to return to a game you are at. The page reloads.")).toBe(
+      "Ștergi din acest browser tot ce e listat mai sus? Nu vei mai putea reveni la jocul tău. Pagina se reîncarcă.",
+    );
+    expect(t("footer", "Source code and about")).toBe("Cod sursă și informații despre pagină");
   });
 });

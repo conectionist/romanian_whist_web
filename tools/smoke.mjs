@@ -54,6 +54,13 @@ async function get(baseUrl, path, headers = {}) {
   return { status: response.status, headers: response.headers, body };
 }
 
+// Whether the script holds exactly this commit, as the build writes it: a whole string, in quotes, so that a commit
+// that is the start of the one written, such as the hash of a build marked -dirty, does not pass for it.
+export function scriptHoldsCommit(text, commit) {
+  const escaped = commit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(["'\`])${escaped}\\1`).test(text);
+}
+
 // The answer to a WebSocket handshake, whose headers are the 101's: fetch cannot read them, since it never hands the
 // upgraded connection over.
 function handshake(baseUrl) {
@@ -263,8 +270,8 @@ export async function checkPage(baseUrl, profileName, { serverCommit, webCommit,
     // The commit is in the page's one script, where the build put it for About and the footer's links.
     await check("the page was built from the commit it was given", async () => {
       const text = (await get(baseUrl, script)).body.toString("utf8");
-      if (!text.includes(webCommit)) {
-        throw new Error(`the script does not hold ${webCommit}`);
+      if (!scriptHoldsCommit(text, webCommit)) {
+        throw new Error(`the script does not hold exactly ${webCommit}`);
       }
     });
   }

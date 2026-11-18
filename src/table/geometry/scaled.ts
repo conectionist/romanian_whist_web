@@ -44,6 +44,11 @@ export const SIDE_MIN = 116;
 export const SIDE_RUN = 132;
 export const SIDE_MAX = 168;
 
+// A side panel is 8 from the window's edge and 8 from the table, so the room beside the table that holds one is this
+// much wider than the panel.
+export const SIDE_GAP = 16;
+export const SIDE_ROOM = SIDE_MIN + SIDE_GAP;
+
 // The face of a card is this much taller than it is wide.
 const CARD_ASPECT = 726 / 500;
 
@@ -281,10 +286,10 @@ export function platesClear(seats: readonly Point[], w: number, h: number): bool
   );
 }
 
-// The table, in the window's own units: at least 640 by 360, with the table across the whole height.
-// The round table leaves the four corners free, and they hold the few controls, so the seats keep out
-// of them.
-export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS): ScaledLayout {
+// The table, in the window's own units, which are at least 640 by 360. The seats keep out of the four corners, which hold
+// the few controls. A `beside` keeps that much of each side of the window clear of the seats and the wood for the side
+// panels; without one the table takes the whole height, as in the mock-up.
+export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS, beside?: number): ScaledLayout {
   const { w, h, top, bottom } = window;
   const bw = NATIVE.plate.w;
   const bh = NATIVE.plate.h;
@@ -312,14 +317,14 @@ export function layoutScaled(window: ScaledWindow, seatCount: number, corners: C
   let ring: Ring;
   for (;;) {
     ring = seatRing({
-      x0: 8,
-      x1: w - 8,
+      x0: beside ?? 8,
+      x1: w - (beside ?? 8),
       y0: top + 4,
       seatCount,
       bw: bw * k,
       bh: bh * k,
       woodTop: top,
-      woodMaxR: h,
+      woodMaxR: beside === undefined ? h : Math.min(h, w / 2 - beside),
       woodBelow: h + 40,
       cardMax: handTop - 6,
       seatMax: handTop - 2,
@@ -341,7 +346,7 @@ export function layoutScaled(window: ScaledWindow, seatCount: number, corners: C
   for (const seat of ring.seats) {
     gap = Math.min(gap, seat.x, w - seat.x - pw);
   }
-  const sideW = Math.min(gap - 16, SIDE_MAX);
+  const sideW = Math.min(gap - SIDE_GAP, SIDE_MAX);
   const side = sideW >= SIDE_MIN ? { w: sideW, y: top + corners.sideTop } : null;
 
   // The band across the table between the players above it and those beside or below: nothing is

@@ -10,17 +10,20 @@ import {
   PAGE_CHIP_HEIGHT,
   PANEL_X,
   PANEL_Y,
+  SIDE_SHRINK,
   TRICK_MOST,
   TRUMP_LABEL,
   TRUMP_WIDTH,
   cornersFor,
+  fitted,
   pageLayout,
   noteBeside,
   playedHeight,
   stripBeside,
   type PageLayout,
 } from "../../src/table/geometry/page";
-import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
+import { layoutChoiceFor } from "../../src/table/layoutChoice";
+import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, SIDE_ROOM, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
 
 interface Fixture {
   windows: { name: string; design: ScaledWindow }[];
@@ -51,6 +54,18 @@ describe("the corners of the port", () => {
     // And the side panels begin where they are told to.
     const wide = windows.find((each) => each.name === "754x247")!.design;
     expect(layoutScaled(wide, 4, { ...MOCKUP_CORNERS, sideTop: 100 }).side?.y).toBe(100);
+  });
+
+  it("keep the seats and the wood the given room from each side of the window, and have the side panels then", () => {
+    for (const count of COUNTS) {
+      const layout = layoutScaled({ w: 731, h: 360, top: 0, bottom: 0 }, count, MOCKUP_CORNERS, SIDE_ROOM);
+      for (const seat of layout.seats.slice(1)) {
+        expect(seat.x, `${count}`).toBeGreaterThanOrEqual(SIDE_ROOM - 1e-9);
+        expect(seat.x + seat.w, `${count}`).toBeLessThanOrEqual(731 - SIDE_ROOM + 1e-9);
+      }
+      expect(layout.table.cx - layout.table.R).toBeGreaterThanOrEqual(SIDE_ROOM - 1e-9);
+      expect(layout.side, `${count}`).not.toBeNull();
+    }
   });
 });
 
@@ -206,6 +221,83 @@ describe("pageLayout", () => {
         expect(crowded(layout, size.w, size.h, count), `${size.w} by ${size.h} with ${count} players`).toEqual([]);
       }
     }
+  });
+
+  it("has the side panels on every window twice as wide as tall or wider, and never loses them as the window grows wider", () => {
+    for (const count of COUNTS) {
+      let shown = false;
+      for (let w = 640; w <= 1100; w += 2) {
+        const side = pageLayout({ w, h: 360, top: 0, bottom: 0 }, count).side !== null;
+        expect(side || !shown, `${w} with ${count} players`).toBe(true);
+        expect(side || w < 720, `${w} with ${count} players`).toBe(true);
+        shown ||= side;
+      }
+    }
+  });
+
+  it("keeps them on phones lying down, in full screen and with their bars", () => {
+    // Phones twice as wide as tall or more: full screen, beside a camera's cutout, and with a bar along the foot or the side.
+    for (const [w, h] of [
+      [832, 384],
+      [790, 384],
+      [780, 384],
+      [784, 360],
+      [915, 412],
+      [892, 412],
+      [851, 393],
+      [740, 360],
+    ]) {
+      const choice = layoutChoiceFor({ w, h }, true);
+      const scale = choice.kind === "scaled" ? choice.scale : 1;
+      for (const count of COUNTS) {
+        expect(pageLayout({ w: w / scale, h: h / scale, top: 0, bottom: 0 }, count).side, `${w} by ${h} with ${count} players`).not.toBeNull();
+      }
+    }
+  });
+
+  it("draws the table no smaller than SIDE_SHRINK of the table the same window has without them, wherever it gives way to them", () => {
+    const windows = [
+      ...Array.from({ length: 24 }, (_, at) => ({ w: 640 + 20 * at, h: 360 })),
+      ...Array.from({ length: 15 }, (_, at) => ({ w: 640, h: 360 + 20 * at })),
+      { w: 700, h: 400 },
+      { w: 720, h: 540 },
+      { w: 760, h: 420 },
+    ];
+    for (const size of windows) {
+      const window = { ...size, top: 0, bottom: 0 };
+      for (const count of COUNTS) {
+        const full = fitted(window, count).layout;
+        const layout = pageLayout(window, count);
+        const where = `${size.w} by ${size.h} with ${count} players`;
+        expect(layout.table.R, where).toBeGreaterThanOrEqual(SIDE_SHRINK * full.table.R - 1e-9);
+        expect(playedHeight(layout, count), where).toBeGreaterThanOrEqual(SIDE_SHRINK * playedHeight(full, count) - 1e-9);
+      }
+    }
+  });
+
+  it("draws the table this much smaller for them on a window as narrow as they take", () => {
+    // The wood's radius and the played card's height, without the panels and with them, in the design's units.
+    for (const [w, count, wood, card] of [
+      [720, 4, [179.74, 161.26], [67.04, 53.71]],
+      [740.625, 4, [179.74, 177.55], [67.04, 59.13]],
+      [640, 3, [165.14, 142.25], [55.0, 45.28]],
+      [700, 5, [165.14, 144.97], [55.0, 46.56]],
+    ] as const) {
+      const window = { w, h: 360, top: 0, bottom: 0 };
+      const full = fitted(window, count).layout;
+      const layout = pageLayout(window, count);
+      const where = `${w} with ${count} players`;
+      expect(layout.side, where).not.toBeNull();
+      expect([full.table.R, layout.table.R], where).toEqual([expect.closeTo(wood[0], 1), expect.closeTo(wood[1], 1)]);
+      expect([playedHeight(full, count), playedHeight(layout, count)], where).toEqual([expect.closeTo(card[0], 1), expect.closeTo(card[1], 1)]);
+    }
+  });
+
+  it("leaves them out where the table would have to shrink too far for them, as on a squarer window", () => {
+    for (const count of COUNTS) {
+      expect(pageLayout({ w: 640, h: 532, top: 0, bottom: 0 }, count).side, `${count} players`).toBeNull();
+    }
+    expect(pageLayout({ w: 640, h: 360, top: 0, bottom: 0 }, 4).side).toBeNull();
   });
 });
 

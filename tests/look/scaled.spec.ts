@@ -9,11 +9,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const OUT = join(ROOT, "build/shots/scaled");
 const OUT_RO = join(ROOT, "build/shots/scaled-ro");
 
-const SIZES = [
-  [640, 360],
-  [915, 412],
-  [832, 384],
+// A Samsung S24+ in landscape, installed as a web app: in full screen, beside the camera's cutout, and with the system bars.
+const PHONE = [
+  [790, 384],
+  [784, 360],
 ] as const;
+
+const SIZES = [[640, 360], [915, 412], [832, 384], ...PHONE] as const;
 
 const SHOTS = ["table-2-players", "table-3-players", "table-4-players", "table-5-players", "table-6-players", "bidding", "hand-1-card", "hand-4-cards", "hand-8-cards"];
 
@@ -281,6 +283,7 @@ for (const [width, height] of [
   [754, 247],
   [832, 384],
   [640, 360],
+  ...PHONE,
 ] as const) {
   test.describe(`the scaled table's panels at ${width} by ${height} hold their words`, () => {
     test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
@@ -317,6 +320,7 @@ for (const [width, height] of [
   [754, 247],
   [832, 384],
   [640, 360],
+  ...PHONE,
 ] as const) {
   test.describe(`the trump's panel at ${width} by ${height}`, () => {
     test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
@@ -387,6 +391,7 @@ for (const [width, height] of [
   [754, 247],
   [832, 384],
   [640, 360],
+  ...PHONE,
 ] as const) {
   test.describe(`the words with a bid at ${width} by ${height}`, () => {
     test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
@@ -507,6 +512,7 @@ for (const [width, height] of [
   [754, 247],
   [832, 384],
   [640, 360],
+  ...PHONE,
   [915, 412],
 ] as const) {
   test.describe(`the trick's details with the longest names at ${width} by ${height}`, () => {
@@ -549,6 +555,38 @@ for (const [width, height] of [
           }
         });
       }
+    }
+  });
+}
+
+// A window as wide as a phone's, whether full screen or not, keeps the trick's details and the scores beside the table,
+// which gives way to them.
+for (const [width, height] of PHONE) {
+  test.describe(`the side panels at ${width} by ${height}`, () => {
+    test.use({ viewport: { width, height }, hasTouch: true, isMobile: true });
+
+    for (const shot of ["table-3-players", "table-4-players", "table-5-players", "table-6-players"]) {
+      test(`show with ${shot}, clear of every plate`, async ({ page }) => {
+        await page.goto(`/look.html?shot=${shot}`);
+        await page.waitForSelector("body[data-ready]");
+        const found = await page.evaluate(() => {
+          const boxes = (selector: string) =>
+            Array.from(document.querySelectorAll<HTMLElement>(selector))
+              .filter((node) => node.checkVisibility())
+              .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+              });
+          return { panels: boxes(".stage .side-panel"), plates: boxes(".stage .seat.plate") };
+        });
+        expect(found.panels).toHaveLength(2);
+        for (const panel of found.panels) {
+          for (const plate of found.plates) {
+            const apart = plate.right <= panel.left || panel.right <= plate.left || plate.bottom <= panel.top || panel.bottom <= plate.top;
+            expect(apart, `a plate at ${Math.round(plate.left)}, ${Math.round(plate.top)} is over a side panel`).toBe(true);
+          }
+        }
+      });
     }
   });
 }

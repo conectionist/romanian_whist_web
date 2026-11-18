@@ -25,8 +25,8 @@ export function storedItems(languages: readonly string[]): StoredItem[] {
   ];
 }
 
-// Every name the page has ever kept something under in an area, including the one an older page kept the last New Game
-// under. Exactly these, and nothing else a site's storage might hold.
+// Every name the page keeps something under in an area, and the name of the last New Game without a language, which is
+// still cleared. Exactly these, and nothing else a site's storage might hold.
 export function keysToForget(area: StorageArea, languages: readonly string[]): string[] {
   const listed = storedItems(languages)
     .filter((item) => item.area === area)

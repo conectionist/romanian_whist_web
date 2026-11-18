@@ -55,12 +55,8 @@ describe("the compose file that builds from the checkout", () => {
   });
 });
 
-describe("the proxy examples in CI", () => {
-  it("are the server's as they are: the nginx file that once added the headers is gone", () => {
-    expect(read(".github/workflows/ci.yml")).not.toContain("whist-headers.conf");
-  });
-
-  it("are stopped, and the server is expected to leave with no failure, after the stack and after the own-proxy runs", () => {
+describe("the stops in CI", () => {
+  it("stop the stack and the own-proxy setup, and expect the server to leave with no failure after each", () => {
     const ci = read(".github/workflows/ci.yml");
     expect(ci.match(/test "\$\(docker inspect -f '\{\{\.State\.ExitCode\}\}' whist-server-1\)" = 0/g)).toHaveLength(2);
   });

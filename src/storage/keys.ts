@@ -6,8 +6,8 @@ export const TOKEN_KEY = "whist.token";
 export const PROFILE_KEY = "whist.profile";
 export const PACE_KEY = "whist.pace";
 export const LANGUAGE_KEY = "whist.language";
-// The last New Game is kept once for each language, under this name, a dot and the language. The name alone
-// is where an older page kept one for all languages.
+// The last New Game is kept once for each language, under this name, a dot and the language. The name without a
+// language is not kept to, and is still cleared.
 export const SETUP_KEY = "whist.setup";
 
 // Session storage, which lasts until the tab is closed.

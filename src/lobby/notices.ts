@@ -35,7 +35,7 @@ export function errorText(code: ErrorCode, detail?: string): string {
         case "connections":
           return t("errors", "There are too many connections from your network. The page tries again in 30 seconds.");
         case "tables":
-          return t("errors", "You have made too many tables this hour. Try again later.");
+          return t("errors", "Too many tables were made from your network this hour. Try again later.");
         case "joins":
           return t("errors", "Too many table codes that do not exist were tried. Try again in a few minutes.");
         default:

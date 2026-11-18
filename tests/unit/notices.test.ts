@@ -41,6 +41,9 @@ describe("the server's refusals in words", () => {
     const texts = [undefined, "connections", "tables", "joins"].map((detail) => errorText("rateLimited", detail));
     expect(new Set(texts).size).toBe(4);
     expect(errorText("rateLimited", "connections")).toContain("30 seconds");
+    // Both name the network, which is what the limit is on, and not the person who happened to be told.
+    expect(errorText("rateLimited", "connections")).toContain("your network");
+    expect(errorText("rateLimited", "tables")).toBe("Too many tables were made from your network this hour. Try again later.");
     expect(errorText("rateLimited", "something new")).toBe(errorText("rateLimited"));
   });
 

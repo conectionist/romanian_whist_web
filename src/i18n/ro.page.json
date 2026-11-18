@@ -835,8 +835,8 @@
     },
     {
       "context": "errors",
-      "source": "You have made too many tables this hour. Try again later.",
-      "translation": "Ai creat prea multe mese în ultima oră. Încearcă din nou mai târziu."
+      "source": "Too many tables were made from your network this hour. Try again later.",
+      "translation": "Prea multe mese au fost create din rețeaua ta în ultima oră. Încearcă din nou mai târziu."
     },
     {
       "context": "errors",
@@ -1042,6 +1042,21 @@
       "context": "about",
       "source": "this build has local changes, so the link is to the repository",
       "translation": "această versiune are modificări locale, așa că linkul duce la depozit"
+    },
+    {
+      "context": "links",
+      "source": "%1 (opens in a new tab)",
+      "translation": "%1 (se deschide într-o filă nouă)"
+    },
+    {
+      "context": "footer",
+      "source": "Server source code",
+      "translation": "Serverul: codul sursă"
+    },
+    {
+      "context": "footer",
+      "source": "Page source code",
+      "translation": "Pagina: codul sursă"
     }
   ]
 }

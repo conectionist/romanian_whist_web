@@ -1,4 +1,5 @@
 import { el, setText } from "../dom/el";
+import { opensInNewTab } from "../dom/newTab";
 import { t } from "../i18n/t";
 import { ISSUES_URL, LICENCE_NAME, pageSourceUrl, serverSourceUrl, shortCommit, type Versions } from "../about/links";
 import type { StoredItem } from "../storage/stored";
@@ -85,7 +86,7 @@ export interface AboutActions {
 
 function link(href: string, text: string, className: string): HTMLAnchorElement {
   // Opened in a tab of its own, which cannot reach back into the page.
-  return el("a", { class: className, attrs: { href, target: "_blank", rel: "noopener noreferrer" }, text });
+  return el("a", { class: className, attrs: { href, target: "_blank", rel: "noopener noreferrer", "aria-label": opensInNewTab(text) }, text });
 }
 
 export class AboutSheet implements Sheet {

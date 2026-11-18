@@ -39,6 +39,9 @@ test("the main menu's foot links to the source of the server and the page at the
     await expect(link).toHaveAttribute("rel", /noopener/);
   }
   await expect(foot.locator('[data-menu-page="about"]')).toHaveText("About");
+  // The short words are named in full for a screen reader, and that the link opens another tab.
+  await expect(foot.getByRole("link", { name: "Server source code (opens in a new tab)" })).toHaveText("server");
+  await expect(foot.getByRole("link", { name: "Page source code (opens in a new tab)" })).toHaveText("page");
 });
 
 test("About tells the licence, the sources, the versions and what is kept, and Escape closes it and gives the keyboard back", async ({ page }) => {
@@ -66,7 +69,8 @@ test("About tells the licence, the sources, the versions and what is kept, and E
     await expect(sheetNow.locator(".about-stored")).toContainText(key);
   }
   await expect(sheetNow).toContainText("no accounts and no cookies");
-  await expect(sheetNow.getByRole("link", { name: "Report a problem" })).toHaveAttribute("href", "https://github.com/conectionist/romanian_whist_web/issues");
+  await expect(sheetNow.getByRole("link", { name: "Report a problem (opens in a new tab)" })).toHaveAttribute("href", "https://github.com/conectionist/romanian_whist_web/issues");
+  await expect(sheetNow.getByRole("link", { name: "Server source code (opens in a new tab)" })).toBeVisible();
   await expect(sheetNow.locator('[data-action="close"]')).toBeFocused();
 
   await page.keyboard.press("Escape");

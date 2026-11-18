@@ -1,5 +1,6 @@
 import { el } from "../dom/el";
 import { icon, type IconName } from "../dom/icons";
+import { opensInNewTab } from "../dom/newTab";
 import { currentLanguage } from "../i18n/language";
 import { t } from "../i18n/t";
 import { fullscreenButton } from "../table/fullscreen";
@@ -48,8 +49,17 @@ export class MenuPage {
   );
 
   // The links to the source of the server and of the page, at the commits that run: set when the page learns them.
-  readonly serverLink = el("a", { attrs: { href: "", target: "_blank", rel: "noopener noreferrer" }, data: { menuPage: "server-source" }, text: t("footer", "server") });
-  readonly pageLink = el("a", { attrs: { href: "", target: "_blank", rel: "noopener noreferrer" }, data: { menuPage: "page-source" }, text: t("footer", "page") });
+  // Short on the page, and named in full for a screen reader, which reads a link out of its place.
+  readonly serverLink = el("a", {
+    attrs: { href: "", target: "_blank", rel: "noopener noreferrer", "aria-label": opensInNewTab(t("footer", "Server source code")) },
+    data: { menuPage: "server-source" },
+    text: t("footer", "server"),
+  });
+  readonly pageLink = el("a", {
+    attrs: { href: "", target: "_blank", rel: "noopener noreferrer", "aria-label": opensInNewTab(t("footer", "Page source code")) },
+    data: { menuPage: "page-source" },
+    text: t("footer", "page"),
+  });
   readonly about = el("button", { class: "menu-source-btn", attrs: { type: "button" }, data: { menuPage: "about" }, text: t("footer", "About") });
 
   constructor(actions: MenuPageActions) {

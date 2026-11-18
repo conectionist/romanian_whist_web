@@ -23,7 +23,7 @@ import {
   type PageLayout,
 } from "../../src/table/geometry/page";
 import { layoutChoiceFor } from "../../src/table/layoutChoice";
-import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, SIDE_MIN, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
+import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, SIDE_ROOM, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
 
 interface Fixture {
   windows: { name: string; design: ScaledWindow }[];
@@ -58,12 +58,12 @@ describe("the corners of the port", () => {
 
   it("keep the seats and the wood the given room from each side of the window, and have the side panels then", () => {
     for (const count of COUNTS) {
-      const layout = layoutScaled({ w: 731, h: 360, top: 0, bottom: 0 }, count, MOCKUP_CORNERS, SIDE_MIN + 16);
+      const layout = layoutScaled({ w: 731, h: 360, top: 0, bottom: 0 }, count, MOCKUP_CORNERS, SIDE_ROOM);
       for (const seat of layout.seats.slice(1)) {
-        expect(seat.x, `${count}`).toBeGreaterThanOrEqual(SIDE_MIN + 16 - 1e-9);
-        expect(seat.x + seat.w, `${count}`).toBeLessThanOrEqual(731 - SIDE_MIN - 16 + 1e-9);
+        expect(seat.x, `${count}`).toBeGreaterThanOrEqual(SIDE_ROOM - 1e-9);
+        expect(seat.x + seat.w, `${count}`).toBeLessThanOrEqual(731 - SIDE_ROOM + 1e-9);
       }
-      expect(layout.table.cx - layout.table.R).toBeGreaterThanOrEqual(SIDE_MIN + 16 - 1e-9);
+      expect(layout.table.cx - layout.table.R).toBeGreaterThanOrEqual(SIDE_ROOM - 1e-9);
       expect(layout.side, `${count}`).not.toBeNull();
     }
   });
@@ -272,6 +272,24 @@ describe("pageLayout", () => {
         expect(layout.table.R, where).toBeGreaterThanOrEqual(SIDE_SHRINK * full.table.R - 1e-9);
         expect(playedHeight(layout, count), where).toBeGreaterThanOrEqual(SIDE_SHRINK * playedHeight(full, count) - 1e-9);
       }
+    }
+  });
+
+  it("draws the table this much smaller for them on a window as narrow as they take", () => {
+    // The wood's radius and the played card's height, without the panels and with them, in the design's units.
+    for (const [w, count, wood, card] of [
+      [720, 4, [179.74, 161.26], [67.04, 53.71]],
+      [740.625, 4, [179.74, 177.55], [67.04, 59.13]],
+      [640, 3, [165.14, 142.25], [55.0, 45.28]],
+      [700, 5, [165.14, 144.97], [55.0, 46.56]],
+    ] as const) {
+      const window = { w, h: 360, top: 0, bottom: 0 };
+      const full = fitted(window, count).layout;
+      const layout = pageLayout(window, count);
+      const where = `${w} with ${count} players`;
+      expect(layout.side, where).not.toBeNull();
+      expect([full.table.R, layout.table.R], where).toEqual([expect.closeTo(wood[0], 1), expect.closeTo(wood[1], 1)]);
+      expect([playedHeight(full, count), playedHeight(layout, count)], where).toEqual([expect.closeTo(card[0], 1), expect.closeTo(card[1], 1)]);
     }
   });
 

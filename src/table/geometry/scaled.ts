@@ -44,6 +44,11 @@ export const SIDE_MIN = 116;
 export const SIDE_RUN = 132;
 export const SIDE_MAX = 168;
 
+// A side panel is 8 from the window's edge and 8 from the table, so the room beside the table that holds one is this
+// much wider than the panel.
+export const SIDE_GAP = 16;
+export const SIDE_ROOM = SIDE_MIN + SIDE_GAP;
+
 // The face of a card is this much taller than it is wide.
 const CARD_ASPECT = 726 / 500;
 
@@ -341,7 +346,7 @@ export function layoutScaled(window: ScaledWindow, seatCount: number, corners: C
   for (const seat of ring.seats) {
     gap = Math.min(gap, seat.x, w - seat.x - pw);
   }
-  const sideW = Math.min(gap - 16, SIDE_MAX);
+  const sideW = Math.min(gap - SIDE_GAP, SIDE_MAX);
   const side = sideW >= SIDE_MIN ? { w: sideW, y: top + corners.sideTop } : null;
 
   // The band across the table between the players above it and those beside or below: nothing is

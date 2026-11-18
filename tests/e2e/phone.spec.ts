@@ -186,7 +186,7 @@ for (const [width, height] of WINDOWS) {
 // round and the trick and no trump, and is as wide as the scores under it, or as its words.
 test.describe("the corners of the scaled table", () => {
   // Each window, and the numbers of players it has the side panels with: the design's own size has them only where the
-  // table leaves them room.
+  // table leaves them room or can be drawn a little smaller for them.
   for (const [width, height, withSides] of [
     [754, 247, [3, 6]],
     [832, 384, [3, 6]],

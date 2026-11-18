@@ -1,4 +1,4 @@
-import { CHIP_WIDTH, CORNER_INSET, FAN_TURN, SIDE_MIN, layoutScaled, playedPlace, tableScale, type Box, type Corners, type ScaledLayout, type ScaledWindow } from "./scaled";
+import { CHIP_WIDTH, CORNER_INSET, FAN_TURN, SIDE_ROOM, layoutScaled, playedPlace, tableScale, type Box, type Corners, type ScaledLayout, type ScaledWindow } from "./scaled";
 
 // The scaled table as the page draws it: the round buttons bottom left, where the desktop has them, and the trump in the column
 // at the left under the trick's details, or under the menu button with no room for them, as large as a played card. The corners
@@ -95,11 +95,9 @@ export function fitted(window: ScaledWindow, seatCount: number, beside?: number)
 }
 
 // The side panels matter during play, so where the table leaves them no room it is drawn smaller for them, down to this
-// share of its wood and its played cards in the same window. A squarer window would take more, so there the panels go.
+// share of its wood and its played cards in the same window; a squarer window would take more, so there they go. Four
+// players need just under this on a window twice as wide as tall.
 export const SIDE_SHRINK = 0.8;
-
-// A side panel is 8 from the window's edge and 8 from the table.
-const BESIDE = SIDE_MIN + 16;
 
 // Whether the table drawn smaller has the side panels and is large enough, its plates no smaller than before.
 function sideWorthy(smaller: ScaledLayout, full: ScaledLayout, seatCount: number): boolean {
@@ -115,7 +113,7 @@ function sideWorthy(smaller: ScaledLayout, full: ScaledLayout, seatCount: number
 export function pageLayout(window: ScaledWindow, seatCount: number): PageLayout {
   let { layout, low } = fitted(window, seatCount);
   if (layout.side === null) {
-    const smaller = fitted(window, seatCount, BESIDE);
+    const smaller = fitted(window, seatCount, SIDE_ROOM);
     if (sideWorthy(smaller.layout, layout, seatCount)) {
       ({ layout, low } = smaller);
     }

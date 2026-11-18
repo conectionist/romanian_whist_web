@@ -472,7 +472,7 @@ checkout of the server beside this one.
     `docker compose build web`, then `docker compose up`, on port 8000.
   - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
     page, a table's link, the file types, the policy and caching headers, that an error is not
-    kept by a cache, that `/health` says the server is up and `/version` and `/health` are
+    kept by a cache, that `/ws` carries the headers too, with the handshake and without, that `/health` says the server is up and `/version` and `/health` are
     `no-store`, that the page's script holds the commit it was built from (`--web-commit`), and a
     solo game through `/ws`, using the server's smoke test. The server sends the headers itself, so
     every profile is held to them. A browser check, `playwright.docker.config.ts`, loads the page

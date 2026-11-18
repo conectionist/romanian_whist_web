@@ -126,8 +126,8 @@ node tools/smoke.mjs --url http://127.0.0.1:8000 --profile web --server-commit <
 - `server`: the server serving the page itself, with no proxy. Gzip is only reported there too.
 
 The server sends the content-security-policy, `nosniff`, the referrer policy and the caching rules
-itself, so every profile checks them, on the page, the assets, the status pages and errors, and that an
-error is not given a rule that keeps it. Every profile also checks the page, a table's link, the file
+itself, so every profile checks them, on the page, the assets, the status pages, errors and `/ws`, with the
+handshake and without, and that an error is not given a rule that keeps it. Every profile also checks the page, a table's link, the file
 types, that `/health` says the server is up, that `/version` and `/health` are `no-store`, and the game
 through `/ws`. `--server-commit` is the commit the server was built from, which `/version` and its welcome
 report; `--web-commit` is the commit the page was built from, which must be in the page's script. Leave

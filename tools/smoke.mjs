@@ -2,7 +2,10 @@
 // Checks a running deployment of the page, and plays the first moments of a solo game through it.
 // Usage and profiles: the README, under Checking a deployment.
 
+import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
+import http from "node:http";
+import https from "node:https";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { smokeGame, waitForPage } from "../libs/romanian_whist_server/tools/smoke/smoke.mjs";
@@ -48,6 +51,29 @@ async function get(baseUrl, path, headers = {}) {
   const response = await fetch(new URL(path, baseUrl), { headers, redirect: "manual", signal: AbortSignal.timeout(10000) });
   const body = Buffer.from(await response.arrayBuffer());
   return { status: response.status, headers: response.headers, body };
+}
+
+// The answer to a WebSocket handshake, whose headers are the 101's: fetch cannot read them, since it never hands the
+// upgraded connection over.
+function handshake(baseUrl) {
+  const url = new URL("/ws", baseUrl);
+  const request = (url.protocol === "https:" ? https : http).request(url, {
+    headers: { Connection: "Upgrade", Upgrade: "websocket", "Sec-WebSocket-Version": "13", "Sec-WebSocket-Key": randomBytes(16).toString("base64") },
+    timeout: 10000,
+  });
+  return new Promise((resolve, reject) => {
+    request.on("upgrade", (response, socket) => {
+      socket.destroy();
+      resolve({ status: response.statusCode, headers: new Headers(Object.entries(response.headers).map(([name, value]) => [name, String(value)])) });
+    });
+    request.on("response", (response) => {
+      response.resume();
+      reject(new Error(`/ws answered ${response.statusCode} to a handshake, not 101`));
+    });
+    request.on("timeout", () => request.destroy(new Error("/ws did not answer a handshake in time")));
+    request.on("error", reject);
+    request.end();
+  });
 }
 
 // Runs every check, so that one run shows all that is wrong. A check throws to fail.
@@ -145,13 +171,19 @@ export async function checkPage(baseUrl, profileName, { serverCommit, webCommit,
   });
 
   await check("the content-security-policy is the page's, on every kind of answer", async () => {
-    // /version and /health are the server's answers, which a proxy passes on.
-    for (const path of ["/", `/t/${TABLE_CODE}`, script, "/avatars.json", "/assets/nope.js", "/nope.svg", "/version", "/health"]) {
+    const policyOf = (what, status, headers) => {
+      expectEqual(`the policy of ${what} (${status})`, headers.get("content-security-policy"), PAGE_CSP);
+      expectEqual(`x-content-type-options of ${what}`, headers.get("x-content-type-options"), "nosniff");
+      expectEqual(`referrer-policy of ${what}`, headers.get("referrer-policy"), "no-referrer");
+    };
+    // /version, /health and /ws are the server's answers, which a proxy passes on: /ws without the handshake is its
+    // refusal, and with it the 101.
+    for (const path of ["/", `/t/${TABLE_CODE}`, script, "/avatars.json", "/assets/nope.js", "/nope.svg", "/version", "/health", "/ws"]) {
       const response = await get(baseUrl, path);
-      expectEqual(`the policy of ${path} (${response.status})`, response.headers.get("content-security-policy"), PAGE_CSP);
-      expectEqual(`x-content-type-options of ${path}`, response.headers.get("x-content-type-options"), "nosniff");
-      expectEqual(`referrer-policy of ${path}`, response.headers.get("referrer-policy"), "no-referrer");
+      policyOf(path, response.status, response.headers);
     }
+    const upgraded = await handshake(baseUrl);
+    policyOf("the WebSocket's handshake", upgraded.status, upgraded.headers);
   });
 
   await check("the caching rules", async () => {

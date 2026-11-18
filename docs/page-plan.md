@@ -5,7 +5,8 @@
 > and online tables, is complete (2026-11-12, PR #7). Phase 8, Romanian, the keyboard, screen readers
 > and touch, is complete (2026-11-13, PR #8). Phase 8b, the phone layout, is complete (2026-11-17,
 > PR #11). Outside the phases, the page's Docker image is built, reviewed twice and merged
-> (2026-11-11, PR #5, [§14](#the-docker-image-outcome)). Phase 9, deployment, is next.**
+> (2026-11-11, PR #5, [§14](#the-docker-image-outcome)). Phase 9's share, the footer, About and the
+> page deployed with its server, is complete (2026-11-18, PR #13, with the server's PR #18).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the
@@ -1499,10 +1500,10 @@ commit of code `71713b4`).
   - **CI** (Build (Linux) and the Docker image) is green at `71713b4`.
   - **The owner approved** the phase on 2026-11-17.
 
-### Phase 9's share: the footer, About and the page deployed — M
+### Phase 9's share: the footer, About and the page deployed — M ✅ COMPLETE
 
 The phase is the server plan's
-[phase 9](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#phase-9-hardening-and-deployment--m),
+[phase 9](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#phase-9-hardening-and-deployment--m--complete),
 whose outcome holds the owner's choices, the deploy, the load test and the server's reviews. This
 is the page's share of it, from §12 and "Left for the server's phase 9" in §14.
 
@@ -1574,7 +1575,9 @@ is the page's share of it, from §12 and "Left for the server's phase 9" in §14
     again on a rerun.
 - **Builds and CI.** `npm run build` passes, and CI (Build (Linux) and the Docker image) is green at
   `fcc2bc7`. The manual run that published `sha-fcc2bc7` passed, and the owner's computer and phone
-  checked the footer, About, the headers and a drain with images built from this branch.
+  checked the footer, About, the headers and a drain with images built from this branch. The run
+  that published `sha-377e771` passed too.
+- **The owner approved** the phase on 2026-11-18.
 
 ### Phase 10 (optional): offline solo — M to L
 

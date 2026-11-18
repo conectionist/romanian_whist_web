@@ -17,9 +17,21 @@ export const SCALE_FLOOR = 0.6;
 
 export type LayoutChoice = { kind: "desktop" } | { kind: "scaled"; scale: number } | { kind: "tooSmall"; scale: number };
 
-// The scale a window gives the design: the largest that keeps the whole of it in view.
+// The least width, at the design's height, that has the side panels with any number of players.
+export const SIDE_FROM = 720;
+
+// The scale a window gives the design: the largest that keeps the whole of it in view and leaves the window at least
+// SIDE_FROM wide in the design's units, or 1 where it is narrower than that. Drawn larger, a taller window would be
+// narrower in those units and could lose the side panels that a shorter one has.
 export function scaleOf(size: Size): number {
-  return Math.min(size.w / DESIGN.w, size.h / DESIGN.h);
+  return Math.min(size.w / DESIGN.w, size.h / DESIGN.h, Math.max(1, size.w / SIDE_FROM));
+}
+
+// The width the side panels go by, as wide as the window is in the design's units, which from the design's scale up never
+// falls as the window grows. Drawn smaller than designed, a taller window is narrower in those units, so there the panels
+// go by the window's own width, which never falls either.
+export function sideWidthOf(size: Size, scale: number): number {
+  return scale < 1 ? Math.max(DESIGN.w, size.w) : size.w / scale;
 }
 
 // A window taller than wide keeps the desktop's table, with the hint to turn the phone over it.

@@ -284,9 +284,15 @@ export function platesClear(seats: readonly Point[], w: number, h: number): bool
 // The table, in the window's own units: at least 640 by 360, with the table across the whole height.
 // The round table leaves the four corners free, and they hold the few controls, so the seats keep out
 // of them. A `beside` above 8 keeps that much of each side of the window clear of the seats and the
-// wood, which makes the table smaller and leaves the side panels room.
-export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS, beside = 8): ScaledLayout {
+// wood, which makes the table smaller and leaves the side panels room; `sides` false leaves them out.
+export interface Room {
+  beside?: number;
+  sides?: boolean;
+}
+
+export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS, room: Room = {}): ScaledLayout {
   const { w, h, top, bottom } = window;
+  const { beside = 8, sides = true } = room;
   const bw = NATIVE.plate.w;
   const bh = NATIVE.plate.h;
   const cw = Math.round(clamp(h * 0.2, 62, 92));
@@ -343,7 +349,7 @@ export function layoutScaled(window: ScaledWindow, seatCount: number, corners: C
     gap = Math.min(gap, seat.x, w - seat.x - pw);
   }
   const sideW = Math.min(gap - 16, SIDE_MAX);
-  const side = sideW >= SIDE_MIN ? { w: sideW, y: top + corners.sideTop } : null;
+  const side = sides && sideW >= SIDE_MIN ? { w: sideW, y: top + corners.sideTop } : null;
 
   // The band across the table between the players above it and those beside or below: nothing is
   // played there while you bid or wait for a connection, so the bid buttons and the banner go there,

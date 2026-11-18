@@ -8,6 +8,7 @@ import { BidStrip, shortNoteFor } from "./bidStrip";
 import { CornerButtons } from "./buttons";
 import { dismissSmallNotice, fullscreenFacts, smallNoticeDismissed, smallNoticeFor } from "./fullscreen";
 import { PAGE_CHIP_HEIGHT, noteBeside, pageLayout, stripBeside, type PageLayout } from "./geometry/page";
+import { sideWidthOf } from "./layoutChoice";
 import { stripArea, type ScaledLayout } from "./geometry/scaled";
 import { humanSeated } from "./geometry/seats";
 import { desktopArrangement, scaledArrangement, scaledFan, type Arrangement } from "./geometry/spots";
@@ -149,7 +150,7 @@ export class TableScene {
     let layout = this.scaledLayouts.get(seatCount);
     if (layout === undefined) {
       const { size, scale } = this.layout;
-      layout = pageLayout({ w: size.w / scale, h: size.h / scale, top: 0, bottom: 0 }, seatCount);
+      layout = pageLayout({ w: size.w / scale, h: size.h / scale, top: 0, bottom: 0 }, seatCount, sideWidthOf(size, scale));
       this.scaledLayouts.set(seatCount, layout);
     }
     return layout;

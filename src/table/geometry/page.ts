@@ -1,4 +1,5 @@
-import { CHIP_WIDTH, CORNER_INSET, FAN_TURN, SIDE_MIN, layoutScaled, playedPlace, tableScale, type Box, type Corners, type ScaledLayout, type ScaledWindow } from "./scaled";
+import { DESIGN } from "../layoutChoice";
+import { CHIP_WIDTH, CORNER_INSET, FAN_TURN, SIDE_MIN, layoutScaled, playedPlace, tableScale, type Box, type Corners, type Room, type ScaledLayout, type ScaledWindow } from "./scaled";
 
 // The scaled table as the page draws it: the round buttons bottom left, where the desktop has them, and the trump in the column
 // at the left under the trick's details, or under the menu button with no room for them, as large as a played card. The corners
@@ -80,26 +81,37 @@ export function playedHeight(layout: ScaledLayout, seatCount: number): number {
 // The table with the page's corners. The trump is as tall as a played card, and a played card is as tall as the room
 // the trump leaves allows, so the trump's height is the one at which the two agree: the largest that is no taller than
 // the card the layout then plays.
-function fitted(window: ScaledWindow, seatCount: number, beside: number): { layout: ScaledLayout; low: number } {
+function fitted(window: ScaledWindow, seatCount: number, room: Room): { layout: ScaledLayout; low: number } {
   let low = 0;
   let high = TRUMP_MOST;
   for (let step = 0; step < 16 && high - low > 0.1; step++) {
     const middle = (low + high) / 2;
-    if (playedHeight(layoutScaled(window, seatCount, cornersFor(middle), beside), seatCount) >= middle) {
+    if (playedHeight(layoutScaled(window, seatCount, cornersFor(middle), room), seatCount) >= middle) {
       low = middle;
     } else {
       high = middle;
     }
   }
-  return { layout: layoutScaled(window, seatCount, cornersFor(low), beside), low };
+  return { layout: layoutScaled(window, seatCount, cornersFor(low), room), low };
 }
 
 // The side panels matter during play, so where the table leaves them no room it gives way to them, down to this share of
-// its wood and its played cards; on a squarer window, which would take more, it keeps its size and the panels go.
+// its wood and its played cards.
 export const SIDE_SHRINK = 0.8;
 
-// Whether the table drawn smaller has the side panels and is large enough, its plates no smaller than before.
-function sideWorthy(smaller: ScaledLayout, full: ScaledLayout, seatCount: number): boolean {
+// A side panel stands 16 from the table.
+const BESIDE = SIDE_MIN + 16;
+
+// Whether a window `w` wide and as tall as the design has the side panels: the table leaves them room, or does once it is
+// drawn smaller, by no more than SIDE_SHRINK and with its plates no smaller. A wider window has more room, so a window has
+// them from some width up.
+export function hasSides(w: number, seatCount: number): boolean {
+  const window = { w, h: DESIGN.h, top: 0, bottom: 0 };
+  const full = fitted(window, seatCount, {}).layout;
+  if (full.side !== null) {
+    return true;
+  }
+  const smaller = fitted(window, seatCount, { beside: BESIDE }).layout;
   return (
     smaller.side !== null &&
     smaller.table.R >= SIDE_SHRINK * full.table.R &&
@@ -108,14 +120,13 @@ function sideWorthy(smaller: ScaledLayout, full: ScaledLayout, seatCount: number
   );
 }
 
-export function pageLayout(window: ScaledWindow, seatCount: number): PageLayout {
-  let { layout, low } = fitted(window, seatCount, 8);
-  if (layout.side === null) {
-    // A side panel stands 16 from the table.
-    const smaller = fitted(window, seatCount, SIDE_MIN + 16);
-    if (sideWorthy(smaller.layout, layout, seatCount)) {
-      ({ layout, low } = smaller);
-    }
+// The table with the page's corners, and the side panels where a window `across` wide and as tall as the design has
+// them, drawing the table smaller for them where it must.
+export function pageLayout(window: ScaledWindow, seatCount: number, across = window.w): PageLayout {
+  const sides = hasSides(across, seatCount);
+  let { layout, low } = fitted(window, seatCount, { sides });
+  if (sides && layout.side === null) {
+    ({ layout, low } = fitted(window, seatCount, { beside: BESIDE }));
   }
   const { w, h, bottom } = window;
   const foot = h - bottom - CORNER_INSET;

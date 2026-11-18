@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { DESIGN, DESKTOP_FROM, SCALE_FLOOR, isShrunk, layoutChoiceFor, sameChoice } from "../../src/table/layoutChoice";
+import { DESIGN, DESKTOP_FROM, SCALE_FLOOR, SIDE_FROM, isShrunk, layoutChoiceFor, sameChoice } from "../../src/table/layoutChoice";
 
 interface Verdict {
   mode: "portrait" | "desk" | "tiny" | "scaled";
@@ -39,16 +39,40 @@ describe("which table a window gets", () => {
     const tall = touch(DESKTOP_FROM.w, DESKTOP_FROM.h - 1);
     expect(wide.kind).toBe("scaled");
     expect(tall.kind).toBe("scaled");
-    expect(tall).toEqual({ kind: "scaled", scale: DESKTOP_FROM.w / DESIGN.w });
-    expect(wide).toEqual({ kind: "scaled", scale: (DESKTOP_FROM.w - 1) / DESIGN.w });
+    expect(tall).toEqual({ kind: "scaled", scale: DESKTOP_FROM.w / SIDE_FROM });
+    expect(wide).toEqual({ kind: "scaled", scale: (DESKTOP_FROM.w - 1) / SIDE_FROM });
   });
 
-  it("scales the design by the smaller of the window's two ratios", () => {
+  it("scales the design by the smaller of the window's two ratios, and no more than leaves the window SIDE_FROM wide in its units", () => {
     expect(touch(640, 360)).toEqual({ kind: "scaled", scale: 1 });
     expect(touch(915, 412)).toEqual({ kind: "scaled", scale: 412 / 360 });
-    expect(touch(829, 690)).toEqual({ kind: "scaled", scale: 829 / 640 });
-    expect(touch(960, 600)).toEqual({ kind: "scaled", scale: 1.5 });
+    expect(touch(829, 690)).toEqual({ kind: "scaled", scale: 829 / SIDE_FROM });
+    expect(touch(960, 600)).toEqual({ kind: "scaled", scale: 960 / SIDE_FROM });
     expect(touch(832, 384)).toEqual({ kind: "scaled", scale: 384 / 360 });
+    // Narrower than SIDE_FROM, a window taller than the design is drawn at the design's size, and has the room.
+    expect(touch(700, 400)).toEqual({ kind: "scaled", scale: 1 });
+    expect(touch(700, 340)).toEqual({ kind: "scaled", scale: 340 / 360 });
+  });
+
+  it("never makes a window narrower in the design's units as it grows, from the design's size up", () => {
+    const units = (w: number, h: number) => {
+      const choice = touch(w, h);
+      return choice.kind === "scaled" ? { w: w / choice.scale, h: h / choice.scale } : null;
+    };
+    for (let w = 640; w < DESKTOP_FROM.w; w += 10) {
+      for (let h = 360; h < Math.min(w, DESKTOP_FROM.h); h += 10) {
+        const here = units(w, h)!;
+        for (const [wider, taller] of [
+          [w + 10, h],
+          [w, h + 10],
+        ]) {
+          const next = units(wider, taller);
+          if (next !== null && taller <= wider) {
+            expect(next.w, `${w} by ${h} to ${wider} by ${taller}`).toBeGreaterThanOrEqual(Math.min(here.w, SIDE_FROM) - 1e-9);
+          }
+        }
+      }
+    }
   });
 
   it("draws a phone inside a browser's bars smaller than designed, and still draws it", () => {
@@ -111,7 +135,8 @@ describe("the mock-up's own verdicts", () => {
           expect(mine, where).toEqual({ kind: "desktop" });
           break;
         case "scaled":
-          expect(mine, where).toEqual({ kind: "scaled", scale: verdict.scale });
+          // The page draws no larger than leaves the window SIDE_FROM wide in the design's units.
+          expect(mine, where).toEqual({ kind: "scaled", scale: Math.min(verdict.scale, Math.max(1, width / SIDE_FROM)) });
           break;
         case "tiny":
           expect(["scaled", "tooSmall"], where).toContain(mine.kind);

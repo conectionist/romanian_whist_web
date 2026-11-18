@@ -185,16 +185,19 @@ for (const [width, height] of WINDOWS) {
 // the trick's details, or under the menu button where there are no side panels. The chip at the top on the right holds the
 // round and the trick and no trump, and is as wide as the scores under it, or as its words.
 test.describe("the corners of the scaled table", () => {
-  for (const [width, height, sides] of [
-    [754, 247, true],
-    [832, 384, true],
-    [640, 360, false],
+  // Each window, and the numbers of players it has the side panels with: the design's own size has them only where the
+  // table leaves them room.
+  for (const [width, height, withSides] of [
+    [754, 247, [3, 6]],
+    [832, 384, [3, 6]],
+    [640, 360, [3]],
   ] as const) {
     test.describe(`in a window of ${width} by ${height}`, () => {
       test.use({ viewport: { width, height }, ...touch });
 
       for (const players of [3, 6]) {
         test(`with ${players} players have the round buttons bottom left, the trump under the trick's details and the chip over the scores`, async ({ page }) => {
+          const sides = (withSides as readonly number[]).includes(players);
           await page.goto(`/?solo=${players}&seed=7&speed=4`);
           await stripUp(page);
           const scale = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".stage")!).getPropertyValue("--scale")));

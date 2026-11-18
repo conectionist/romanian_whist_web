@@ -44,16 +44,16 @@ describe("reading the commit from git", () => {
 
   it("asks git in the folder it is given, and uses a head whose repository is that folder", () => {
     const folder = process.cwd();
-    const found = buildCommit(folder, {}, git({ "rev-parse --show-toplevel": folder, "rev-parse HEAD": HEAD, "status --porcelain": "" }));
+    const found = buildCommit(folder, {}, git({ "rev-parse --show-toplevel": folder, "rev-parse HEAD": HEAD, "--no-optional-locks status --porcelain": "" }));
     expect(found).toBe(HEAD);
     expect(asks.every((ask) => ask[0] === folder)).toBe(true);
   });
 
   it("marks changes, and gives nothing for another repository's head", () => {
     const folder = process.cwd();
-    const dirty = git({ "rev-parse --show-toplevel": folder, "rev-parse HEAD": HEAD, "status --porcelain": " M a" });
+    const dirty = git({ "rev-parse --show-toplevel": folder, "rev-parse HEAD": HEAD, "--no-optional-locks status --porcelain": " M a" });
     expect(buildCommit(folder, {}, dirty)).toBe(`${HEAD}-dirty`);
-    const parent = git({ "rev-parse --show-toplevel": "/", "rev-parse HEAD": HEAD, "status --porcelain": "" });
+    const parent = git({ "rev-parse --show-toplevel": "/", "rev-parse HEAD": HEAD, "--no-optional-locks status --porcelain": "" });
     expect(buildCommit(folder, {}, parent)).toBe("");
   });
 

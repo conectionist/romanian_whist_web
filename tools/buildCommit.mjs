@@ -3,6 +3,7 @@
 
 import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 // The commit as the build writes it: what it was told, else the checkout's head, with "-dirty" after it when the
 // tree has changes, else nothing. A repository that holds this folder without being it says nothing of what is in it.
@@ -30,9 +31,15 @@ export function buildCommit(folder, env = process.env, git = runGit) {
       toplevel: realpathSync(git(folder, ["rev-parse", "--show-toplevel"])),
       folder: realpathSync(folder),
       head: git(folder, ["rev-parse", "HEAD"]),
-      porcelain: git(folder, ["status", "--porcelain"]),
+      // Without the optional locks, so that a build never takes the index's lock from a git that is running.
+      porcelain: git(folder, ["--no-optional-locks", "status", "--porcelain"]),
     });
   } catch {
     return "";
   }
+}
+
+// Run as a command, it prints the commit for the folder it is run in, for the image's build argument.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  console.log(buildCommit(process.cwd()));
 }

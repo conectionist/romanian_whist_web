@@ -164,7 +164,8 @@ The page's commit is written into the built page. `npm run build` takes it from 
 `git rev-parse HEAD` run in this folder, when the repository is this folder and not one that holds it, else
 it has none. A tree with changes is marked, and About says the build has local changes. The image's build has no git history, so the commit is a build
 argument: CI gives it the commit, and a local image build is given it as
-`WHIST_WEB_COMMIT=$(git rev-parse HEAD) docker compose build web`. A page built with none, or of a tree with changes,
+`WHIST_WEB_COMMIT=$(node tools/buildCommit.mjs) docker compose build web`, which works the commit out by
+the same rule, so a tree with changes is marked. A page built with none, or of a tree with changes,
 links to the repository, and About says that its commit is unknown or that it has local changes.
 
 About lists the licence (AGPL-3.0-or-later), both links, the versions and commits of the page and the
@@ -242,8 +243,9 @@ takes several minutes, and `JOBS`, the number of compile jobs, is 2 unless
 `WHIST_JOBS` says otherwise, so that the machine stays usable. The server reports as its commit what
 `WHIST_SERVER_COMMIT` holds, for example
 `WHIST_SERVER_COMMIT=$(git -C libs/romanian_whist_server rev-parse --short HEAD)`, and the page names what
-`WHIST_WEB_COMMIT` holds, for example `WHIST_WEB_COMMIT=$(git rev-parse HEAD)`. The page's image
-alone is `docker build --build-arg WHIST_WEB_COMMIT=$(git rev-parse HEAD) -t romanian_whist_web .`.
+`WHIST_WEB_COMMIT` holds, for example `WHIST_WEB_COMMIT=$(node tools/buildCommit.mjs)`, which marks a tree
+with changes as `-dirty` where `git rev-parse HEAD` would call it clean. The page's image alone is
+`docker build --build-arg WHIST_WEB_COMMIT=$(node tools/buildCommit.mjs) -t romanian_whist_web .`.
 
 ## Tests
 

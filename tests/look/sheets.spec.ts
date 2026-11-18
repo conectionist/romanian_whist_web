@@ -233,8 +233,9 @@ for (const [width, height] of SIZES) {
 const BANNER_SHEETS = ["sheet-new-game-restarting", "sheet-about-restarting", "sheet-lobby-restarting", "sheet-rules-restarting"];
 
 // The server's restart is told in a slim banner over the table and the main menu, in the words of both languages: inside
-// the window, with the time of day, and clear of every control a finger has to reach.
-for (const [width, height] of SIZES) {
+// the window, with the time of day, and clear of every control a finger has to reach. A touch window of 1024 by 600 is
+// scaled too, and wider than the two phone sizes, where a rule for the desktop layout would show.
+for (const [width, height] of [...SIZES, [1024, 600]] as const) {
   test.describe(`the restart banner at ${width} by ${height} under a finger`, () => {
     test.use({ viewport: { width, height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 
@@ -267,6 +268,12 @@ for (const [width, height] of SIZES) {
             return touches.map((node) => `${node.className || node.tagName}: ${node.textContent}`);
           });
           expect(covered, "controls under the banner").toEqual([]);
+          // The scaled layout keeps the notices clear of its corner controls, which the banner's own width must not undo.
+          const room = await page.evaluate(() => {
+            const scale = parseFloat(getComputedStyle(document.querySelector(".window")!).getPropertyValue("--scale"));
+            return { allowed: window.innerWidth - 2 * 190 * scale, width: document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect().width };
+          });
+          expect(room.width, "the banner's width").toBeLessThanOrEqual(room.allowed + 1);
           // Nor does a sheet start under it: its title and its bar are what the banner would hide.
           const sheetUnder = await page.evaluate(() => {
             const banner = document.querySelector('.notice[data-kind="restart"]')!.getBoundingClientRect();

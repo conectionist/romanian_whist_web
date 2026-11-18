@@ -472,9 +472,10 @@ select.field option {
   text-align: center;
 }
 
-/* The banner keeps clear of the language flag at the page's top right corner, which is 76 wide, and the flag goes
-   below the banner, under the sheet layer, which starts there. */
-.window:has(.notice[data-kind="restart"]) .notices {
+/* On the desktop layout the banner keeps clear of the language flag at the page's top right corner, which is 76
+   wide; the scaled layout clears its own corner controls. The flag goes below the banner, under the sheet layer,
+   which starts there. */
+.window[data-layout="desktop"]:has(.notice[data-kind="restart"]) .notices {
   max-width: calc(100% - 2 * 86px);
 }
 

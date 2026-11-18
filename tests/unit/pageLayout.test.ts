@@ -10,6 +10,7 @@ import {
   PAGE_CHIP_HEIGHT,
   PANEL_X,
   PANEL_Y,
+  SIDE_SHRINK,
   TRICK_MOST,
   TRUMP_LABEL,
   TRUMP_WIDTH,
@@ -20,7 +21,7 @@ import {
   stripBeside,
   type PageLayout,
 } from "../../src/table/geometry/page";
-import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
+import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, SIDE_MIN, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
 
 interface Fixture {
   windows: { name: string; design: ScaledWindow }[];
@@ -51,6 +52,18 @@ describe("the corners of the port", () => {
     // And the side panels begin where they are told to.
     const wide = windows.find((each) => each.name === "754x247")!.design;
     expect(layoutScaled(wide, 4, { ...MOCKUP_CORNERS, sideTop: 100 }).side?.y).toBe(100);
+  });
+
+  it("keep the seats and the wood the given room from each side of the window, and have the side panels then", () => {
+    for (const count of COUNTS) {
+      const layout = layoutScaled({ w: 731, h: 360, top: 0, bottom: 0 }, count, MOCKUP_CORNERS, SIDE_MIN + 16);
+      for (const seat of layout.seats.slice(1)) {
+        expect(seat.x, `${count}`).toBeGreaterThanOrEqual(SIDE_MIN + 16 - 1e-9);
+        expect(seat.x + seat.w, `${count}`).toBeLessThanOrEqual(731 - SIDE_MIN - 16 + 1e-9);
+      }
+      expect(layout.table.cx - layout.table.R).toBeGreaterThanOrEqual(SIDE_MIN + 16 - 1e-9);
+      expect(layout.side, `${count}`).not.toBeNull();
+    }
   });
 });
 
@@ -206,6 +219,37 @@ describe("pageLayout", () => {
         expect(crowded(layout, size.w, size.h, count), `${size.w} by ${size.h} with ${count} players`).toEqual([]);
       }
     }
+  });
+
+  it("never loses the side panels as the window grows wider", () => {
+    for (const count of COUNTS) {
+      let shown = false;
+      for (let w = 640; w <= 1100; w += 2) {
+        const side = pageLayout({ w, h: 360, top: 0, bottom: 0 }, count).side !== null;
+        expect(side || !shown, `${w} with ${count} players`).toBe(true);
+        shown ||= side;
+      }
+      expect(shown, `${count} players`).toBe(true);
+    }
+  });
+
+  it("keeps them at a phone's sizes, full screen or not, with the table smaller but no less than SIDE_SHRINK of its size", () => {
+    // A Samsung S24+ in landscape, in the window's units: full screen, beside the camera's cutout or not, and with the bars.
+    for (const w of [731, 741, 750, 780, 784]) {
+      for (const count of COUNTS) {
+        const window = { w, h: 360, top: 0, bottom: 0 };
+        const layout = pageLayout(window, count);
+        expect(layout.side, `${w} with ${count} players`).not.toBeNull();
+        expect(layout.table.R).toBeGreaterThanOrEqual(SIDE_SHRINK * layoutScaled(window, count, cornersFor(layout.trumpCard.h)).table.R - 1e-9);
+      }
+    }
+  });
+
+  it("leaves them out where the table would have to shrink too far for them, as on a squarer window", () => {
+    for (const count of COUNTS) {
+      expect(pageLayout({ w: 640, h: 532, top: 0, bottom: 0 }, count).side, `${count} players`).toBeNull();
+    }
+    expect(pageLayout({ w: 640, h: 360, top: 0, bottom: 0 }, 4).side).toBeNull();
   });
 });
 

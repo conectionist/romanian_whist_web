@@ -283,8 +283,9 @@ export function platesClear(seats: readonly Point[], w: number, h: number): bool
 
 // The table, in the window's own units: at least 640 by 360, with the table across the whole height.
 // The round table leaves the four corners free, and they hold the few controls, so the seats keep out
-// of them.
-export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS): ScaledLayout {
+// of them. A `beside` above 8 keeps that much of each side of the window clear of the seats and the
+// wood, which makes the table smaller and leaves the side panels room.
+export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS, beside = 8): ScaledLayout {
   const { w, h, top, bottom } = window;
   const bw = NATIVE.plate.w;
   const bh = NATIVE.plate.h;
@@ -312,14 +313,14 @@ export function layoutScaled(window: ScaledWindow, seatCount: number, corners: C
   let ring: Ring;
   for (;;) {
     ring = seatRing({
-      x0: 8,
-      x1: w - 8,
+      x0: beside,
+      x1: w - beside,
       y0: top + 4,
       seatCount,
       bw: bw * k,
       bh: bh * k,
       woodTop: top,
-      woodMaxR: h,
+      woodMaxR: beside > 8 ? Math.min(h, w / 2 - beside) : h,
       woodBelow: h + 40,
       cardMax: handTop - 6,
       seatMax: handTop - 2,

@@ -1,0 +1,30 @@
+# The Romanian Whist page, pointed at a game server of your choice, with automatic HTTPS.
+# Put this file beside a .env made from .env.example, then: docker compose pull && docker compose up -d
+name: whist-page
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: 10m, max-file: "5" }
+
+services:
+  web:
+    image: ghcr.io/conectionist/romanian_whist_web:${WHIST_WEB_TAG:-latest}
+    restart: unless-stopped
+    # Caddy writes only to its two volumes and /tmp, and needs only the right to bind ports 80 and 443.
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      SITE_ADDRESS: ${WHIST_DOMAIN:?set WHIST_DOMAIN in .env, such as whist.example.org, or :80 for plain HTTP}
+      WHIST_SERVER_ADDRESS: ${WHIST_SERVER_ADDRESS:?set WHIST_SERVER_ADDRESS in .env, such as host.docker.internal:8080 or https://whist.example.org}
+    # On Linux, so that host.docker.internal reaches a server on this machine listening on the bridge.
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: [caddy_data:/data, caddy_config:/config]
+    logging: *logging
+
+volumes:
+  caddy_data:
+  caddy_config:

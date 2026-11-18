@@ -1,0 +1,76 @@
+{
+  "shot": {
+    "file": "sheet-lobby.png",
+    "height": 1034,
+    "view": "table",
+    "width": 1920
+  },
+  "state": {
+    "game": null,
+    "held": null,
+    "history": [],
+    "lastTrick": null,
+    "prompt": null,
+    "snapshot": null,
+    "table": {
+      "code": "K7QM4P",
+      "host": 0,
+      "mode": "online",
+      "paused": false,
+      "seats": [
+        {
+          "avatar": "man-dark-hair-beard",
+          "gender": "male",
+          "kind": "human",
+          "name": "Player",
+          "presence": "here",
+          "you": true
+        },
+        {
+          "kind": "open"
+        },
+        {
+          "kind": "open"
+        },
+        {
+          "avatar": "woman-long-red-hair",
+          "gender": "female",
+          "kind": "computer",
+          "level": "low-risk",
+          "name": "Cristina"
+        }
+      ],
+      "settings": {
+        "allOneCardForehead": false,
+        "botSpeed": 2,
+        "foreheadAndHidden": true,
+        "replacement": "reckoner-beta",
+        "seats": [
+          {
+            "avatar": "man-dark-hair-beard",
+            "gender": "male",
+            "kind": "human",
+            "name": "Player"
+          },
+          {
+            "kind": "open"
+          },
+          {
+            "kind": "open"
+          },
+          {
+            "avatar": "woman-long-red-hair",
+            "gender": "female",
+            "kind": "computer",
+            "level": "low-risk",
+            "name": "Cristina"
+          }
+        ],
+        "structure": "1-8-1",
+        "turnTimer": 60000,
+        "waitAfterRound": true
+      },
+      "state": "lobby"
+    }
+  }
+}

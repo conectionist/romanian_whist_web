@@ -1,3 +1,6 @@
 {
-    "document_root": "dist"
+    "document_root": "dist",
+    "max_connections_per_ip": 1000,
+    "tables_per_ip_per_hour": 100000,
+    "failed_joins_per_ip": 100000
 }

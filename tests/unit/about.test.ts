@@ -1,0 +1,159 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { ISSUES_URL, PAGE_REPOSITORY, pageOf, SERVER_REPOSITORY, isCommit, pageSourceUrl, serverSourceUrl, shortCommit, sourceUrl, versionsOf, type Versions } from "../../src/about/links";
+import { LANGUAGES, setLanguage } from "../../src/i18n/language";
+import { t } from "../../src/i18n/t";
+import { PROTOCOL_VERSION } from "../../src/net/protocol";
+import { fieldsFor } from "../../src/sheets/aboutSheet";
+import { storedItems } from "../../src/storage/stored";
+
+afterEach(() => setLanguage("en"));
+
+const WHOLE = "0123456789abcdef0123456789abcdef01234567";
+
+function versions(changes: Partial<Versions> = {}): Versions {
+  return { page: { version: "1.0.0", commit: WHOLE, dirty: false }, server: { version: "1.0.0", commit: "89abcde" }, protocol: 2, ...changes };
+}
+
+describe("the links to the source", () => {
+  it("name the commit that runs, short or whole", () => {
+    expect(sourceUrl(SERVER_REPOSITORY, "89abcde")).toBe(`${SERVER_REPOSITORY}/tree/89abcde`);
+    expect(sourceUrl(PAGE_REPOSITORY, WHOLE)).toBe(`${PAGE_REPOSITORY}/tree/${WHOLE}`);
+    expect(sourceUrl(PAGE_REPOSITORY, "89ABCDE")).toBe(`${PAGE_REPOSITORY}/tree/89abcde`);
+  });
+
+  it("are the repository itself where there is no commit, or what stands for one is not a commit", () => {
+    for (const none of [null, undefined, "", "unknown", "abc", "main", "89abcde/../x", "89abcde?x=1", `${WHOLE}0`]) {
+      expect(sourceUrl(PAGE_REPOSITORY, none), String(none)).toBe(PAGE_REPOSITORY);
+    }
+  });
+
+  it("read a commit a person sees as seven characters", () => {
+    expect(shortCommit(WHOLE)).toBe("0123456");
+    expect(shortCommit("89abcde")).toBe("89abcde");
+    expect(shortCommit("")).toBeNull();
+    expect(isCommit("0123456")).toBe(true);
+    expect(isCommit("012345")).toBe(false);
+  });
+
+  it("follow what the welcome said of the server, and are the repository until it has", () => {
+    expect(serverSourceUrl(versions())).toBe(`${SERVER_REPOSITORY}/tree/89abcde`);
+    expect(serverSourceUrl(versions({ server: null }))).toBe(SERVER_REPOSITORY);
+    expect(serverSourceUrl(versions({ server: { version: "1.0.0", commit: null } }))).toBe(SERVER_REPOSITORY);
+    expect(pageSourceUrl(versions())).toBe(`${PAGE_REPOSITORY}/tree/${WHOLE}`);
+    expect(pageSourceUrl(versions({ page: { version: "1.0.0", commit: null, dirty: false } }))).toBe(PAGE_REPOSITORY);
+  });
+
+  it("are the owner's two repositories, and the problems go to the page's tracker", () => {
+    expect(PAGE_REPOSITORY).toBe("https://github.com/conectionist/romanian_whist_web");
+    expect(SERVER_REPOSITORY).toBe("https://github.com/conectionist/romanian_whist_server");
+    expect(ISSUES_URL).toBe("https://github.com/conectionist/romanian_whist_web/issues");
+  });
+
+  it("take the server's commit from its welcome, dropping one that is not a commit", () => {
+    expect(versionsOf({ version: "1.0.0", commit: "89abcde" }).server).toEqual({ version: "1.0.0", commit: "89abcde" });
+    expect(versionsOf({ version: "1.0.0", commit: "" }).server).toEqual({ version: "1.0.0", commit: null });
+    expect(versionsOf(null).server).toBeNull();
+    expect(versionsOf(null).protocol).toBe(PROTOCOL_VERSION);
+  });
+});
+
+describe("About", () => {
+  const items = () => storedItems(LANGUAGES);
+
+  it("tells the licence, the two links at their commits, both versions and the protocol", () => {
+    const fields = fieldsFor(versions(), items());
+    expect(fields.licence).toContain("AGPL-3.0-or-later");
+    expect(fields.sources.map((source) => source.href)).toEqual([`${SERVER_REPOSITORY}/tree/89abcde`, `${PAGE_REPOSITORY}/tree/${WHOLE}`]);
+    expect(fields.sources.map((source) => source.note)).toEqual(["commit 89abcde", "commit 0123456"]);
+    expect(fields.versions).toEqual([
+      { label: "Page", value: "1.0.0, commit 0123456" },
+      { label: "Server", value: "1.0.0, commit 89abcde" },
+      { label: "Protocol", value: "2" },
+    ]);
+  });
+
+  it("says that the page's commit is unknown, and links to the repository, for a build with none", () => {
+    const fields = fieldsFor(versions({ page: { version: "1.0.0", commit: null, dirty: false } }), items());
+    expect(fields.sources[1].href).toBe(PAGE_REPOSITORY);
+    expect(fields.sources[1].note).toContain("commit is unknown");
+    expect(fields.versions[0].value).toBe("1.0.0, commit unknown");
+  });
+
+  it("says a build of a tree with changes has local changes, and links the repository without a commit", () => {
+    const dirty = pageOf("1.0.0", `${WHOLE}-dirty`);
+    expect(dirty).toEqual({ version: "1.0.0", commit: null, dirty: true });
+    const fields = fieldsFor(versions({ page: dirty }), items());
+    expect(fields.sources[1].href).toBe(PAGE_REPOSITORY);
+    expect(fields.sources[1].note).toBe("this build has local changes, so the link is to the repository");
+    expect(fields.versions[0].value).toBe("1.0.0, with local changes");
+    setLanguage("ro");
+    const romanian = fieldsFor(versions({ page: dirty }), items());
+    expect(romanian.versions[0].value).toBe("1.0.0, cu modificări locale");
+    expect(romanian.sources[1].note).toContain("modificări locale");
+  });
+
+  it("reads what the build wrote: a commit, a dirty one, or nothing", () => {
+    expect(pageOf("1.0.0", WHOLE)).toEqual({ version: "1.0.0", commit: WHOLE, dirty: false });
+    expect(pageOf("1.0.0", "")).toEqual({ version: "1.0.0", commit: null, dirty: false });
+    expect(pageOf("1.0.0", "unknown")).toEqual({ version: "1.0.0", commit: null, dirty: false });
+    expect(pageOf("1.0.0", "-dirty")).toEqual({ version: "1.0.0", commit: null, dirty: true });
+  });
+
+  it("says the server is not connected yet before its welcome, and that its commit is unknown when it says none", () => {
+    const before = fieldsFor(versions({ server: null }), items());
+    expect(before.sources[0].href).toBe(SERVER_REPOSITORY);
+    expect(before.sources[0].note).toContain("not connected yet");
+    expect(before.versions[1].value).toBe("not connected yet");
+    const without = fieldsFor(versions({ server: { version: "1.0.0", commit: null } }), items());
+    expect(without.sources[0].note).toContain("unknown");
+    expect(without.versions[1].value).toBe("1.0.0, commit unknown");
+  });
+
+  it("lists what the page keeps, with the names, from the one list that Forget clears", () => {
+    const fields = fieldsFor(versions(), items());
+    expect(fields.stored.map((each) => each.keys)).toEqual(items().map((item) => item.keys.join(", ")));
+    expect(fields.stored.map((each) => each.keys)).toContain("whist.setup.ro, whist.setup.en");
+    expect(fields.privacy).toContain("no accounts and no cookies");
+  });
+
+  it("is the same in Romanian, with the sources and versions named", () => {
+    setLanguage("ro");
+    const fields = fieldsFor(versions(), items());
+    expect(fields.title).toBe("Despre această pagină");
+    expect(fields.licence).toContain("AGPL-3.0-or-later");
+    expect(fields.sources.map((source) => source.label)).toEqual(["Codul sursă al serverului", "Codul sursă al paginii"]);
+    expect(fields.versions.map((each) => each.label)).toEqual(["Pagina", "Serverul", "Protocol"]);
+    expect(fields.versions[1].value).toBe("1.0.0, revizia 89abcde");
+    expect(JSON.stringify(fields)).not.toMatch(/\bbot\b/i);
+  });
+
+  it("says in Romanian what the page keeps, and what is not known, as the owner worded it", () => {
+    setLanguage("ro");
+    const fields = fieldsFor(versions(), items());
+    expect(fields.licence).toBe("Whist online este software liber, sub licența AGPL-3.0-or-later: oricine îi poate citi și modifica codul sursă și îl poate rula.");
+    expect(fields.sources.map((source) => source.note)).toEqual(["revizia 89abcde", "revizia 0123456"]);
+    expect(fields.versions[0].value).toBe("1.0.0, revizia 0123456");
+    expect(fields.stored[0].what).toBe("Cine ești pentru server, ca să te poți întoarce la jocul la care participi.");
+    expect(fields.stored[3].what).toBe("Cât de repede se joacă.");
+
+    const unknown = fieldsFor(versions({ server: null, page: { version: "1.0.0", commit: null, dirty: false } }), items());
+    expect(unknown.sources[0].note).toBe("încă nu e conectat, așa că linkul duce la pagina proiectului");
+    expect(unknown.sources[1].note).toBe("nu se știe din ce revizie e făcută această versiune, așa că linkul duce la pagina proiectului");
+    expect(unknown.versions[0].value).toBe("1.0.0, revizie necunoscută");
+    const server = fieldsFor(versions({ server: { version: "1.0.0", commit: null } }), items());
+    expect(server.sources[0].note).toBe("nu se știe din ce revizie e făcut, așa că linkul duce la pagina proiectului");
+    expect(server.versions[1].value).toBe("1.0.0, revizie necunoscută");
+    const dirty = fieldsFor(versions({ page: pageOf("1.0.0", `${WHOLE}-dirty`) }), items());
+    expect(dirty.sources[1].note).toBe("această versiune are modificări locale, așa că linkul duce la pagina proiectului");
+  });
+
+  it("says in Romanian what the buttons and the question of Forget are", () => {
+    setLanguage("ro");
+    expect(t("about", "Forget this browser")).toBe("Șterge datele din acest browser");
+    expect(t("about", "Forget")).toBe("Șterge");
+    expect(t("about", "Remove everything listed above from this browser? You will not be able to return to a game you are at. The page reloads.")).toBe(
+      "Ștergi din acest browser tot ce e listat mai sus? Nu vei mai putea reveni la jocul tău. Pagina se reîncarcă.",
+    );
+    expect(t("footer", "Source code and about")).toBe("Cod sursă și informații despre pagină");
+  });
+});

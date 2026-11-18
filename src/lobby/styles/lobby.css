@@ -1,0 +1,750 @@
+/* New Game, the table's lobby and the main menu page: the sheets' look, with its forms. */
+
+.field {
+  box-sizing: border-box;
+  height: 30px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid #654c2b;
+  border-radius: 3px;
+  background: #130d09;
+  font-family: var(--f-body);
+  font-size: 17px;
+  color: var(--cream);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.field:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 1px;
+}
+
+.field:disabled {
+  color: var(--muted);
+  border-color: #4d3d28;
+}
+
+.field.number {
+  width: 72px;
+}
+
+select.field {
+  padding-right: 4px;
+}
+
+select.field option {
+  background: #1a1009;
+  color: var(--cream);
+}
+
+.ng-label {
+  font-size: 17px;
+  color: var(--cream);
+  white-space: nowrap;
+}
+
+.ng-label.off {
+  color: var(--muted);
+}
+
+.ng-who {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.ng-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 16px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.ng-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ng-line .field:first-child:not(.number) {
+  flex: 1 1 auto;
+}
+
+.ng-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ng-opponent {
+  display: grid;
+  grid-template-columns: 2em minmax(0, 1fr) auto auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.ng-head {
+  margin-top: 20px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sheet-head-rule);
+}
+
+.sheet.newgame .check {
+  margin-top: 10px;
+}
+
+.ng-summary {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.ng-speed {
+  margin-top: 12px;
+}
+
+.ng-error {
+  min-height: 21px;
+  margin-top: 14px;
+  font-size: 17px;
+  line-height: 21px;
+  color: var(--bad);
+  white-space: pre-wrap;
+}
+
+/* Radios: a ring, with a dot inside it when chosen. */
+.check.radio .box {
+  border-radius: 50%;
+}
+
+.check.radio input:checked + .box::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 6px;
+  height: 6px;
+  border: 0;
+  border-radius: 50%;
+  background: #e6dcc3;
+  transform: none;
+}
+
+.sheet.newgame .check .box,
+.sheet.newgame .check input,
+.sheet.lobby .check .box,
+.sheet.lobby .check input {
+  flex: none;
+}
+
+/* The main menu page: the room, the plaque and two buttons, in a column centred on the page below
+   the menu bar. */
+.menu-page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--band, 0px);
+  bottom: 0;
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: radial-gradient(ellipse at 50% 42%, var(--room-centre) 0%, var(--room-middle) 58%, var(--room-edge) 100%);
+}
+
+.menu-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto;
+}
+
+/* The plaque, the two buttons and the foot are 510 tall, and a landscape phone leaves the page 344: drawn smaller
+   in steps until they, and the margin to the bar, fit. */
+@media (max-height: 571px) {
+  .menu-column {
+    zoom: 0.85;
+  }
+}
+
+@media (max-height: 495px) {
+  .menu-column {
+    zoom: 0.7;
+  }
+}
+
+@media (max-height: 418px) {
+  .menu-column {
+    zoom: 0.62;
+  }
+}
+
+@media (max-height: 378px) {
+  .menu-column {
+    zoom: 0.52;
+  }
+}
+
+/* The plaque is drawn at 0.9 of its 270 by 142 frame, and at twice that here. */
+.menu-logo {
+  position: relative;
+  width: 486px;
+  height: 255.6px;
+  flex: none;
+}
+
+.medal.plaque {
+  left: 50%;
+  top: 50%;
+  width: 270px;
+  height: 142px;
+  border-radius: 14px;
+  transform: translate(-50%, -50%) scale(var(--plaque-scale, 1.8));
+}
+
+.medal.plaque::before {
+  border-radius: 9px;
+}
+
+/* At twice the size the desktop's lettering sits a pixel lower against its ornaments, which half a
+   pixel of the unscaled plaque is. */
+.medal.plaque .medal-letters {
+  transform: translateY(var(--letters-drop, 0.55px));
+}
+
+.medal.plaque .club {
+  position: absolute;
+  top: 50%;
+  font-family: var(--f-body);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--logo-ornament);
+  transform: translateY(-50%);
+}
+
+.medal.plaque .club.left {
+  left: 18.5px;
+}
+
+.medal.plaque .club.right {
+  right: 18.5px;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 40px;
+}
+
+/* Both as wide as the wider, and not stretched to the window. */
+.menu-btn {
+  justify-content: center;
+}
+
+/* The foot of the main menu: where the source is, and About. */
+.menu-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  margin-top: 28px;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+.menu-source a,
+.menu-source-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.menu-source a:hover,
+.menu-source-btn:hover,
+.menu-source a:focus-visible,
+.menu-source-btn:focus-visible {
+  color: var(--gold-bright);
+}
+
+.menu-source a:focus-visible,
+.menu-source-btn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+@media (pointer: coarse) {
+  .menu-source a,
+  .menu-source-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 6px;
+  }
+}
+
+/* The flag that opens the language dialog again, in the page's top right corner. */
+.menu-lang {
+  top: 18px;
+  right: 22px;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 40px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.menu-lang svg {
+  display: block;
+  width: 36px;
+  height: 24px;
+}
+
+/* A flag lit as the desktop's buttons are: under the mouse, held down, or holding the keyboard. */
+.menu-lang:hover,
+.menu-lang:focus-visible,
+.lang-choice:hover .flag-box,
+.lang-choice:active .flag-box,
+.lang-choice:focus .flag-box {
+  box-shadow:
+    inset 0 0 0 3px var(--panel-inner-shadow),
+    inset 0 0 0 4px var(--panel-inner-line-hover),
+    0 0 18px var(--button-glow),
+    0 12px 26px var(--panel-shadow);
+}
+
+.menu-lang:focus-visible {
+  outline: none;
+}
+
+/* The language dialog, src/ui/LanguageDialog.cpp: the room covers the page and the desktop's 560 by
+   420 sits in it, smaller where the window is. Its measures are the desktop's: the plaque at 1.4, 32
+   down; buttons 160 by 112, 248 down and 32 apart; each name 12 under its button. */
+.lang-page {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 42%, var(--room-centre) 0%, var(--room-middle) 58%, var(--room-edge) 100%);
+}
+
+.lang-dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 560px;
+  height: 420px;
+  transform: translate(-50%, -50%) scale(var(--lang-fit, 1));
+}
+
+/* The desktop lays its picture of the plaque on whole pixels, which puts it a fraction of a pixel right
+   and down of the arithmetic. A translation moves it by less than a pixel, where a position would be
+   rounded to one; the lettering and ornaments settle by their own fraction. */
+.lang-logo {
+  --plaque-scale: 1.26;
+  --letters-drop: 0.8px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 560px;
+  height: 242.92px;
+  translate: 0.25px 0.6px;
+}
+
+.lang-logo .medal-stack {
+  translate: 0 -0.5px;
+}
+
+.lang-choice {
+  position: absolute;
+  top: 248px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 160px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.lang-choice[data-language="ro"] {
+  left: 104px;
+}
+
+.lang-choice[data-language="en"] {
+  left: 296px;
+}
+
+.lang-choice:focus {
+  outline: none;
+}
+
+.flag-box.panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 160px;
+  height: 112px;
+}
+
+.flag-box svg {
+  display: block;
+  width: 120px;
+  height: 80px;
+}
+
+.lang-name {
+  font-family: var(--f-head);
+  font-size: 21px;
+  line-height: calc(21px * var(--lh-head));
+}
+
+.lang-choice:hover .lang-name,
+.lang-choice:active .lang-name,
+.lang-choice:focus .lang-name {
+  color: var(--gold-bright);
+}
+
+/* Notices: panels in a strip under the menu bar, over the sheets, new to the page. */
+.notices {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--band, 0px) + 10px);
+  transform: translateX(-50%);
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+}
+
+.notice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 18px;
+  font-size: 17px;
+  line-height: 21px;
+  color: var(--cream);
+  pointer-events: auto;
+}
+
+.notice[data-kind="error"] {
+  border-color: var(--bad);
+}
+
+.notice[data-kind="warn"],
+.notice[data-kind="wait"],
+.notice[data-kind="restart"] {
+  border-color: var(--warn);
+}
+
+/* A banner that stays up for minutes is slim and sits high, clear of the top player's plate. */
+.notice[data-kind="restart"] {
+  margin-top: -6px;
+  padding: 3px 14px;
+  font-size: 15px;
+  line-height: 21px;
+  text-align: center;
+}
+
+/* On the desktop layout the banner keeps clear of the language flag at the page's top right corner, which is 76
+   wide; the scaled layout clears its own corner controls. The flag goes below the banner, under the sheet layer,
+   which starts there. */
+.window[data-layout="desktop"]:has(.notice[data-kind="restart"]) .notices {
+  max-width: calc(100% - 2 * 86px);
+}
+
+.window:has(.notice[data-kind="restart"]) .menu-lang {
+  top: calc(18px + var(--banner-room, 0px));
+}
+
+/* The main menu and the small-table offer, which share the top with the banner, make room for it. */
+.window:has(.notice[data-kind="restart"]) .menu-page {
+  padding-top: var(--banner-room, 40px);
+}
+
+.notice-btn {
+  padding: 3px 12px;
+  border: 1px solid var(--button-border);
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--button-top), var(--button-bottom));
+  font-family: var(--f-head);
+  font-size: 16px;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.notice-btn:hover,
+.notice-btn:focus-visible {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+
+.notice-btn:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+/* Who is here, on a name panel: a chip over its top edge. */
+.seat .presence {
+  position: absolute;
+  top: -12px;
+  right: 14px;
+  padding: 1px 12px;
+  border: 1px solid var(--pill-border);
+  border-radius: 999px;
+  background: var(--panel-bottom);
+  font-size: 17px;
+  line-height: 22px;
+  color: var(--muted);
+  z-index: 2;
+}
+
+.seat .presence[data-state="away"] {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.seat .presence[data-state="timer"] {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+
+/* The turn's last seconds, a ring that empties round the panel. */
+.seat .ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.seat .ring rect {
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.seat .ring rect[data-urgent="true"] {
+  stroke: var(--bad);
+}
+
+/* Play online: the portraits to choose from. */
+.portrait-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portrait-choice {
+  box-sizing: border-box;
+  width: 44px;
+  height: 50px;
+  padding: 0;
+  border: 1px solid var(--button-border);
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--portrait-edge);
+  cursor: pointer;
+}
+
+.portrait-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portrait-choice[aria-checked="true"] {
+  box-shadow: 0 0 0 2px var(--gold-bright);
+}
+
+.portrait-choice:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
+.ng-seat {
+  display: grid;
+  grid-template-columns: 2em minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.ng-more {
+  margin-top: 16px;
+}
+
+/* The table's lobby. */
+.field.link {
+  flex: 1 1 auto;
+}
+
+.lobby-share {
+  margin-top: 14px;
+}
+
+.lobby-seats {
+  margin-top: 14px;
+}
+
+.lobby-seat {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--sheet-row-rule);
+}
+
+.lobby-seat .portrait {
+  box-sizing: border-box;
+  width: 44px;
+  height: 50px;
+  border: 1px solid var(--button-border);
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--portrait-edge);
+}
+
+.lobby-seat .portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lobby-seat .portrait img:not([src]) {
+  visibility: hidden;
+}
+
+.lobby-who {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lobby-name {
+  font-family: var(--f-head);
+  font-size: 22px;
+  line-height: 24px;
+  color: var(--cream);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lobby-name.muted {
+  color: var(--muted);
+}
+
+.lobby-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lobby-tags .pill {
+  font-size: 15px;
+  padding: 0 10px;
+}
+
+.lobby-seat.away .lobby-name {
+  color: var(--muted);
+}
+
+.lobby-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sheet-btn.small {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.lobby-host {
+  margin-top: 6px;
+}
+
+.lobby-summary,
+.lobby-note {
+  margin-top: 14px;
+}
+
+.lobby-note {
+  min-height: 21px;
+  font-size: 17px;
+  color: var(--gold-bright);
+}
+
+/* The row wraps where its words are long, as the Romanian's are, and Start stays at the right. */
+.lobby-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  row-gap: 12px;
+}
+
+.lobby-actions .sheet-btn.primary {
+  margin-left: auto;
+}
+
+.lobby-fill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.lobby-settings-head {
+  margin-top: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sheet-head-rule);
+  font-family: var(--f-head);
+  font-size: 19px;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.lobby-host[open] .lobby-settings-head {
+  color: var(--gold-bright);
+}
+
+.lobby-settings-head:focus-visible {
+  outline: 1px solid var(--gold-bright);
+  outline-offset: 3px;
+}

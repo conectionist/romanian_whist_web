@@ -1,6 +1,12 @@
 # Romanian Whist in the browser: the page's implementation plan
 
-> **Status: phase 1's echo page is built. The page proper, phases 6 to 8, is not.**
+> **Status: phase 1's echo page is built, and phase 6, the table page, is complete (2026-11-10): it
+> draws the table and plays a solo game against the server (PR #3). Phase 7, the sheets, the menus
+> and online tables, is complete (2026-11-12, PR #7). Phase 8, Romanian, the keyboard, screen readers
+> and touch, is complete (2026-11-13, PR #8). Phase 8b, the phone layout, is complete (2026-11-17,
+> PR #11). Outside the phases, the page's Docker image is built, reviewed twice and merged
+> (2026-11-11, PR #5, [§14](#the-docker-image-outcome)). Phase 9's share, the footer, About and the
+> page deployed with its server, is complete (2026-11-18, PR #13, with the server's PR #18).**
 >
 > Until 2026-11-03 this plan was part of the server's plan, now `docs/server-plan.md` in
 > [`romanian_whist_server`](https://github.com/conectionist/romanian_whist_server). That day the
@@ -155,12 +161,16 @@ The repository:
 
 ```
 romanian_whist_web/                 AGPL-3.0-or-later, like the server and the engine
-├── libs/romanian_whist_server/     submodule: the server, for its fixtures and the end-to-end tests
+├── libs/romanian_whist_server/     submodule: the server, for its fixtures, the end-to-end tests,
+│                                   its image and the proxy examples
 ├── src/                            TypeScript: net, play, table, sheets, lobby, i18n
 ├── public/                         generated assets (§9), fonts and their licences
-├── tests/                          Vitest (units), Playwright (end to end, screenshots)
-├── tools/                          asset import, translation import, screenshot pairing
+├── tests/                          Vitest (units), Playwright (end to end, the image, screenshots)
+├── tools/                          asset import, translation import, screenshot pairing, smoke.mjs
+├── deploy/                         the image's Caddyfile, and the compose file for the page alone
 ├── docs/                           this plan, and the mock-up
+├── Dockerfile                      the page's image: Caddy serving the built page
+├── compose.yaml                    the page and the server, built from this checkout (§14)
 └── CLAUDE.md                       the owner's machine rules (§14)
 ```
 
@@ -286,10 +296,12 @@ Paths are in the desktop repository.
 - **`t(context, source, args)` mirrors Qt's `translate()`**, so strings ported from the desktop
   client keep their wording.
 - **One import tool.** `tools/import_ts.py` turns `i18n/romanian_whist_desktop_ro_RO.ts` (211
-  strings, 8 with plural forms) into `en.json` and `ro.json`.
-- **New strings**, for the lobby and the connection notices, are added by hand in both languages.
+  strings, 8 with plural forms) into `src/i18n/ro.desktop.json`. There is no English file: the
+  English is the source string in the code, as in Qt.
+- **New strings**, for the lobby and the connection notices, are written in English in the code and
+  added by hand in Romanian, in `src/i18n/ro.page.json`.
 - **Plurals:** port Qt's own Romanian rule (three forms, one line) instead of using
-  `Intl.PluralRules`. The two disagree on some numbers above 100 (101, for one), and Qt's rule is
+  `Intl.PluralRules`. The two agree on every whole number, which phase 8 checked, and Qt's rule is
   the one the reviewed translation was written against.
 - **Gender agreement:** port `src/table/PersonText.cpp`.
 - **Every string goes through `t()`** from the first phase of the page, even before Romanian
@@ -316,7 +328,8 @@ Paths are in the desktop repository.
   - `touch-action: manipulation` on the table.
 - **Small screens:** the table scales to fit, as the desktop client's does (`TableView.cpp`), and
   phones held sideways work. In the first version, a phone held upright gets a "turn your phone"
-  hint.
+  hint. A phone gets a layout of its own in [phase 8b](#phase-8b-the-phone-layout--l--complete): scaled as
+  the desktop's is, the table is too small to read on one.
 
 ---
 
@@ -328,18 +341,39 @@ sets the rules. The page's share:
 
 - Player-chosen text goes in only through `textContent`.
 - The page works under the strict Content-Security-Policy the server sends: no inline script, and
-  `connect-src 'self'`.
+  `connect-src 'self'`. The server sends it, with `nosniff`, the referrer policy and the caching
+  rules, on every answer; its proxy examples add none. The image's Caddy sends it too, since it
+  serves the page. The copies are the image's Caddyfile and the server's `PageHeaders.h`, each the
+  exact string of `PAGE_CSP` in `tools/smoke.mjs`, which a unit test and the smoke test compare.
 - Every asset is served by the server itself, so the page makes no third-party requests. That is
   also a privacy point.
 - The token is kept in the browser's storage and sent only in `hello`, never in a URL or a log.
-- **The footer** links "Source" to the server at the commit `GET /version` gives, and to this
-  repository at the commit the page was built from, which the build writes into the page. The
-  AGPL's section 13 needs both (the server plan's
+- **The footer** of the main menu, on the desktop and the phone, reads "Source: server · page ·
+  About". Server links to the server at the commit its welcome gives, which is the commit `GET
+  /version` gives, and page links to this repository at the commit the page was built from, which
+  the build writes into the page: from `WHIST_WEB_COMMIT`, else the head of the repository that is
+  this folder, marked dirty when the tree has changes, else none. In the image that
+  commit is a build argument, since the build context has no `.git`; CI passes the commit, and a
+  pull request's is its head's. With no commit, or a dirty one, the link is to the repository and
+  About says the commit is unknown or that the build has local changes. The AGPL's section 13 needs
+  both (the server plan's
   [§12](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#12-deployment-and-operations)).
-- **An About page** says what the page keeps: a chosen display name and a random token in the
-  browser's storage, with no accounts and no cookies.
+- **An About sheet,** opened by the footer and placed like the rules on the phone, lists the licence
+  (AGPL-3.0-or-later), both links, both versions and commits, the protocol number, and what the page
+  keeps in the browser, by name: the token, the profile, the last New Game for each language, the
+  pace, the language, and two notes that last for the tab. The names are one registry, which the
+  list and "Forget this browser" both read, and a test holds the source to it. Forget asks first,
+  clears exactly those names and reloads. It says there are no accounts and no cookies, and the
+  page asks no other site for anything. "Report a problem" opens this repository's issues.
+- **A server that restarts** sends `restarting` with the time left, to every page and again right
+  after the welcome of one that comes in during the drain. It is about the server, not the table,
+  so the page takes it before the playback queue and shows it in the strip of notices, as a slim
+  banner over the table and the main menu, with the time of day the games can go on until and that
+  no new game can start. The strip is a live region, so a screen reader says it. It stays until
+  the connection goes. `busy` and each limit of `rateLimited` have words of their own, and a
+  refusal for too many connections waits 30 seconds before the page tries again.
 
-Both are built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
+All of this is built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
 the page is built from the latest commit of this repository whose submodule points at the server
 being deployed, and a server change that no such commit points at gets a submodule update here
 first (the server plan's §12).
@@ -396,6 +430,10 @@ They run against a real server, built from the submodule ([§14](#14-building-an
 - `nice -n 19 npm run e2e -- --workers=1`;
 - one heavy command at a time, and long jobs in the background.
 
+The end-to-end server's limits per address are lifted in `tests/e2e/server.json`, since every test
+connects and makes tables from the one address. The drain test starts a server of its own on port
+8091 with a short `drain_ms`.
+
 **The server for the end-to-end tests** is built from the submodule, by the server's own rules:
 
 ```
@@ -413,14 +451,191 @@ checkout of the server beside this one.
   these packages, with an `edgesOut` error, so `package-lock.json` is made with npm 11.
 - **Day to day:** the Vite dev server (port 5173) passes `/ws` through to the server (port 8080).
   Or the server serves `dist/` itself, as it does in production.
-- **CI:** one Linux job, which builds the page and runs its unit tests. End-to-end tests and
-  screenshots run locally, at the end of a phase. From phase 6, which moves the submodule to a
-  server with fixtures, the job checks out the submodule too, without the submodule's own
-  submodules, so that §13.1's tests run.
+- **CI:** the Linux job builds the page and runs its unit tests. End-to-end tests and screenshots
+  run locally, at the end of a phase. From phase 6, which moves the submodule to a server with
+  fixtures, the job checks out the submodule too, without the submodule's own submodules, so that
+  §13.1's tests run. The `docker` job and the `publish` job are below.
+- **Docker.** The page is an image: `Dockerfile` builds it with Node 26 (npm 11) in a Debian stage,
+  because TypeScript 7 ships a glibc binary only, and serves `dist/` from `caddy:2.11.9-alpine`
+  with `deploy/Caddyfile`. The Linux job and the owner's machine stay on Node 24, where the
+  lockfile is made.
+  - **Caddyfile.** It serves the page, hides dotfiles, answers `/t/` and six capital letters or digits with
+    `index.html`, and passes `/ws`, `/version` and `/health` to `WHIST_SERVER_ADDRESS`, whose own
+    answers it never gives a caching rule: the server says `no-store` itself. It sends the
+    content-security-policy, `nosniff` and the referrer policy on every answer, errors included,
+    and the caching rules on successful ones only: `immutable` under `/assets/`, `no-cache` for
+    the page and a table's link, an hour for the rest.
+  - **Compose files.** `deploy/docker-compose.yml` runs the image alone, pointed at any server, with
+    a read-only root and only the right to bind ports 80 and 443.
+    The full stack and the setup behind the user's own proxy are the server's repository's
+    compose files, which this repository's CI runs from the submodule. `compose.yaml` builds the
+    server and the page from this checkout: `docker compose build server`, then
+    `docker compose build web`, then `docker compose up`, on port 8000.
+  - **Smoke test.** `tools/smoke.mjs` takes `--profile web`, `server` or `proxy`, and checks the
+    page, a table's link, the file types, the policy and caching headers, that an error is not
+    kept by a cache, that `/ws` carries the headers too, with the handshake and without, that `/health` says the server is up and `/version` and `/health` are
+    `no-store`, that the page's script holds the commit it was built from (`--web-commit`), and a
+    solo game through `/ws`, using the server's smoke test. The server sends the headers itself, so
+    every profile is held to them. A browser check, `playwright.docker.config.ts`, loads the page
+    under the image's policy, and fails if the page arrives without it.
+  - **CI.** The `docker` job checks that this repository's compose files and the override its
+    README gives parse, builds both images, and runs the full stack with our Caddy, the own-proxy
+    setup directly and through the server's Caddy and nginx examples, this repository's compose
+    file pointed at that server over the Docker bridge and, with the README's override, over the
+    server's network, and the same file over HTTPS under its hardening. It stops the server's stack
+    and the own-proxy setup, which starts the drain, and expects the server to leave with exit code
+    0; the compose files' grace period is longer than the drain. It builds the page's image with the
+    commit as a build argument. It holds the page's image
+    to its size budget. The `publish` job pushes the page's image from `master` and version tags,
+    never from a pull request.
+  - **Versioning.** The image's tag is the version in `package.json`; its labels carry the
+    protocol version and the server revision it was tested with. The server's plan has the rest
+    ([§12.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#121-with-docker-recommended)).
 - **Python** 3.12 with Pillow, for the mock-up's build script and the import tools.
 - **Pull requests:** change a PR's title or description with
   `gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -F body=@<file>`. `gh pr edit` fails on the
   owner's repositories with a "Projects (classic)" GraphQL error.
+
+### The Docker image: outcome
+
+Branch `web/docker`, off `ccr-209c0806-o444sp`, PR #5, "The page's Docker image". Commits:
+
+- **The build:** `5127b11` (the submodule moves to the server's `21b905d`), `300d361` (the image),
+  `cc14b63` (the smoke test), `e52efa5` (the browser check), `36c6ae6` (CI), `9b6de49` (the compose
+  files), `0b13b28` (the Docker rule in `CLAUDE.md`), `4dfd0fa` (the README), `bd7da9e` (the notes
+  in this plan) and `ff19fae` (the `.dockerignore` fault that CI found).
+- **After the first review:** `ab2da44`, `921bb9e`, `7f11be2`, `4b94d0e`, `46bd892` and `91229b7`.
+- **After the second review:** `1369279`, `b367449` and `f5bb03c`.
+- **This outcome,** in a commit of its own.
+
+**The owner's choices** (2026-11-10):
+
+- **The four from the start:** Caddy in the web image, serving the page and passing `/ws` on; the
+  registry ghcr.io; publishing from `master` and version tags; amd64 only.
+- **Two requests:** the latest stable versions (Node 26 for the image's build stage, Caddy 2.11.9),
+  and a deployment without a Caddy of ours, which is the server's
+  [§12.1.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#1211-behind-your-own-proxy).
+- **The plan's open questions,** all at their defaults. The ones that shape this page: the browser
+  check of the policy runs in CI; `/version` is proxied; there is no HSTS; the Linux job and the
+  owner's machine stay on Node 24.
+- **After the first review** (15 findings, none above severity 3): fix all as the implementer
+  recommended, skipping HSTS, the extra step that stops the server to check a 502, playing a bid and
+  a card in the browser check, and a concurrency group per commit; and a second review.
+- **After the second review** (13 findings, none above severity 2): fix all, as recommended. No third
+  review.
+
+**Built:**
+
+- **The submodule** moves from `a656cde` to `21b905d`, the merge of the server's Docker image. It
+  brings the server's image, its compose files and the proxy examples, which this repository's CI
+  runs from the submodule instead of copying.
+- **The image.** `Dockerfile`: a build stage on `node:26.13.0-trixie-slim` (npm 11.20), then
+  `caddy:2.11.9-alpine` holding `dist/` in `/srv` and `deploy/Caddyfile`, which the build validates.
+  It is 68 MB by its layers, 66 MB of that Caddy's Alpine base.
+- **`deploy/Caddyfile`.** It serves the page with dotfiles hidden, answers a table's link (`/t/` and
+  six capital letters or digits) with `index.html`, and passes `/ws` and `/version` to
+  `WHIST_SERVER_ADDRESS`. The policy, `nosniff` and the referrer policy are on every answer, errors
+  included. The caching rules are on 2xx and 304 answers only, so that an error is never cached.
+- **`tools/smoke.mjs`,** which checks a running page and plays a solo game through it with the
+  server's smoke test, in three profiles: `web` (our Caddy), `proxy` (a proxy with the server's
+  examples) and `server` (the server alone). `--copies` compares the policy in this Caddyfile and
+  the server's two proxy examples with `PAGE_CSP`.
+- **A browser check,** `playwright.docker.config.ts` and `tests/docker/page.spec.ts`, which loads
+  the page from a running stack under its policy.
+- **Compose files:** `deploy/docker-compose.yml` runs the image alone, pointed at any server, with a
+  read-only root and only the right to bind ports 80 and 443; `compose.yaml` builds the page and
+  the server from this checkout, one image at a time.
+- **CI:** the `docker` and `publish` jobs, below. **Docs:** the README's deployment sections, this
+  plan's §4, §12, §14 and phase 7, and a Docker rule in `CLAUDE.md`.
+
+**Versions:** Node 26.13.0 (Active LTS) with npm 11.20.0 on Debian trixie for the build stage, and
+Caddy 2.11.9. CI's proxies run Caddy 2.11.9 and nginx 1.30.6. The Caddy example in the server needs
+Caddy 2.9.1 or later, which the image's Caddy is well past.
+
+**Tests and checks:**
+
+- **The unit tests,** 320 in 24 files, with a test that every copy of the policy is `PAGE_CSP`, and
+  the end-to-end tests, 8, pass. The end-to-end run used the server binary from the server's
+  checkout, through `WHIST_SERVER`, since the submodule has no build here.
+- **The `web` profile** passes ten checks: the page; a table's link, which is the same page; a
+  lowercase and a seven-character link, which are not found; the file types, `woff2` included;
+  gzip; the policy, `nosniff` and the referrer policy on every kind of answer, `/version` included;
+  the caching rules; that an error is not kept by a cache; and the game through `/ws` with the
+  server's commit. The `proxy` profile runs the same except that gzip is only reported, and the
+  `server` profile checks no headers and holds an error to nothing long.
+- **Negative checks,** each on a copy, so nothing in the repository changed: the smoke test fails on
+  Caddy 2.6.2 with the Caddy example (a 404 gets the year-long cache), on nginx with a changed
+  policy, and, in the `web` and `proxy` profiles, on an hour's cache on a 404; a Caddy that adds
+  `no-store` to errors passes; the browser check fails when the stack says `font-src 'none'` and
+  when the page arrives with no policy header; the copies comparison names a drifted file.
+- **What CI runs.** The `build` job builds the page, runs the unit tests and the policy copies test.
+  The `docker` job:
+  - parses this repository's two compose files and the override the README gives, before anything
+    is built, and checks that the protocol version is the server's;
+  - builds the page's image and the server's, from the submodule;
+  - checks that the three copies of the policy are the same;
+  - runs the full stack with our Caddy: the `web` profile, the browser check, and a stop that leaves
+    the server with exit code 0;
+  - runs the own-proxy setup as shipped: the `server` profile directly and the `proxy` profile
+    through the Caddy and nginx examples;
+  - moves the server to the Docker bridge's address, as the README says, and runs this repository's
+    compose file against it, with the `web` profile, and again with the README's override joining
+    the server's network, with `server:8080`;
+  - runs the same compose file at `localhost`, to see automatic HTTPS answer 200, and 308 on HTTP,
+    under the file's hardening;
+  - holds the image to 85 MB.
+
+  The `publish` job, which a pull request never runs, pushes the page's image from `master` and
+  version tags.
+
+**Where the build departs from the plan:**
+
+- **The size budget is 85 MB, not 70 MB.** The plan estimated 55 MB, and the base alone is 66 MB.
+- **The policy is on Caddy's own error answers too,** through `handle_errors` and a snippet that
+  the site imports as well: an error that `file_server` gives skips a `header` directive, so the
+  plan's Caddyfile sent it on successful answers only.
+- **A check the plan did not list:** CI fails when the page's protocol version is not the server's.
+  The policy is also compared as files (`--copies`) and in a unit test, not only live.
+- **The image's Node stage was built only in CI.** Docker Hub's rate limit refused the Node image
+  here after one attempt. The page was built on the host into a stand-in on the same Caddy image,
+  and the context the `.dockerignore` leaves was built on the host. CI found one fault this way:
+  `tools/` was left out of the context, and a unit test imports the smoke test's declaration.
+- **`/ws` is left out of the policy checks.** The server's nginx example does not send the headers
+  on its `/ws` location, so the check failed there. It is a plain GET with no body.
+- **The page's container is hardened,** which the plan gave to the server's only: a read-only root,
+  a tmpfs on `/tmp`, and one capability, the right to bind ports 80 and 443.
+
+**The reviews,** each by a cold reviewer:
+
+- **The first,** 15 findings, none above severity 3. The ones that mattered: the page's compose
+  file could not reach a server that listens on loopback, which every documented setup does, and
+  CI never ran it; an hour's cache on an error passed the smoke test; the browser check passed
+  with no policy header; and the page's container was unhardened. The rest were wording, time
+  limits, a dead job output and the build order of the compose file's two images. All fixed but the
+  four skips above.
+- **The second,** 13 findings, none above severity 2: CI tested neither documented way to reach a
+  server, nor HTTPS under the hardening; the README's advice was incomplete (a firewall, a server
+  started before Docker, Linux only, which network); the failure logs were skipped when a job timed
+  out; a proxied error that says `no-store` would have failed the smoke test; and wording. All fixed.
+
+**Builds and CI.** The first run failed in the image's build, on the `.dockerignore` fault. The runs
+on `1369279`, after the first review's fixes, and on `f5bb03c`, after the second's, pass: `build`,
+`docker` and a skipped `publish`. In the `docker` job the page's image builds in under a minute and
+the server's, with a warm cache, in about 10 seconds; the whole job takes about 5 minutes with a
+cold cache and a minute and a half with a warm one. The commits after `f5bb03c` change only this
+plan.
+
+**Left for the server's phase 9:**
+
+- Keep `/version` out of the proxy examples' cache rules. It is a 404 today, so nothing is cached
+  yet, but the examples would give a 200 an hour.
+- Send the policy headers on the nginx example's `/ws` location, as the Caddy examples and this
+  Caddyfile do.
+
+**Not done, and not checked here:** publishing, which waits for the parents to reach `master`, and
+then both GHCR packages need setting to Public; the footer's commit as a build argument, which is
+phase 9's share of the page; and the bridge advice on Docker Desktop, which the README states from
+Docker's documentation and no test covers.
 
 ---
 
@@ -429,7 +644,7 @@ checkout of the server beside this one.
 The phases are numbered in one sequence with the server's. Phases 0 to 5, 9 and 11 are in the
 server plan's
 [§13](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#13-phases),
-and 6, 7, 8 and 10 are here. Phase 9 has a share here too: the footer, the About page, and deploying the page with its server
+and 6, 7, 8, 8b and 10 are here. Phase 9 has a share here too: the footer, the About page, and deploying the page with its server
 (§12).
 The branch workflow and the code review procedure are that section's. Its step 5, building and
 testing both presets after the fixes, means here the page's build, unit tests and browser tests.
@@ -438,7 +653,7 @@ Sizes are relative: S, M, L.
 After the server's phase 3, the page can be built against fixtures while the server's phases 4 and
 5 go on.
 
-### Phase 6: the table page — L
+### Phase 6: the table page — L ✅ COMPLETE
 
 - **Work:**
   - the stage and seat geometry, name panels, racks, hand, played cards, lead mark, scoreboard,
@@ -459,9 +674,231 @@ After the server's phase 3, the page can be built against fixtures while the ser
     has not accepted;
   - the owner approves.
 
-### Phase 7: sheets and menus — L
+**Outcome** (branch `web/phase-6-table-page`, PR #3, parent `ccr-209c0806-o444sp`, the last commit
+of code `e2eef2e`):
+
+- **The branch.**
+  - **The commits,** in the plan's order:
+    - the server's fixtures and the parent's name: `9758235` (the submodule moves to `a656cde`, the
+      merge of the server's fixture tool), `c962784`;
+    - the protocol `b18943f`, the art `2d31580`, `t()` `db62000`, the geometry `362f54f`, the store
+      and the table model `031b223`;
+    - the table: the room and the felt `4e50382`, the name panels `9517968`, the racks `d49aa8d`,
+      the played cards and the lead mark `4bd9a3e`, your hand `2d09f21`, the scoreboard, the trick
+      panel and the corner buttons `ae1d1fa`, the bid strip and the bubbles `928a1bb`;
+    - the playback queue and the motion `a4e12e8`, the solo game against the server `0291ba5`, the
+      docs `13a0d8d`, the look page in CI `d63c560`;
+    - the comparison with the desktop's pictures: the scoreboard `17a5ef3`, the trick panel
+      `20b3ec1`, the racks `7908bd2`;
+    - the first review's fixes: `9c9ea6d`, `6483b2b`, `64184a1`, `e1084f8`, `ee038cb`, `6de5ef3`,
+      `ed5075f`, and two the work itself called for, `30aad2e` and `cb5304e`;
+    - the second review's fixes: `57a0302`, `d19e162`, `4334fe5`, `e2eef2e`.
+  - **The PR** is against the parent, never `master`. The server stays on its own parent branch,
+    `ccr-c8ac042f-e6e18n`, and the submodule is at `a656cde`.
+- **The owner's choices.** The plan's fifteen questions, all at their defaults:
+  - Q1 the branch names; Q2 the reference pictures (below); Q3 a 46 px menu band with no items in the
+    window shots; Q4 the corner buttons draw and do nothing; Q5 `?solo=N[&seed=S]` until the page
+    has a New Game; Q6 no countdown ring and no presence on the name panels yet;
+  - Q7 the WebP gap recorded, and `webp` to be added to the server's `setFileTypes` before phase 7;
+    Q8 WebP cards at 310x450, not the desktop's SVGs; Q9 WOFF2 fonts; Q10 the look page built apart
+    into `dist-look/`; Q11 `prefers-reduced-motion` reads as Off; Q12 the server plan's tick on a
+    docs-only branch after approval; Q13 the desktop commit `5757811`; Q14 D5, D14 and D18 as they
+    stand; Q15 the comparisons linked by absolute path;
+  - after the first cold review: fix 1 to 8 and 11, skip 9 and 10 and record 10 as a departure, and
+    give the fixes a second cold review;
+  - after the second: fix all nine, and the helper comment in the controller's test that the
+    re-check found backwards; no third review.
+- **Built.**
+  - **The server's fixtures.** The submodule is at `a656cde`. CI checks it out, not recursively, and
+    builds the look page.
+  - **The protocol.** Types and a strict decoder: a `DecodeError` names the field. It is tested
+    against every file in `protocol/fixtures/` and every look fixture's state.
+  - **The art.** `tools/import_assets.py` takes the desktop's cards, portraits, table textures and
+    fonts at `5757811` into `public/`, as WebP, WOFF2 with each OFL licence and an SVG card back,
+    and writes a manifest. The first load is 457 KiB for the empty table and about 700 KiB with a
+    game. The importer's worst case is 945 KiB of its 2 MiB.
+  - **`t()`,** English only, with the desktop's contexts and sentences, one-pass `%n` substitution,
+    and the gendered sentences about people.
+  - **The geometry,** ported from the desktop and tested against its numbers: the stage and its fit,
+    the seat layout, the projective racks (`QTransform::quadToQuad` written out, handed to CSS as
+    `matrix3d`), the hand's fan, the trick and the lead mark, the card order.
+  - **The store and the table model.** The store is applied as pure functions. The model has the shape
+    of the desktop's `GameSnapshot`.
+  - **The table.** The room, the rim, the felt and the round logo; the name panels; the racks; the
+    played cards and the lead mark; your hand; the scoreboard, the trick panel and the corner
+    buttons; the bid strip and the bubbles. Every element is made once and updated in place, keyed by
+    seat and by card.
+  - **Motion.** One playback queue. A card flies from its panel, or from your fan; a full trick is
+    swept to its winner; bubbles are said and never waited for. More than four waiting messages catch
+    up with no animation. Off, a background tab and `prefers-reduced-motion` animate nothing.
+  - **A solo game against the server.**
+    - The connection backs off, keeps its token, drops a token the server cannot read and asks once
+      without it.
+    - A click sends the answer and shows it taken at once: your card leaves the fan and flies, and an
+      error puts it back. The answer stays taken until the server says the card was played, and is
+      forgotten when the game ends, stops, starts again or its table closes.
+    - A blind card keeps its back until the server's word and then flies from the middle back, at the
+      fan's size.
+    - `/?solo=N` starts a game with the desktop screenshot tool's players, at the desktop's default
+      speed. `&seed=S`, `&speed=0` to `4` and `&forehead=all` change the deal, the computer players'
+      speed, and make the first deal blind.
+  - **The look tool.** `npm run look` renders the nine fixtures at the desktop's own sizes with no
+    server, and `npm run compare` pairs them with the desktop's pictures.
+- **The reference pictures.** The container cannot build the desktop (no Qt 6.7), and the owner had
+  no Qt machine at hand. The nine pictures were taken by the desktop's own `"[.screenshot]"` tool on
+  GitHub CI (ubuntu-latest, Qt 6.10.3, the `default` preset, offscreen) at desktop `5757811` plus a
+  commit that only changes the workflow, on the desktop's throwaway branch `ccr-209c0806-o444sp`.
+  The desktop's `src/` and `resources/` are the same as at `5757811`. The pictures are kept in
+  `build/shots/desktop/`, which is git-ignored, and the README has the steps.
+- **The comparisons.** Mean absolute difference of each capture from the desktop's picture, 0 to
+  255, before and after the three comparison commits (the scoreboard's lines, black suits, the rack
+  cards). They are the same after both rounds of fixes.
+
+  | Shot | Before | After |
+  |---|---|---|
+  | `table-3-players` | 1.93 | 1.73 |
+  | `table-4-players` | 2.32 | 1.93 |
+  | `table-5-players` | 2.18 | 1.72 |
+  | `table-6-players` | 2.66 | 2.04 |
+  | `bidding` | 2.02 | 1.51 |
+  | `table-empty` | 0.74 | 0.74 |
+  | `hand-1-card` | 1.85 | 1.55 |
+  | `hand-4-cards` | 1.93 | 1.52 |
+  | `hand-8-cards` | 2.06 | 1.73 |
+
+  Every element lands on the same whole pixel as the desktop's: a shift search finds none. The room,
+  the felt and the rim agree to within a level or two, and the portraits and the lead mark to within
+  half a pixel. Two runs of the look tool can differ by a few hundred pixels in one picture, in the
+  logo's lettering, and not in the same picture twice; the means do not change. What remains:
+
+  | Difference | Cause |
+  |---|---|
+  | The menu band has no items | **Accepted** (Q3) |
+  | Card faces are slightly softer and thin lines less crisp; this is most of what remains, and court cards show it most | **Accepted** (Q8): WebP at 310x450 against the desktop's vector SVG drawn at the exact size |
+  | Suit glyphs in the trick panel come from the system's fallback font and differ in shape and width | **Browser-forced** |
+  | Panel and button hairlines straddle two device rows where the desktop's are crisp: the table is scaled by CSS, and the browser puts a box on a whole local pixel before scaling it | **Browser-forced** |
+  | Text lines sit up to a pixel from the desktop's, in the scoreboard's three header lines and the trick panel's title and rows: Qt puts a baseline on a whole device pixel | **Browser-forced** |
+  | Wood grain and felt mottling are sampled slightly differently | **Browser-forced** |
+  | Scoreboard column spacing when a panel is wider than its columns: the extra width is shared equally, not in proportion; no difference shows in the nine shots | **Browser-forced** (CSS grid) |
+
+- **Where the build departs from the plan, or found what it did not say:**
+  - **The server answers 404, not 403, for `.webp`** (Q7). Cards, portraits and the table's
+    textures do not load from `whist_server` until it serves WebP. The page and every test still
+    work; `npm run dev` shows the pictures. **`webp` must be added to the server's `setFileTypes`
+    before phase 7.** Added in the server's PR #11, merged as `b6f59c7`.
+  - **The racks copy the desktop's pictures, not its source.** The desktop renders every rack card a
+    quarter darker than the mock-up's CSS does, though its source paints only a 1 px hairline in that
+    black. It was measured: a uniform 0.75 on every channel, in all four racks, at both ends of the
+    card. The page reproduces what the desktop's pictures show. If the owner takes it for a desktop
+    bug, the fix is one CSS layer in `rack.css` here and a change in `RackItem.cpp` there.
+  - **The trick panel rebuilds its row and run elements with `replaceChildren` when their text
+    changes** (the first review's 10), where §6 asks for elements made once and updated in place.
+    They are a few small elements, rebuilt only on a change of text; left as they are.
+  - **Hooks the plan did not name:**
+    - `data-slot` on hand cards, for the tests;
+    - `window.look` and `?pace=` on the look page;
+    - `&speed=` and `&forehead=all` on `?solo=N`;
+    - an extra commit, `d63c560`, adds `npm run build:look` to CI, since the script did not exist at
+      the first step.
+  - **`?solo=N` is acted on after a sync with no table,** and the page reads `tableState` as "at a
+    table", since the server answers `createSolo` with one.
+  - **A blind card whose prompt the computer closes** (a turn timer running out, or a replacement)
+    keeps its back until the card is played. Solo allows neither, so only unit tests reach this path,
+    until online tables exist and the page can be tried against one.
+- **Left out:**
+  - **The sheets, the menus, the lobby and Romanian** (phases 7 and 8); New Game, which replaces
+    `?solo=N`; the countdown ring and presence on the name panels (Q6); the corner buttons' sheets
+    (Q4); the menu band's items (Q3).
+  - **The page's own JS, CSS and HTML in the asset budget** (the first review's 9). They add about
+    1 MiB, so nothing is near the limit.
+  - **`storePace`,** which nothing used until a settings sheet exists, and `cardsText`, which the
+    scoreboard says in its own words.
+- **Tests:** 318 unit tests in 23 files, 8 end-to-end tests and 13 look tests.
+  - **Unit:** the protocol against every fixture, the geometry against the desktop's numbers, the
+    queue with a fake stage and clock, the controller with a fake table, the connection with a fake
+    socket and storage.
+  - **End to end,** against `whist_server`:
+    - connect and reload, and a stored token the server cannot read;
+    - 22 decisions reaching the moment `table-4-players.json` shows, then a reload mid-trick;
+    - a game to the end of a round;
+    - your own card in the air the moment you click it;
+    - a blind card keeping its back until the server's word, then flying from the fan at its size;
+    - a game at the default speed with the cards flying, and the table landing where the server says.
+  - **Look:** the nine captures, element reuse, seat-count changes, and a real flight and sweep in
+    Chromium.
+  - **Mutation checks,** each made and reverted:
+    - the redraw at a click with no animation fails the flight check (1 animation expected, 0
+      received);
+    - clearing the answer when its prompt closes fails 3 controller tests;
+    - a blind back that vanishes at the click fails the blind end-to-end test (1 back expected, 0
+      received);
+    - dropping the blind back when the computer closes the prompt fails 1 controller test, and not
+      holding it when there was no click fails 2;
+    - removing the socket guard in the connection's close handler fails 2 connection tests, and the
+      once-only guard on a refused token fails 1.
+  - **Two tests that could not fail** were found by the reviews and made able to: the end-to-end
+    flight count, which counted only at the end, and the connection test of a refused socket closing.
+- **Reviews.**
+  - **The first cold review,** of `7908bd2`, found 11 problems, none above severity 3. It found
+    sound: the decoder, the store, the queue, the connection, the ported geometry (`matrix3d` checked
+    against Qt's source), `t()` and the palette, element reuse, CI, the asset tool and the twelve
+    comparisons.
+    1. Severity 3: your own card never flew, because the redraw at the click cut its flight short.
+    2. Severity 2: the card you played came back into your hand until the server's word.
+    3. Severity 2: a blind card's back vanished at the click, and the card flew small and faint.
+    4. Severity 2: an answer pending at the end of a game was never forgotten.
+    5. Severity 2: a malformed stored token left the page waiting for ever.
+    6. Severity 2: `?solo` played at the top speed, so no computer player's card flew.
+    7. Severity 1: comments about what the page would have later, and one that sent the reader to
+       another function.
+    8. Severity 1: the pairing tool was fixed to phase 6.
+    9. Severity 1: the asset budget leaves out the page's own code. Skipped.
+    10. Severity 1: the trick panel's `replaceChildren`. Skipped, recorded above.
+    11. Severity 1: dead code, and a translated sentence passed back to `t()`.
+
+    The owner chose to fix 1 to 8 and 11, in my order, and to skip 9 and 10. The fixes are `9c9ea6d`
+    (6), `6483b2b` (1), `64184a1` (2, 3 and 4), `e1084f8` (5), `ee038cb` (7), `6de5ef3` (11) and
+    `ed5075f` (8). Two more commits came from the work: `30aad2e`, because a slot taken out of the fan
+    kept its `playable` class once a played card stayed out of the hand until the server's word, which
+    the end-to-end count of playable cards caught; and `cb5304e`, which makes the test of the cards
+    flying play at the default speed and count them.
+  - **The second cold review,** of `7908bd2..cb5304e`, found 9 problems, none above severity 2. It
+    found sound: all nine fixes, every path of a pending answer, the new end-to-end tests able to
+    fail, and the retiring of hand slots with no leak.
+    1. Severity 2: a blind back vanished when the computer closed the prompt. My check agreed, and
+       found the cause wider than the review said: a timer closing the prompt before any click took
+       the back too.
+    2. Severity 2: no test reached a blind round in the page.
+    3. Severity 1: the test of a refused socket closing could not fail.
+    4. Severity 1: a refused token was retried at once with no limit.
+    5. Severity 1: a comment in the controller's test did not match its fixture.
+    6. Severity 1: `cardsText`, `storePace` and the `CornerButton` interface were still unused.
+    7. Severity 1: a comment about what the strip once was.
+    8. Severity 1: the controller's class comment was four lines and said a reason twice.
+    9. Severity 1: the README did not say what `&speed` does.
+
+    My re-check agreed with all nine, 1 and 4 in part, and found a tenth: a helper comment in the
+    controller's test that had the order of the queue and the store backwards. The owner chose to fix
+    all nine and that comment, in my order, and to skip a third cold review. They are fixed in `57a0302` (2), `d19e162`
+    (1, 5, 8 and the helper), `4334fe5` (3 and 4) and `e2eef2e` (6, 7 and 9). The blind end-to-end
+    test found no bug in the page.
+- **Builds and CI.**
+  - **`npm run build` and `npm run build:look`** pass at `e2eef2e`, and the unit, end-to-end and look
+    tests pass: 318, 8 and 13.
+  - **CI** (Build (Linux): `npm ci`, the two builds and the unit tests) is green at `7908bd2`,
+    `cb5304e`, `e2eef2e` and `647e02a`. It does not run the end-to-end or the look tests, which need
+    the server's build and a browser.
+  - **The owner approved** the phase on 2026-11-10.
+
+### Phase 7: sheets and menus — L ✅ COMPLETE
 
 - **Work:**
+  - first, the submodule moves to the head of the server's parent branch, `df37bd8` or later. It
+    is at `21b905d` (the Docker image's merge), which already serves the page's WebP pictures and
+    JSON files, so the move only brings the server's plan up to date;
+  - the reference pictures are the `sheet-*`, `menu` and `language` shots from the same CI run as
+    phase 6's (desktop commit `03a3244`, in `shots/` on the desktop's throwaway branch
+    `ccr-209c0806-o444sp`). If the desktop's look changes, the workflow there takes them again;
   - the round sheet, history, last trick, final results, rules, settings and pause, as the
     desktop client's overlay and sheets draw them, not the mock-up's modal;
   - the main menu and solo setup, as the desktop client's main menu and New Game;
@@ -474,9 +911,190 @@ After the server's phase 3, the page can be built against fixtures while the ser
     has not accepted;
   - everything in
     [the server plan's §2.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#21-carried-over-from-the-desktop-client)
-    works in solo play.
+    works in solo play;
+  - a blind card whose prompt the computer closes (the turn timer) keeps its back until it is
+    played, tried against a real online table. Phase 6 could only unit-test it;
+  - the desktop's throwaway branch `ccr-209c0806-o444sp` is deleted, once its pictures are no longer
+    needed.
 
-### Phase 8: Romanian, keyboard, touch — M
+**Outcome** (branch `web/phase-7-sheets-and-menus`, PR #7, parent `ccr-209c0806-o444sp`, the last
+commit of code `2e100c4`).
+
+- **The branch.**
+  - **The commits,** in the plan's order:
+    - the submodule `5d843be`, to `df37bd8`; the client messages and the store `b7bac64`; the twos
+      `9be9562`;
+    - the sheet layer and the seven sheets `d3ec05e`, their flow `fded66e`, the menu bar `98defce`,
+      the solo game wired to them `9cf567b`, and the trick panel's empty prompt `30549fd`;
+    - the main menu, New Game and online `ad60a0a`; their tests `40abd80`, `05969a6`, `ed3cf78`,
+      `83887aa`, `05e18cd`, `06f52a7`; the menu's look fixture `362cda6`; the README `99da9a2`; and
+      `6b8136f`, below;
+    - the first review's fixes: `3ec53ef`, `d0e3d82`, `eb0823e`, `85c9539`, `f406adf`, `4eec5c5`;
+    - the second review's fixes: `cd62e93`, `c27c545`, `2e100c4`.
+  - **The PR** is against the parent, never `master`. The server stays on its own parent branch.
+  - **Who built it:** a Sonnet agent at extra-high effort built the phase, in two stretches with a
+    check between them; the review's fixes were made in this session.
+- **The owner's choices.** The plan's fifteen questions at their defaults, but for Q13: the cold
+  reviews ran on Fable 5.2 at medium effort, where §13 says extra-high. After the first review: fix
+  all but 15, and give the fixes for 1, 2 and 4 a second review. After the second: fix all ten, and
+  no third review.
+- **Built.**
+  - **The sheet layer:** a dim and a 720-pixel panel in screen pixels, not table units, as the
+    desktop's `Overlay` is; one sheet at a time, centred on whole pixels, narrowing and scrolling in
+    a small window. `SheetButton` and `SheetTable` are the desktop's.
+  - **The seven sheets:** the round sheet, with the streak warning; the history; the last trick; the
+    final results, with the tie sentence, the stars and the failure face; the rules, written from
+    the table's settings; the settings, with the two sliders and the wait drawn by hand; pause.
+  - **The menu bar:** 46 pixels, New Game, Settings and Rules, and Exit at the right, with the
+    desktop's icons as SVG and its greyed states.
+  - **A solo game:** the corner buttons open the history and the last trick. The round sheet comes
+    up after every round, as the desktop's: held, its Continue sends `continue`; resting, it goes
+    when the game moves on. Play again opens New Game on the setup just played. Rules, Settings, the
+    history and the last trick hold a solo game while they are up, and Esc and Exit raise pause. A
+    sync brings back the sheet that was up.
+  - **The main menu and New Game:** the plaque and two buttons; New Game as a sheet, with the
+    desktop dialog's fields, order, wording, bounds, defaults, name and face drawing and validation.
+    It also refuses what the server refuses in a name and the page can know.
+  - **Online:** a profile; creating a table; joining by its code or its link, `/t/<code>`; the lobby,
+    with the host's controls and "Fill open seats"; presence on the name panels; the ring for a
+    prompt's last 15 seconds; notices for a seat waited for, replaced, back or left; the round hold
+    with who is awaited; errors as sentences; and the connection's state. Exit at an online table
+    asks "Leave the table?". A finished table is a lobby again, after its results. Back from a table
+    asks before leaving it. The trick panel says "Computer playing for Ana".
+  - **What the page keeps:** the animation speed, the last New Game and the online profile, in the
+    browser's storage.
+  - **The twos,** in `public/cards/`, for the hand under the desktop's sheet pictures.
+  - **The look tool:** eight new captures, from fixtures in `tests/look/fixtures/` that
+    `tools/sheet_fixtures.py` writes from the numbers of the desktop's `tests/ScreenshotTool.cpp`.
+    `tools/measure_shots.py` measures where each element lands against the desktop's pictures.
+- **The comparisons.** Mean absolute difference of each capture from the desktop's picture, 0 to
+  255. They are the same at `06f52a7` and at `2e100c4`. The pairs are `compare-<name>.png` in the
+  git-ignored `build/shots/compare/`.
+
+  | Shot | Difference |
+  |---|---|
+  | `menu` | 0.50 |
+  | `sheet-pause` | 1.13 |
+  | `sheet-game-over` | 1.18 |
+  | `sheet-history` | 1.19 |
+  | `sheet-last-trick` | 1.24 |
+  | `sheet-settings` | 1.25 |
+  | `sheet-round` | 1.27 |
+  | `sheet-rules` | 1.54 |
+
+  Every sheet's panel is the desktop's size to the pixel, and its text, rules, rows and buttons land
+  within a pixel. The five window shots of phase 6 moved 0.03 to 0.06 closer, since the bar has its
+  items. What remains:
+
+  | Difference | Cause |
+  |---|---|
+  | Text edges: Qt draws subpixel text, Chromium grey | **Browser-forced** |
+  | Glyph widths: the ♥ and some button labels are a pixel or two wider or narrower, and text after them drifts by that much | **Browser-forced** |
+  | The red pips of the cards under the sheets | **Accepted** in phase 6 (Q8) |
+  | The sliders' handles and the check mark, within a pixel of Qt Fusion's | Drawn by hand; to be **accepted** |
+  | `menu`: Play online where the desktop has Quit, and no View menu | **Accepted** (Q3, Q4) |
+
+- **Where the build departs from the plan, or found what it did not say:**
+  - **The lobby is a sheet with a list of seats,** not seats drawn round the table. The host's game
+    settings fold away under it, so the seats and Start stay in view.
+  - **New Game, Play online, Create a table and the lobby have no picture to compare with.** The
+    desktop has none of them; New Game's fields and bounds are checked by an end-to-end test.
+  - **Some of the sheets' row heights are measured, not derived:** Qt's label heights differ from
+    sheet to sheet in ways its source does not say. They are numbers in `sheet.css`, which
+    `tools/measure_shots.py` can take again.
+  - **The standings of a game reloaded after its end are ranked by the page,** by the server's rule,
+    since a sync does not carry them. Without it a reloaded finished game would show no results.
+  - **The failure face's sentence is the page's own,** "The server could not go on with this game.":
+    the server sends no words with `gameStopped`.
+  - **A refused new game can still cost the old one.** The protocol makes a table only for someone at
+    none, so the page leaves the old table before it asks. New Game refuses what it can foresee, and
+    the sheet stays up with what was typed and says a solo table left for it is gone. A name that
+    only the server's comparison catches, such as a full-width "Ａna" beside "Ana", is the case
+    left.
+  - **At the Instant speed the round sheet flashes,** as the desktop's does: the server's rest on a
+    scored round is zero there.
+  - **Hooks the plan did not name:** `?solo=N&wait=1`, and the look page's `?shot=sheet-<name>`.
+  - **Found by the look tool:** the trick panel's empty prompt was 7 units short (`30549fd`), and the
+    lobby's portrait buttons were named `.face`, which every card's face also is, so every card would
+    have taken their border (`6b8136f`, with a look test that fails when the name comes back).
+- **Left out:**
+  - **The language dialog** (`language.png`) and Romanian, which are phase 8.
+  - **Changing your profile at a table:** the protocol has `updateProfile`; the page offers no way to
+    use it.
+  - **Not tried in a browser:** joining a table whose game has started, a second tab taking over, a
+    host who goes away handing the table over, and changing seats or settings after guests have
+    joined. These have unit tests.
+  - **The desktop's throwaway branch `ccr-209c0806-o444sp`** is left for the owner to delete: the
+    session's git proxy refused the deletion (HTTP 403). Its 18 pictures were checked byte for byte
+    against the copies in `build/shots/desktop/` first.
+- **Tests:** 591 unit tests in 40 files (318 at the start of the phase), 25 look tests and 31
+  end-to-end tests.
+  - **End to end,** against `whist_server`:
+    - solo: the round sheet held, after a reload, and resting; the history, last trick, rules,
+      settings and pause; a game to its results, Play again and Main menu; New Game from the main
+      menu, a watched game, New Game over a running game, and a game the server refuses;
+    - online: three browsers making, joining by link and by code, filling and playing a table; a
+      table that does not exist; Back and Exit at a table; a second game after a player left; a
+      player who drops, is replaced and comes back; and a blind card whose prompt the turn timer
+      closes keeping its back until the computer player has played it, at a table with a 10-second
+      timer and every one-card round Forehead.
+  - **Mutation checks,** each made and reverted, among them:
+    - Continue sending the wrong round fails a unit and an end-to-end test; a sync forgetting the
+      hold fails four unit tests and the reload test; Resume sending `pause` fails four;
+    - a tie joined with commas, stars by place, a round arrow showing the total twice, a streak warning
+      at five, history totals leaving the last round out, and a rules deck a rank off each fail their
+      sheet's tests;
+    - the host's controls shown to a guest fail the three-browser test, and `canStart` without the
+      host fails a unit test;
+    - an address read as no table's fails two unit tests and the join by link;
+    - a blind back dropped when the timer closes the prompt fails the blind-card test;
+    - a portrait button named `.face` fails the look test that holds a card's border at 0;
+    - the unit tests the reviews' fixes added were seen failing without their fix, but for the
+      address's; the end-to-end tests those fixes added were not mutated.
+- **Reviews.**
+  - **The first cold review,** of the whole branch at `06f52a7`, found 15 problems, none above
+    severity 3, and no crash, hang or leaked card. It found sound: the store, pause and hold,
+    leaving, the sync order, security, the lobby's model and the blind-card test.
+    1. Severity 3: a finished online table had no lobby, so a game with a leaver could not be
+       played again.
+    2. Severity 3: the round sheet showed only when the game was held; the desktop's shows after
+       every round.
+    3. Severity 2: Play again started the same game; the desktop's reopens New Game.
+    4. Severity 2–3: Deal over a running game left it before the server took the new one.
+    5. Severity 2: Back could not leave an online table.
+    6. Severity 2: the join sheet's error line was rewritten on every render, and a refusal was said
+       twice.
+    7. Severity 2: an emptied seat count asked for two seats.
+    8. to 14. Severity 1: Esc and the join sheet; "Take this seat" hidden; Continue after a reload;
+       a refused leave; "Computer playing for"; small slips; long comments and unused code.
+    15. Severity 1: the desktop's branch and the outcome. Skipped, as the outcome and the owner's
+        word handle them.
+
+    2 and 3 came from this plan's own wording, which the review showed the desktop does not follow.
+    The fixes are `3ec53ef` (7–11), `d0e3d82` (5, 6), `eb0823e` (4), `85c9539` (3, 1), `f406adf` (2)
+    and `4eec5c5` (12–14). 4 is fixed only in part, as above.
+  - **The second cold review,** of `06f52a7..4eec5c5`, found 10 problems in those fixes, none above
+    severity 3.
+    1. Severity 3: an answer lost with the connection left Deal, Create and Join disabled.
+    2. Severity 3: Back to the table and a closed round sheet carried into the next game past a sync.
+    3. Severity 2: the last results flashed when the next online game started.
+    4. Severity 2: the page refused names the server takes, such as "Low Risk Larry".
+    5. Severity 2: a lost table was announced for an online table, which goes on.
+    6. Severity 2: any error was shown in an open New Game or Play online.
+    7. Severity 1: Esc on Deal's leave question dropped New Game.
+    8. Severity 2: the resting round sheet took the keyboard.
+    9. Severity 1: Continue before the hold only closed the sheet.
+    10. Severity 1: three comments the fixes made wrong.
+
+    All ten are fixed: `cd62e93` (1–3), `c27c545` (4–6) and `2e100c4` (7–10). By the owner's choice
+    there is no third review.
+- **Builds and CI.**
+  - **`npm run build` and `npm run build:look`** pass at `2e100c4`, and the unit, look and end-to-end
+    tests pass: 591, 25 and 31.
+  - **CI** (Build (Linux) and the Docker image) is green at `4eec5c5` and `7924e0c`.
+  - **The owner approved** the phase on 2026-11-12.
+
+### Phase 8: Romanian, keyboard, touch — M ✅ COMPLETE
 
 - **Work:**
   - the imported translations, the new strings in Romanian, gender agreement and plurals;
@@ -484,7 +1102,482 @@ After the server's phase 3, the page can be built against fixtures while the ser
 - **Done when:**
   - the owner has reviewed the Romanian;
   - a game can be played with the keyboard alone;
-  - a phone held sideways finishes a game.
+  - a phone held sideways finishes a game. The owner moved this one to
+    [phase 8b](#phase-8b-the-phone-layout--l--complete) on 2026-11-13, after trying the page on a phone: see
+    the outcome.
+
+**Outcome** (branch `web/phase-8-romanian-keyboard-touch`, PR #8, parent `ccr-209c0806-o444sp`, the last
+commit of code `6fc0a0c`).
+
+- **The branch.**
+  - **The commits,** in the order they were made:
+    - Romanian: the import `5e229af`; the catalogue and Qt's plural rule `684c379`; the language the
+      page is told to run in `d302683`; the page's own strings `6a01f58`; the test that every string
+      has Romanian `9f3bd3e`; the language dialog `5891619` and the flag that reopens it `e563c26`;
+      every look capture in Romanian too `f216f13`; `91ff5b1`; a game in Romanian, end to end, and
+      the README `43acc45`;
+    - the keyboard `13848a3`, screen readers `bdc3d64`, touch `12c9236`, small windows and the
+      upright hint `4fc01fa`, and `9c639b5`;
+    - the first review's fixes: `3da0949`, `97c45c3`, `acc97b6`, `82073c8`, `65d270e`, and the name
+      panels' growth on a phone `093c8e3`;
+    - the second review's fixes: `fd11910`, `4b0956a`, `1b00571`, `427d3ff`, `73cd8dd`, `20c34fa`;
+    - the owner's Romanian: `cac3016` and `6cedec2`;
+    - the name panels' growth taken away again: `6fc0a0c`.
+  - **The PR** is against the parent, never `master`. The server and its submodule (`df37bd8`) are
+    untouched.
+  - **Who built it:** one implementing agent at extra-high effort built the phase, in two stretches
+    with a check between them, and made every fix. Two fresh read-only agents at extra-high effort
+    reviewed it, as the server plan's §13 says.
+- **The owner's choices.**
+  - **Before the build:** the page asks for the language on a first visit and remembers it; the
+    desktop's keys plus a selection moved by the arrows; the Romanian shown on a private review page;
+    the phone tried in emulation and then on the owner's own. A tap on a bid bids at once: only a
+    card takes two taps.
+  - **After the first review:** fix all but 7, 11 and 13, and add the name panels on a phone; the same
+    agent makes the fixes; every fix gets a second review.
+  - **After the second review:** fix all but 11 and 16; no third review.
+  - **How a screen reader says a card,** in Romanian: a rank as a word, "de" and the suit, with no
+    article, in the past tense: "Bogdan a pus damă de inimă roșie", "Atu: Zece de inimă neagră". The
+    suits are inimă neagră, inimă roșie, romb and treflă. A card of the hand "se poate juca" or
+    "nu se poate juca".
+  - **The Romanian review** (2026-11-12 and 13): the owner marked each of the review page's 116
+    entries, beside screenshots of every screen in Romanian. 18 changed, among them
+    "Deconectat" for a person who is away, "%1 nu mai răspunde.", "mută", "Fără timp limită" and
+    "%1 s per mutare". A computer player is a "robot" everywhere, never a "bot". The round sheet's
+    "waiting for" agrees with the people it waits for: "Îl", "O", "Îi" or "Le așteptăm pe …".
+  - **After the phone** (2026-11-13): the name panels' growth is removed, the phone gets a layout of
+    its own in phase 8b, and "a phone held sideways finishes a game" moves there.
+- **Built.**
+  - **The catalogues.** `tools/import_ts.py` writes the desktop's translation into
+    `src/i18n/ro.desktop.json`: 211 entries, 8 of them plural, from the desktop's commit `5757811`,
+    which the file records. The page's own strings are in `src/i18n/ro.page.json`, 139 entries, by
+    hand. `t(context, source, args)` looks a string up as Qt's `translate()` does, with Qt's
+    three-form Romanian plural rule, and a sentence about a person takes the variant for a man, a
+    woman or you (`src/i18n/person.ts`, from the desktop's `PersonText.cpp`).
+  - **The language.** A first visit is asked, with the desktop's language dialog, before anything is
+    drawn. The answer is kept in the browser. The flag at the top right of the main menu opens the
+    dialog again. `?lang=ro` or `?lang=en` sets the language for one visit, without asking or
+    keeping, and follows the address into `/t/CODE`. New Game remembers a setup for each language,
+    because the drawn names are the language's.
+  - **The keyboard.** `0` to `8` bid and `1` to `8` play that card of the hand, as on the desktop.
+    Left and Right move a pick over the legal cards or the offered bids, and Enter takes it. Space
+    lets a held round go, Esc raises the pause menu or closes a sheet, and Alt+N, S, R and X are the
+    menu bar. The keyboard's focus is on the pick or on nothing, so Enter never plays a card nobody
+    picked. Tab reaches every control and the focus is always drawn.
+  - **Screen readers.** Every picture of a card has a name, a rack's face with its owner
+    ("Ana: Queen of hearts"). A card of the hand says whether it is playable and is a pressed button
+    while it is the pick, as a bid is. Each name panel has a name. A polite live region says each
+    round begun with its trump, the question put to you, each bid and card, each trick taken, each
+    round scored and the game's end. It keeps 100 lines, more than a round of six.
+  - **Touch.** The first tap on a card picks it and the second plays it; a tap elsewhere puts the
+    pick down; a mouse plays at once. Where the pointer is coarse, the bid strip and the hand are
+    drawn larger on a small window, so a bid is 44 pixels from the next and a card of the fan 32,
+    the corner panels are drawn no smaller than half, and sliders and small buttons take touches 44
+    pixels tall. A played card's flight starts from where the card is drawn.
+  - **Small windows.** The page works in a window of 740 by 360: the main menu draws smaller, a
+    sheet taller than the window scrolls and opens at its top every time, and the lobby's row of
+    actions wraps. A phone held upright is told to turn.
+  - **The look tool** takes every capture in Romanian as well, and has fixtures of its own for New
+    Game, Play online, Create a table and the lobby.
+- **The comparisons.** Mean absolute difference of each capture from the desktop's picture, 0 to
+  255, as in phase 7. The language dialog is new, at 0.90. The others did not move through the
+  phase: menu 0.57, table-empty 0.74, sheet-pause 1.13, sheet-game-over 1.18, sheet-history 1.19,
+  sheet-last-trick 1.24, sheet-settings 1.25, sheet-round 1.27, bidding 1.47, hand-4-cards 1.52,
+  sheet-rules 1.54, hand-1-card 1.55, table-5-players 1.68, table-3-players 1.69, hand-8-cards 1.73,
+  table-4-players 1.89 and table-6-players 2.00.
+- **Where the build departs from the plan, or found what it did not say:**
+  - **No `en.json` and no `ro.json`** (§10, corrected above): the English is the source string, and
+    the Romanian is two files, the imported one and the page's own.
+  - **Qt's plural rule and `Intl.PluralRules` agree** on every whole number, 101 included. §10 said
+    they did not, and is corrected. The port of Qt's rule stays.
+  - **The page overrides two of the desktop's strings,** "Bot %1" and "Bot speed", to say "robot".
+    The desktop's issue #51 asks for the same there; the page then imports again and drops the two.
+  - **The flag on the main menu** is the page's own: the desktop's menu page has none.
+  - **A card is said as the owner set it,** not as §11's example, "Ana plays the queen of hearts":
+    the past tense, and in Romanian no article.
+  - **A click with no press before it only picks a card.** A screen reader's activation arrives so.
+    It is told the card is pressed, and a second activation plays it.
+  - **Under a finger the table no longer scales as the desktop's does:** the strip, the hand and
+    the corner panels are drawn larger than the table's scale gives. The hand's cards are 32 pixels
+    apart, not 44: eight cards of 44 do not fit a phone.
+  - **English says "wins with 1 point",** where the desktop says "1 points".
+  - **On a phone the other players' names cannot be read.** At 844 by 390 and 740 by 360 they are 6
+    or 7 pixels tall, because the whole table is scaled as the desktop's is. A stop-gap drew those
+    panels at 0.55 and moved them clear of everything else (`093c8e3`, `fd11910`). On the owner's
+    phone it put two players side by side, off the desktop's directions, and the owner had it
+    removed (`6fc0a0c`). Phase 8b gives the phone its own layout.
+  - **A browser's bars take much of a phone's screen.** On a Samsung S24+ held sideways the browser
+    left the page 754 by 247 pixels, below the 740 by 360 this phase built for; full screen is 832
+    by 384. Phase 8b adds a full-screen button and a home-screen app.
+  - **Brave on Android would not open the page over plain http** on the local network. That is its
+    HTTPS upgrade, not the page.
+- **Left out:**
+  - **A phone finishing a game,** which is phase 8b's.
+  - **A third review.** The ten commits after the second review had none, by the owner's choice.
+  - **Pictures to compare New Game, Play online, Create a table and the lobby with:** the desktop
+    has none.
+  - **An unreliable test,** `online.spec.ts`'s "a table whose game ended with a seat left…", fails
+    now and then on the parent too. It gets a PR of its own after this phase.
+- **Tests:** 742 unit tests in 53 files (591 at the start of the phase), 134 look tests (25) and 69
+  end-to-end tests (31).
+  - **End to end,** against `whist_server`: the language question and its reopening; a game in
+    Romanian with Romanian names; a whole game with the keyboard alone, which a lint keeps free of
+    the mouse; what a screen reader is told; a whole game by touch at a phone's size; the language
+    through a table's address; a setup for each language.
+  - **Mutation checks,** each made and reverted, among them: Enter on a card nobody picked; the touch
+    guard on a press; the flight's start under a finger, picked and not; the sliders' gap; a sheet's
+    scroll reset; the pressed state; the pointer's reset; the setup's slots; the language-only query;
+    the lobby's wrap; and a "bot" left anywhere in the Romanian.
+- **Reviews.**
+  - **The first cold review,** of the whole branch at `9c639b5`, found 17 problems, none above
+    severity 3.
+    1. Severity 3: Enter played a card that had the focus but was not the pick, with no focus drawn.
+    2. Severity 3: only the hand's cards had names; the trump, the felt, the racks and the last trick
+       had none.
+    3. Severity 2: the live region never said it was your turn, nor the trump.
+    4. Severity 2: under a finger a played card jumped as its flight started.
+    5. Severity 2: a card's name read badly inside a sentence, in both languages.
+    6. Severity 2: sliders and "Take this seat" were under 44 pixels for a finger.
+    7. Severity 2: one tap on a bid bids.
+    8. Severity 2: the touch test never moved a pick from one card to another.
+    9. Severity 1: a comment and a test said Qt's and Intl's plural rules differ.
+    10. Severity 1: `?lang=` was lost when the address moved to a table.
+    11. Severity 1: "1 point" where the desktop says "1 points".
+    12. Severity 1: the flag's name did not say the language.
+    13. Severity 1: points of Romanian wording.
+    14. Severity 1: two comments against `CLAUDE.md`.
+    15. Severity 1: Space on nothing was reached only by a scripted blur.
+    16. Severity 1: only a touch screen opened a tall sheet at its top.
+    17. Severity 1: departures the outcome had to record.
+
+    Fixed: 1 and 8 (`3da0949`, `65d270e`), 2, 3 and 5 (`97c45c3`), 4, 6 and 16 (`acc97b6`), and 9,
+    10, 12, 14 and 15 (`82073c8`). 7 is the owner's choice and 11 is kept, both recorded above with
+    17. 13 went to the owner's review of the Romanian.
+  - **The second cold review,** of `9c639b5..65d270e`, found 16 problems in those fixes, none above
+    severity 3.
+    1. Severity 3: the grown name panels moved between rounds.
+    2. Severity 2: a resize that only moved a panel up or down did not lay it out again.
+    3. Severity 2: the two settings sliders' touch areas overlapped.
+    4. Severity 2: a sheet opened again where it had been scrolled to.
+    5. Severity 2: under a finger a picked card still jumped as it flew.
+    6. Severity 2: "cincul" for "cinciul".
+    7. Severity 2: a screen reader was not told a card was picked.
+    8. Severity 2: the live region's 40 lines were less than a round.
+    9. Severity 2: a setup saved in the other language was dropped whole.
+    10. Severity 2: a rack's face was named without its owner.
+    11. Severity 1: "jucabilă" and "nejucabilă" read oddly.
+    12. Severity 1: the live region was given a suit's symbol.
+    13. Severity 1: a press let go elsewhere left a later bare click playing at once.
+    14. Severity 1: the whole query went to a table's address, not the language alone.
+    15. Severity 1: five comments against `CLAUDE.md`.
+    16. Severity 1: §10's plural claim.
+
+    Fixed: 1 and 2 (`fd11910`, and gone with `6fc0a0c`), 3 to 5 (`4b0956a`), 6 to 8, 10, 12 and 13
+    (`1b00571`, where the owner's way of saying a card also settled 6 and 11), 9, 14 and 15
+    (`427d3ff`), and 16 here. Checking the fixes also found the lobby's Start button cut off in
+    Romanian, fixed in `73cd8dd`.
+- **Builds and CI.**
+  - **`npm run build` and `npm run build:look`** pass at `6fc0a0c`, and the unit, look and end-to-end
+    tests pass: 742, 134 and 69.
+  - **CI** (Build (Linux) and the Docker image) is green at `6fc0a0c` and `d9e0718`.
+  - **The owner approved** the phase on 2026-11-13.
+
+### Phase 8b: the phone layout — L ✅ COMPLETE
+
+The owner added this phase on 2026-11-13, after phase 8 showed that the desktop's table, scaled to a
+phone, cannot be read. The Android client's plan had already settled what a small window needs, with
+a mock-up the owner approved: `docs/android-client-plan.md` §5 and
+`docs/android-client-mockup/source/mockup.js` in `romanian_whist_android` (commit `a9ea8a7`). The
+mock-up is HTML and JavaScript, so its layout code can be ported, not only read. Where §2 says the
+desktop client wins, that still holds for the desktop layout. For the scaled layout the Android
+mock-up wins.
+
+- **Work:**
+  - **Choosing a layout,** from the window's size in CSS pixels, as the mock-up's `chooseLayout`
+    (line 160) does, on a touch screen only (see what was settled, below):
+    - taller than wide: the "turn your phone" hint, which phase 8 built;
+    - at least 1100 by 740: the desktop layout, which is the page as it is;
+    - smaller than 640 by 360: a page that says the game needs more room;
+    - otherwise: the scaled layout, drawn at 640 by 360 or wider and scaled to the window.
+  - **The scaled table,** from `layoutScaled` (line 448) and `seatRing` (line 373):
+    - each opponent sits in the desktop's direction for that number of players, every plate's
+      nearest edge on one circle as large as the window allows;
+    - the plates are flat, 128 by 54, and come in over the wood so the table takes the whole height;
+      your own is 184 by 38, over the foot of your hand;
+    - the corners hold the controls: a menu button top left in place of the menu bar, a round chip
+      top right that opens the scoreboard, and Round history and Last trick bottom right;
+    - the bid strip is one row of 48 by 48 bids across the table;
+    - side panels for the trick and the scores on phones wider than 16:9.
+  - **Pages and sheets,** from the Android plan's §5.5: a side sheet for the scoreboard, the history
+    and the last trick; bottom sheets for the end of a round, settings, the pause menu and the final
+    results; New Game, Play online and the lobby as pages with their one action always in reach.
+  - **Full screen,** the owner's two choices of 2026-11-13:
+    - a full-screen button on a touch screen, which also holds the phone sideways where the browser
+      allows it;
+    - a web app manifest, so that "Add to Home screen" opens the page with no browser bars. It needs
+      https, so it shows on a deployment and not on a local network.
+
+    The strip beside the camera is left alone.
+  - **Phase 8's enlargements under a finger** (the strip, the hand, the corner panels) go where the
+    scaled layout replaces them. The two taps, the pressed state and the 44-pixel targets stay.
+- **Done when:**
+  - a phone held sideways finishes a game: the owner's, in full screen, in a solo game and at an
+    online table;
+  - the layout's geometry is unit tested against the mock-up's numbers, at the mock-up's window
+    sizes and with 2 to 6 players;
+  - comparisons with the Android mock-up are linked;
+  - the desktop layout's comparisons with the desktop's pictures have not moved.
+- **Settled when the phase was planned** (the owner, 2026-11-13). Where these differ from the work
+  above, these hold:
+  - **Only a touch screen gets the scaled layout:** a window whose pointer is coarse and which is
+    smaller than 1100 by 740. A mouse keeps the desktop layout at every size, so a laptop's window
+    of 1366 by 650 does not lose it. A touch screen of 1100 by 740 or more keeps the desktop layout
+    too, with phase 8's enlargements.
+  - **Below 640 by 360 a touch screen still gets the scaled table,** drawn smaller, down to a floor
+    of about 0.6 of its size, with a notice that offers full screen. A phone inside a browser's
+    bars is there: the owner's gives the page 754 by 247, which is 0.69. Below the floor is the
+    page that says the game needs more room. The floor is tuned on the owner's phone.
+  - **The Android plan's containers, the page's content.** Each sheet the page has keeps its
+    content and its logic and is placed as the Android plan places it:
+    - a side sheet for the round history and the last trick;
+    - a bottom sheet, its actions pinned at the foot, for the end of a round, settings, rules, the
+      pause menu, leaving a table and the final results;
+    - a page with a bar that holds Back, the title and the one action, for New Game, Play online,
+      Create a table and the lobby;
+    - the main menu with the logo beside its buttons.
+
+    New only where the scaled layout needs it: the scoreboard's side sheet behind the round chip,
+    with the trick's details and three tabs (Scores, History, Last trick); the menu as a list that
+    reaches settings, rules and the way out, since the menu bar is gone; and a sheet opened from
+    another returning to it. The lobby's two columns, New Game's form, Join's four states and
+    sharing, as the mock-up draws them, are not followed.
+  - **How the owner tries a build:** on their own phone, from their own computer, with Docker, at
+    two points in the build (after the scaled table, with a solo game; after the sheets, the pages
+    and full screen, with a solo and an online game) and again after the review's fixes. "Add to
+    Home screen" needs https: tests cover the manifest, and the owner tries it once phase 9 has
+    deployed the page.
+  - **An iPhone** gets the manifest and no full-screen button: its browser has none. Nothing is
+    tested on one.
+
+**Outcome** (branch `web/phase-8b-phone-layout`, PR #11, parent `ccr-209c0806-o444sp`, the last
+commit of code `71713b4`).
+
+- **The branch.**
+  - **The commits,** in the order they were made:
+    - the scaled table, with a solo game by touch: `0081dc8` to `a8c35e8`;
+    - the sheets, the pages, the menu list, full screen and the manifest: `67fd57d` to `c9a9ed1`;
+    - the owner's notes from the phone: `681c9ed` to `c3ee188`, and `5920b26` to `9ed1b9f`;
+    - the review's fixes: `9e21889` to `71713b4`.
+  - **The PR** is against the parent, never `master`. The server and its submodule (`df37bd8`) are
+    untouched.
+  - **Who built it:** one implementing agent at extra-high effort built the phase, in two stretches
+    with a check between them, and made every fix. A fresh read-only agent at extra-high effort
+    reviewed it, as the server plan's §13 says.
+- **The owner's choices.**
+  - **Before the build:** see what was settled, above.
+  - **After the first build on the phone** (checkpoint 1): the short line of the bid wraps inside its
+    panel; Round history and Last trick move to the bottom left, where the desktop has them; the
+    trump leaves the round chip and is drawn as large as a played card.
+  - **After the second** (checkpoint 2): the on-screen keyboard must not close as a field takes the
+    focus; the round history is a page of its own, since its columns cannot be read in a side sheet;
+    the round chip is as wide as the scores panel; the trump goes under the trick's details; a row
+    leaves full screen while the page is in it; two rows of bids where one does not fit; the notice
+    may cover the top plate until it is put away.
+  - **After the third** (checkpoint 3): the trump in a panel of its own, its word and card centred,
+    as wide as the trick's details above it; the short line of a bid right under the strip, over the
+    logo.
+  - **The Romanian review** (2026-11-14), on a private review page with screenshots: of the 18 new
+    strings, 13 are kept and 5 changed: "Pe tot ecranul", "Masa e cam mică așa.", "Pentru o masă
+    mai mare, adaugă pagina pe ecranul principal.", "Un joc online nu poate fi pus pe pauză: ceilalți
+    joacă mai departe cât timp meniul este deschis." and, for a refused bid, "N-ai voie să zici %1.",
+    without the reason. "Ieși de pe tot ecranul" came after the review.
+  - **After the review:** fix all but 5 and 12 (12 is the PR's text, done by hand), and no second
+    review.
+  - **The phone** (2026-11-17): the owner finished a solo game and an online game on a Samsung S24+
+    in full screen.
+- **Built.**
+  - **Choosing a layout** (`layoutChoice.ts`, `layoutWatch.ts`): a mouse gets the desktop layout at
+    every size. A touch screen gets it from 1100 by 740, the scaled table below that down to 0.6 of
+    its size, and below that the page that says the window is too small. While a text field has the
+    focus, a window that only gets shorter is the keyboard and changes nothing; the window is looked
+    at again once the field has lost the focus and the window has been still for 350 ms.
+  - **The scaled table** (`geometry/scaled.ts`): the mock-up's `seatRing`, `trickScale`,
+    `layoutScaled`, `platesClear`, the hand's slots and a played card's place, ported line by line.
+    `tools/mockup_layout.mjs` runs the mock-up's own script and writes its numbers, and the unit
+    tests hold the port to them within 1e-6, at the mock-up's nine windows with 2 to 6 players.
+  - **The corners** (`geometry/page.ts`) are an input of the ported layout: the menu button top left;
+    the round chip top right, as wide as the scores panel under it; Round history and Last trick
+    bottom left; the trump's panel under the trick's details, its card as tall as a played card.
+  - **The bid strip** is one row of bids, or two where one does not fit. When it has no room for its
+    note, the note's short line is a panel right under it.
+  - **Sheets** (`placement.ts`): side sheets, bottom sheets with their actions pinned, and pages with
+    a bar that holds Back, the title and the one action. The scoreboard sheet holds the trick's
+    details, the Scores and Last trick tabs, and a button for the round history, which is a page.
+    The menu is a list that reaches the history, the last trick, settings, rules, full screen and
+    the way out; in an online game the way out asks first, with the leave sheet. A sheet opened
+    from another goes back to it.
+  - **Full screen** (`fullscreen.ts`): a button in a notice over a small table, in the upright hint,
+    on the too-small page, the main menu and the menu list. It asks for full screen and then for the
+    phone to stay sideways, and either may be refused. While in full screen the menu's row and the
+    main menu's button leave it. A browser without full screen is told to add the page to the home
+    screen.
+  - **The manifest** `public/manifest.json`, with icons of 192 and 512 pixels, a maskable one and
+    Apple's, made from the logo by `tools/make_icons.py`.
+- **The comparisons.**
+  - **The scaled table against the Android mock-up:** 21 pairs at 640 by 360, 832 by 384 and 915 by
+    412, in `build/shots/scaled-compare`, made by `tools/pair_scaled.py` from the mock-up's own
+    captures (`tools/mockup_shots.mjs`). The seats, the plates, the hand and the strip are the
+    mock-up's; the corners differ by the owner's choices above.
+  - **The desktop layout against the desktop's pictures** (the desktop's `03a3244`): mean absolute
+    difference, 0 to 255, as in phase 8. None moved through the phase: menu 0.57, table-empty 0.74,
+    language 0.90, sheet-pause 1.13, sheet-game-over 1.18, sheet-history 1.19, sheet-last-trick 1.24,
+    sheet-settings 1.25, sheet-round 1.27, bidding 1.47, hand-4-cards 1.52, sheet-rules 1.54,
+    hand-1-card 1.55, table-5-players 1.68, table-3-players 1.69, hand-8-cards 1.73, table-4-players
+    1.89 and table-6-players 2.00.
+- **Where the build departs from the plan, or found what it did not say:**
+  - **The corners** are the owner's, not the mock-up's: see the owner's choices.
+  - **The round history is a page,** not a side sheet, and the scoreboard has two tabs and a button
+    for it, not three tabs.
+  - **The manifest is `manifest.json`,** not `.webmanifest`: the game server serves no file of that
+    kind.
+  - **44-pixel targets hold in full screen only.** Inside the browser's bars, at 754 by 247, the
+    table is drawn at 0.69 and a bid is about 38 pixels. The owner keeps it so: full screen is the
+    way to play.
+  - **Back from Create a table** goes to Play online, in both layouts.
+  - **The trump's card is drawn shorter** where long names make the trick's details taller than the
+    100 units they are given, so that it never covers the round buttons.
+  - **A desktop bug found on the way:** after leaving an online table, a dealt game left the New Game
+    sheet up. Fixed in `9e21889`.
+  - **The mock-up's flick up to play** and its "tap a dimmed card to hear why" are not ported. A
+    player who is away shows a sign in the pill, without the word.
+  - **Captures that change between runs of the same build:** the Play online sheet's caret and the
+    table's logo in `table-empty`.
+- **Left out:**
+  - **"Add to Home screen"** on a phone, which needs https: tests cover the manifest, and the owner
+    tries it once phase 9 has deployed the page.
+  - **A real phone's full screen and keyboard** in the tests: headless Chromium has neither, so the
+    tests stand in for them, and the owner's games proved them.
+  - **The table inside the scores panel's button** stays: its replacement moved a column by a pixel.
+    The button has a short name for a screen reader.
+  - **A second review,** by the owner's choice.
+- **Tests:** 1140 unit tests in 59 files (742 at the start of the phase), 554 look tests (134) and
+  166 end-to-end tests (69).
+  - **End to end,** against `whist_server`, by touch at 832 by 384: a whole solo game and a whole
+    online game with two phones; every sheet and page and the way back from each; the on-screen
+    keyboard on every text field; full screen, the manifest and the icons.
+  - **Look:** every sheet and page at 832 by 384 and 754 by 247 in both languages; no word leaves its
+    panel at three sizes in both languages; the corners and the trick's details clear of each other
+    with names of 20 letters.
+  - **Mutation checks,** each made and reverted, for every fix and for the corners, the placements,
+    full screen, the keyboard and the history page.
+  - **Unreliable:** "the main menu reaches Settings and Rules" failed once in about 95 runs and not
+    since; "Space closes the round sheet…" fails now and then, as before the phase.
+- **Reviews.**
+  - **The cold review,** of the whole branch at `9ed1b9f`, found 12 problems, none above severity 3.
+    1. Severity 3: in an online game the menu's Leave table left at once, with no word that a robot
+       takes the seat.
+    2. Severity 2: Exit full screen could hide where a browser calls a page in full screen an
+       installed one.
+    3. Severity 2: the language dialog and the too-small page each let the page under them be used
+       again; Esc reached the game under the too-small page.
+    4. Severity 2: the round history was a page, not the plan's side sheet.
+    5. Severity 2: targets under 44 pixels at 754 by 247.
+    6. Severity 2: a screen reader heard the short line of a bid again at every redraw.
+    7. Severity 2: the window could be looked at while the keyboard was still closing.
+    8. Severity 1: the too-small page kept an old size.
+    9. Severity 1: the chip and the side panels were named by every word in them.
+    10. Severity 1: the layout watch kept two listeners after it was put away.
+    11. Severity 1: comments and test titles against `CLAUDE.md`.
+    12. Severity 1: the PR's text was out of date.
+
+    Fixed: 1 (`9e21889`), 2 (`5bf93e0`), 3 (`f9e5c9d`), 6 (`0a9f95d`), 7 and 10 (`ce9b403`), 8
+    (`d338db1`), 9 (`587630f`), 4's way back (`43990a4`), 11 (`71713b4`) and 12 by hand. 4 and 5
+    are the owner's choices. Checking the trick's details, which the review could not, found them
+    taller than counted with long names, fixed in `127458f`.
+- **Builds and CI.**
+  - **`npm run build` and `npm run build:look`** pass at `71713b4`, and the unit, look and end-to-end
+    tests pass: 1140, 554 and 166.
+  - **CI** (Build (Linux) and the Docker image) is green at `71713b4`.
+  - **The owner approved** the phase on 2026-11-17.
+
+### Phase 9's share: the footer, About and the page deployed — M ✅ COMPLETE
+
+The phase is the server plan's
+[phase 9](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#phase-9-hardening-and-deployment--m--complete),
+whose outcome holds the owner's choices, the deploy, the load test and the server's reviews. This
+is the page's share of it, from §12 and "Left for the server's phase 9" in §14.
+
+**Outcome** (branch `web/phase-9-deployment`, PR #13, parent `ccr-209c0806-o444sp`, the last commit
+`377e771`, with the submodule at the server's `69c4663`).
+
+- **The branch.**
+  - **The commits,** in the order they were made:
+    - protocol 2, the banner, the footer, About and the deploy: `2af52f0` to `f2e6ba8`;
+    - the first review's fixes: `19c0081` to `8d81198`;
+    - the second review's fixes: `1601694` to `9c90812`;
+    - the owner's Romanian wording, `fcc2bc7`, and the submodule at the cap of 40, `377e771`.
+  - **Who built it:** the server phase's implementing agent, at extra-high effort.
+- **The owner's choices,** besides the server plan's:
+  - **About:** privacy (what the browser keeps, no accounts, cookies or third parties), the
+    licence, both repositories at their commits, the versions and the protocol, "Report a problem"
+    on this repository's issues, and "Forget this browser".
+  - **The footer:** a small line on the main menu, "Source: server · page · About".
+  - **The Romanian review** (2026-11-18), on a private review page with a screenshot of each string:
+    of 46 strings, 31 are kept and 15 changed. "Revizie" stands for a commit and "pagina
+    proiectului" for the repository; Forget is "Șterge datele din acest browser", its button
+    "Șterge"; the banner says "Nu mai poate începe niciun joc nou."
+- **Built.**
+  - **Protocol 2:** `restarting` and `busy`, and the detail of `rateLimited`. A banner over the menu
+    and the table says the server is restarting, until when games can go on, and that no new one
+    can start. Each refusal has its own words; one for too many connections waits 30 s before the
+    page tries again.
+  - **The footer and About,** as above. The links go to the server's repository at the commit
+    `/version` gives, and to this one at the build's commit; without one, to the repository.
+  - **Storage** is listed once (`src/storage/keys.ts`, `stored.ts`), and About and Forget both read
+    that list. Forget tells the page's other tabs by a key it sets and clears, and they let go of
+    their connection and reload.
+  - **The build's commit:** `WHIST_WEB_COMMIT`, or git in this folder's own repository, with
+    `-dirty` after a tree with changes; `node tools/buildCommit.mjs` prints it for an image's build.
+    The image takes it as a build argument, which CI passes.
+  - **Deploy:** the Caddyfile passes `/health` on; `compose.yaml` stops in 16 minutes; the smoke
+    test holds every profile to the server's headers, `/ws` included, checks that no `Server` header
+    is sent where none should be, and matches the commit exactly.
+  - **1.0.0** in `package.json`.
+- **Left from the Docker image's outcome, now done:** `/version` is in no proxy example's cache
+  rule, and the headers on `/ws` come from the server, so the nginx example needs none and the smoke
+  test checks `/ws` too. The footer's commit is a build argument. Both packages on GHCR are public.
+- **On the owner's phone,** with the deployed page: "Add to Home screen" works in Chrome and
+  DuckDuckGo. Two problems found there are open: #14, the side panels go in full screen, where the
+  window is taller and the table takes their room; and #15, the restart banner covers the top seat's
+  name plate.
+- **Reviews.**
+  - **The first,** of the page's commits up to `f2e6ba8`, found 12 problems (one in two parts), none
+    above severity 3: Tab never reached a sheet's links or selects; in the README's setups with the
+    page alone, every visitor counted as one address; the banner was drawn over the sheets; the
+    build's commit came from git in the current folder and missed a tree with changes; the drain test
+    was tight; Forget did not reach other tabs; and smaller matters of the smoke test, comments, dead
+    code and the footer links' names. All fixed, in `19c0081` to `8d81198`. The Docker image's
+    outcome is left as it was written; its open items are listed as done above.
+  - **The second,** one reviewer for both repositories' fix commits, found 13, none above severity 3.
+    The page's eight: the README's remote server must trust the page host too (severity 3); the
+    banner's width rule beat the scaled layout's; the build's `git status` could take the index's
+    lock; a tab dropping a refused token made the others reload; the end-to-end server's
+    `max_tables`; the strip beside the banner was not dimmed; the local image hints and the smoke
+    test let a build with changes pass as clean; and a comment. All fixed, in `1601694` to `9c90812`.
+- **Tests:** 1206 unit tests in 66 files (1140 at the start of the phase), 652 look tests (554) and
+  175 end-to-end tests (166).
+  - **End to end:** a drain with a short `drain_ms` and its banner; Forget, in one tab and across
+    two, and a refused token that is not taken for it; Tab through About.
+  - **Look:** About and the banner at the desktop and phone sizes in both languages, a sheet under the
+    banner, and the banner on a 1024 by 600 touch screen.
+  - **Unreliable:** "full screen entering and leaving it redraws…" (`scaledSheets.spec.ts:558`)
+    failed twice and "Space closes the round sheet…" (`keyboard.spec.ts:177`) once more; each passed
+    again on a rerun.
+- **Builds and CI.** `npm run build` passes, and CI (Build (Linux) and the Docker image) is green at
+  `fcc2bc7`. The manual run that published `sha-fcc2bc7` passed, and the owner's computer and phone
+  checked the footer, About, the headers and a drain with images built from this branch. The run
+  that published `sha-377e771` passed too.
+- **The owner approved** the phase on 2026-11-18.
 
 ### Phase 10 (optional): offline solo — M to L
 

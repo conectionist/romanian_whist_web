@@ -1,0 +1,257 @@
+{
+  "sheet": "create-table",
+  "shot": {
+    "file": "sheet-create-table.png",
+    "handOrder": [
+      "2C",
+      "7C",
+      "JC",
+      "9D",
+      "QD",
+      "TH",
+      "KH",
+      "AS"
+    ],
+    "height": 1034,
+    "view": "table",
+    "width": 1920
+  },
+  "state": {
+    "game": 1,
+    "held": null,
+    "history": [],
+    "lastTrick": null,
+    "prompt": null,
+    "snapshot": {
+      "active": null,
+      "bets": {
+        "placed": 6,
+        "sum": 6
+      },
+      "forbiddenBet": null,
+      "phase": "playing",
+      "round": {
+        "count": 32,
+        "index": 9,
+        "leader": 0,
+        "trick": 3,
+        "tricks": 8,
+        "trump": null,
+        "type": "normal"
+      },
+      "seats": [
+        {
+          "bet": 1,
+          "bidOrder": 0,
+          "cards": 8,
+          "hand": [
+            "2C",
+            "7C",
+            "JC",
+            "9D",
+            "QD",
+            "TH",
+            "KH",
+            "AS"
+          ],
+          "losses": 0,
+          "name": "Player",
+          "roundScore": 0,
+          "total": 0,
+          "wins": 0,
+          "won": 0
+        },
+        {
+          "bet": 1,
+          "bidOrder": 0,
+          "cards": 8,
+          "losses": 0,
+          "name": "Ana",
+          "roundScore": 0,
+          "total": 0,
+          "wins": 0,
+          "won": 0
+        },
+        {
+          "bet": 1,
+          "bidOrder": 0,
+          "cards": 8,
+          "losses": 0,
+          "name": "Bogdan",
+          "roundScore": 0,
+          "total": 0,
+          "wins": 0,
+          "won": 0
+        },
+        {
+          "bet": 1,
+          "bidOrder": 0,
+          "cards": 8,
+          "losses": 0,
+          "name": "Cristina",
+          "roundScore": 0,
+          "total": 0,
+          "wins": 0,
+          "won": 0
+        },
+        {
+          "bet": 1,
+          "bidOrder": 0,
+          "cards": 8,
+          "losses": 0,
+          "name": "Dan",
+          "roundScore": 0,
+          "total": 0,
+          "wins": 0,
+          "won": 0
+        },
+        {
+          "bet": 1,
+          "bidOrder": 0,
+          "cards": 8,
+          "losses": 0,
+          "name": "Elena",
+          "roundScore": 0,
+          "total": 0,
+          "wins": 0,
+          "won": 0
+        }
+      ],
+      "status": "inProgress",
+      "table": {
+        "cards": [
+          {
+            "card": "KS",
+            "seat": 1,
+            "winning": true
+          },
+          {
+            "card": "QS",
+            "seat": 2,
+            "winning": false
+          },
+          {
+            "card": "JS",
+            "seat": 3,
+            "winning": false
+          },
+          {
+            "card": "8S",
+            "seat": 4,
+            "winning": false
+          },
+          {
+            "card": "3S",
+            "seat": 5,
+            "winning": false
+          }
+        ],
+        "leadSuit": null,
+        "ledBy": 1
+      },
+      "you": 0
+    },
+    "table": {
+      "code": "SHEET1",
+      "host": 0,
+      "mode": "solo",
+      "paused": false,
+      "seats": [
+        {
+          "avatar": "man-dark-hair-beard",
+          "gender": "male",
+          "kind": "human",
+          "name": "Player",
+          "presence": "here",
+          "you": true
+        },
+        {
+          "avatar": "woman-long-brown-hair",
+          "gender": "female",
+          "kind": "computer",
+          "level": "low-risk",
+          "name": "Ana"
+        },
+        {
+          "avatar": "man-hat-mustache",
+          "gender": "male",
+          "kind": "computer",
+          "level": "ducking",
+          "name": "Bogdan"
+        },
+        {
+          "avatar": "woman-long-red-hair",
+          "gender": "female",
+          "kind": "computer",
+          "level": "low-risk",
+          "name": "Cristina"
+        },
+        {
+          "avatar": "man-white-hair-hat",
+          "gender": "male",
+          "kind": "computer",
+          "level": "ducking",
+          "name": "Dan"
+        },
+        {
+          "avatar": "woman-long-brown-hair",
+          "gender": "female",
+          "kind": "computer",
+          "level": "low-risk",
+          "name": "Elena"
+        }
+      ],
+      "settings": {
+        "allOneCardForehead": false,
+        "botSpeed": 2,
+        "foreheadAndHidden": true,
+        "seats": [
+          {
+            "avatar": "man-dark-hair-beard",
+            "gender": "male",
+            "kind": "human",
+            "name": "Player"
+          },
+          {
+            "avatar": "woman-long-brown-hair",
+            "gender": "female",
+            "kind": "computer",
+            "level": "low-risk",
+            "name": "Ana"
+          },
+          {
+            "avatar": "man-hat-mustache",
+            "gender": "male",
+            "kind": "computer",
+            "level": "ducking",
+            "name": "Bogdan"
+          },
+          {
+            "avatar": "woman-long-red-hair",
+            "gender": "female",
+            "kind": "computer",
+            "level": "low-risk",
+            "name": "Cristina"
+          },
+          {
+            "avatar": "man-white-hair-hat",
+            "gender": "male",
+            "kind": "computer",
+            "level": "ducking",
+            "name": "Dan"
+          },
+          {
+            "avatar": "woman-long-brown-hair",
+            "gender": "female",
+            "kind": "computer",
+            "level": "low-risk",
+            "name": "Elena"
+          }
+        ],
+        "structure": "1-8-1",
+        "waitAfterRound": true
+      },
+      "state": "playing"
+    }
+  }
+}

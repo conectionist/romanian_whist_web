@@ -281,18 +281,11 @@ export function platesClear(seats: readonly Point[], w: number, h: number): bool
   );
 }
 
-// The table, in the window's own units: at least 640 by 360, with the table across the whole height.
-// The round table leaves the four corners free, and they hold the few controls, so the seats keep out
-// of them. A `beside` above 8 keeps that much of each side of the window clear of the seats and the
-// wood, which makes the table smaller and leaves the side panels room; `sides` false leaves them out.
-export interface Room {
-  beside?: number;
-  sides?: boolean;
-}
-
-export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS, room: Room = {}): ScaledLayout {
+// The table, in the window's own units, which are at least 640 by 360. The seats keep out of the four corners, which hold
+// the few controls. A `beside` keeps that much of each side of the window clear of the seats and the wood for the side
+// panels; without one the table takes the whole height, as in the mock-up.
+export function layoutScaled(window: ScaledWindow, seatCount: number, corners: Corners = MOCKUP_CORNERS, beside?: number): ScaledLayout {
   const { w, h, top, bottom } = window;
-  const { beside = 8, sides = true } = room;
   const bw = NATIVE.plate.w;
   const bh = NATIVE.plate.h;
   const cw = Math.round(clamp(h * 0.2, 62, 92));
@@ -319,14 +312,14 @@ export function layoutScaled(window: ScaledWindow, seatCount: number, corners: C
   let ring: Ring;
   for (;;) {
     ring = seatRing({
-      x0: beside,
-      x1: w - beside,
+      x0: beside ?? 8,
+      x1: w - (beside ?? 8),
       y0: top + 4,
       seatCount,
       bw: bw * k,
       bh: bh * k,
       woodTop: top,
-      woodMaxR: beside > 8 ? Math.min(h, w / 2 - beside) : h,
+      woodMaxR: beside === undefined ? h : Math.min(h, w / 2 - beside),
       woodBelow: h + 40,
       cardMax: handTop - 6,
       seatMax: handTop - 2,
@@ -349,7 +342,7 @@ export function layoutScaled(window: ScaledWindow, seatCount: number, corners: C
     gap = Math.min(gap, seat.x, w - seat.x - pw);
   }
   const sideW = Math.min(gap - 16, SIDE_MAX);
-  const side = sides && sideW >= SIDE_MIN ? { w: sideW, y: top + corners.sideTop } : null;
+  const side = sideW >= SIDE_MIN ? { w: sideW, y: top + corners.sideTop } : null;
 
   // The band across the table between the players above it and those beside or below: nothing is
   // played there while you bid or wait for a connection, so the bid buttons and the banner go there,

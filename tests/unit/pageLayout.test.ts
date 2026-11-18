@@ -10,19 +10,19 @@ import {
   PAGE_CHIP_HEIGHT,
   PANEL_X,
   PANEL_Y,
+  SIDE_SHRINK,
   TRICK_MOST,
   TRUMP_LABEL,
   TRUMP_WIDTH,
   cornersFor,
-  hasSides,
+  fitted,
   pageLayout,
   noteBeside,
   playedHeight,
   stripBeside,
   type PageLayout,
 } from "../../src/table/geometry/page";
-import { DESKTOP_FROM, SIDE_FROM, layoutChoiceFor, sideWidthOf } from "../../src/table/layoutChoice";
-import type { Size } from "../../src/table/space";
+import { layoutChoiceFor } from "../../src/table/layoutChoice";
 import { CHIP_WIDTH, CORNER_INSET, MOCKUP_CORNERS, SIDE_MIN, directionsFor, handSlots, layoutScaled, type Box, type ScaledWindow } from "../../src/table/geometry/scaled";
 
 interface Fixture {
@@ -58,7 +58,7 @@ describe("the corners of the port", () => {
 
   it("keep the seats and the wood the given room from each side of the window, and have the side panels then", () => {
     for (const count of COUNTS) {
-      const layout = layoutScaled({ w: 731, h: 360, top: 0, bottom: 0 }, count, MOCKUP_CORNERS, { beside: SIDE_MIN + 16 });
+      const layout = layoutScaled({ w: 731, h: 360, top: 0, bottom: 0 }, count, MOCKUP_CORNERS, SIDE_MIN + 16);
       for (const seat of layout.seats.slice(1)) {
         expect(seat.x, `${count}`).toBeGreaterThanOrEqual(SIDE_MIN + 16 - 1e-9);
         expect(seat.x + seat.w, `${count}`).toBeLessThanOrEqual(731 - SIDE_MIN - 16 + 1e-9);
@@ -223,87 +223,63 @@ describe("pageLayout", () => {
     }
   });
 
-  it("has the side panels from SIDE_FROM wide up at the design's height, for any number of players, and never loses them as it widens", () => {
+  it("has the side panels on every window twice as wide as tall or wider, and never loses them as the window grows wider", () => {
     for (const count of COUNTS) {
-      expect(hasSides(SIDE_FROM, count), `${count} players`).toBe(true);
       let shown = false;
       for (let w = 640; w <= 1100; w += 2) {
-        const side = hasSides(w, count);
+        const side = pageLayout({ w, h: 360, top: 0, bottom: 0 }, count).side !== null;
         expect(side || !shown, `${w} with ${count} players`).toBe(true);
+        expect(side || w < 720, `${w} with ${count} players`).toBe(true);
         shown ||= side;
       }
     }
   });
 
-  // The windows a touch screen gets the scaled table at, in its own pixels: lying down, from the floor up to the desktop's.
-  const screens: Size[] = [];
-  for (let w = 390; w < DESKTOP_FROM.w; w += 30) {
-    for (let h = 216; h <= w && h < DESKTOP_FROM.h; h += 24) {
-      if (layoutChoiceFor({ w, h }, true).kind === "scaled") {
-        screens.push({ w, h });
-      }
-    }
-  }
-  const drawn = (screen: Size, count: number): PageLayout => {
-    const choice = layoutChoiceFor(screen, true);
-    const scale = choice.kind === "scaled" ? choice.scale : 1;
-    return pageLayout({ w: screen.w / scale, h: screen.h / scale, top: 0, bottom: 0 }, count, sideWidthOf(screen, scale));
-  };
-
-  it("never hides the side panels on a screen that grows, wider or taller, as a phone's does when its bars go", () => {
-    const shown = new Map(screens.flatMap((screen) => COUNTS.map((count) => [`${screen.w} ${screen.h} ${count}`, drawn(screen, count).side !== null] as const)));
-    for (const { w, h } of screens) {
-      for (const count of COUNTS) {
-        if (!shown.get(`${w} ${h} ${count}`)) {
-          continue;
-        }
-        for (const [wider, taller] of [
-          [w + 30, h],
-          [w, h + 24],
-        ]) {
-          const next = shown.get(`${wider} ${taller} ${count}`);
-          expect(next ?? true, `${w} by ${h} to ${wider} by ${taller} with ${count} players`).toBe(true);
-        }
-      }
-    }
-  });
-
-  it("has nothing overlapping on any of those screens, for any number of players", () => {
-    for (const screen of screens) {
-      for (const count of COUNTS) {
-        const layout = drawn(screen, count);
-        const choice = layoutChoiceFor(screen, true);
-        const scale = choice.kind === "scaled" ? choice.scale : 1;
-        expect(crowded(layout, screen.w / scale, screen.h / scale, count), `${screen.w} by ${screen.h} with ${count} players`).toEqual([]);
-      }
-    }
-  });
-
-  it("keeps them on phones lying down, in full screen and with their bars, and drops only those it must on a phone drawn small", () => {
-    // Phones from 16:9 to 20:9, in full screen and with a bar along the foot or the side.
+  it("keeps them on phones lying down, in full screen and with their bars", () => {
+    // Phones twice as wide as tall or more: full screen, beside a camera's cutout, and with a bar along the foot or the side.
     for (const [w, h] of [
       [832, 384],
       [790, 384],
+      [780, 384],
       [784, 360],
-      [800, 360],
       [915, 412],
       [892, 412],
       [851, 393],
-      [780, 360],
       [740, 360],
     ]) {
+      const choice = layoutChoiceFor({ w, h }, true);
+      const scale = choice.kind === "scaled" ? choice.scale : 1;
       for (const count of COUNTS) {
-        expect(drawn({ w, h }, count).side, `${w} by ${h} with ${count} players`).not.toBeNull();
+        expect(pageLayout({ w: w / scale, h: h / scale, top: 0, bottom: 0 }, count).side, `${w} by ${h} with ${count} players`).not.toBeNull();
       }
     }
-    // A 16:9 phone has them with two or three players, which leave the room, and not with four, which do not.
-    expect(drawn({ w: 640, h: 360 }, 3).side).not.toBeNull();
-    expect(drawn({ w: 640, h: 360 }, 4).side).toBeNull();
-    // Drawn small, inside a browser's bars, a phone as wide as one that has them has them too; a narrower one goes by its width.
-    for (const count of COUNTS) {
-      expect(drawn({ w: 754, h: 247 }, count).side, `${count} players`).not.toBeNull();
-      expect(drawn({ w: 600, h: 300 }, count).side !== null, `${count} players`).toBe(hasSides(640, count));
+  });
+
+  it("draws the table no smaller than SIDE_SHRINK of the table the same window has without them, wherever it gives way to them", () => {
+    const windows = [
+      ...Array.from({ length: 24 }, (_, at) => ({ w: 640 + 20 * at, h: 360 })),
+      ...Array.from({ length: 15 }, (_, at) => ({ w: 640, h: 360 + 20 * at })),
+      { w: 700, h: 400 },
+      { w: 720, h: 540 },
+      { w: 760, h: 420 },
+    ];
+    for (const size of windows) {
+      const window = { ...size, top: 0, bottom: 0 };
+      for (const count of COUNTS) {
+        const full = fitted(window, count).layout;
+        const layout = pageLayout(window, count);
+        const where = `${size.w} by ${size.h} with ${count} players`;
+        expect(layout.table.R, where).toBeGreaterThanOrEqual(SIDE_SHRINK * full.table.R - 1e-9);
+        expect(playedHeight(layout, count), where).toBeGreaterThanOrEqual(SIDE_SHRINK * playedHeight(full, count) - 1e-9);
+      }
     }
+  });
+
+  it("leaves them out where the table would have to shrink too far for them, as on a squarer window", () => {
+    for (const count of COUNTS) {
+      expect(pageLayout({ w: 640, h: 532, top: 0, bottom: 0 }, count).side, `${count} players`).toBeNull();
+    }
+    expect(pageLayout({ w: 640, h: 360, top: 0, bottom: 0 }, 4).side).toBeNull();
   });
 });
 

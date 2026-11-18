@@ -15,7 +15,7 @@ const PHONE = [
   [784, 360],
 ] as const;
 
-const SIZES = [[640, 360], [915, 412], [832, 384], [1024, 768], ...PHONE] as const;
+const SIZES = [[640, 360], [915, 412], [832, 384], ...PHONE] as const;
 
 const SHOTS = ["table-2-players", "table-3-players", "table-4-players", "table-5-players", "table-6-players", "bidding", "hand-1-card", "hand-4-cards", "hand-8-cards"];
 

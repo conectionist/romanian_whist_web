@@ -17,7 +17,6 @@ export function delayFor(attempt: number): number {
   return BACKOFF_MS[Math.min(Math.max(attempt, 0), BACKOFF_MS.length - 1)];
 }
 
-
 type Memory = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export interface ConnectionOptions {

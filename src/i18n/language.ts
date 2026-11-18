@@ -11,7 +11,6 @@ export const LANGUAGES: readonly Language[] = ["ro", "en"];
 // A language's name in itself, which is how the dialog names it.
 export const NATIVE_NAMES: Record<Language, string> = { ro: "Română", en: "English" };
 
-
 // A code as the address gives it: "en" or "ro", in any case, with or without a country ("ro_RO",
 // "en-GB"). Anything else is none.
 export function languageFromCode(code: string | null | undefined): Language | null {

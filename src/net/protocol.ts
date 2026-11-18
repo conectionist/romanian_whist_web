@@ -204,11 +204,6 @@ export type ErrorCode =
   | "busy"
   | "openElsewhere";
 
-// What a rateLimited says it is for, when it says: the limits per address. With no detail it is
-// the connection's own message rate.
-export type RateLimit = "connections" | "tables" | "joins";
-export const RATE_LIMITS: readonly RateLimit[] = ["connections", "tables", "joins"];
-
 export interface SyncBody {
   table: TableState | null;
   game: number | null;

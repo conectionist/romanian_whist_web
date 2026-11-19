@@ -162,7 +162,10 @@ export class SheetLayer {
     this.returnTo = null;
     if (target instanceof HTMLElement && target.isConnected && !target.closest("[inert]")) {
       target.focus();
-    } else if (document.activeElement instanceof HTMLElement && this.element.contains(document.activeElement)) {
+    }
+    // body.focus() does nothing, and a hidden field keeps the keyboard until the next frame, so a key
+    // pressed in between would reach the closed sheet.
+    if (document.activeElement instanceof HTMLElement && this.element.contains(document.activeElement)) {
       document.activeElement.blur();
     }
   }

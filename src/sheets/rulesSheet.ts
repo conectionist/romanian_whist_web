@@ -117,7 +117,7 @@ export function linesFor(config: RulesConfig): string[] {
     t("rulessheet", "Follow suit if you can, otherwise trump if you can. You never have to overtrump."),
     t(
       "rulessheet",
-      "An exact bid scores 5 + bid. A miss loses the difference. Five exact bids in a row earn +10, five misses cost 10; 1-card rounds neither add to a run nor break one.",
+      "An exact bid scores 5 + bid. A miss loses the difference. Five exact bids in a row earn +10, five misses cost 10, then the count starts over; 1-card rounds neither add to a run nor break one.",
     ),
   );
   return lines;

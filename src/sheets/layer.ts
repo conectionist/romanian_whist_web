@@ -153,6 +153,7 @@ export class SheetLayer {
     if (takesKeyboard) {
       sheet.focusDefault();
     }
+    this.dropHiddenFocus();
     return true;
   }
 
@@ -162,8 +163,16 @@ export class SheetLayer {
     this.returnTo = null;
     if (target instanceof HTMLElement && target.isConnected && !target.closest("[inert]")) {
       target.focus();
-    } else if (document.activeElement instanceof HTMLElement && this.element.contains(document.activeElement)) {
-      document.activeElement.blur();
+    }
+    this.dropHiddenFocus();
+  }
+
+  // A hidden element keeps the keyboard until the next frame, so a key pressed in between would reach a
+  // sheet no longer shown. Neither body.focus() nor a sheet that waits for nothing takes it from there.
+  private dropHiddenFocus(): void {
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && this.element.contains(focused) && !(this.open?.element.contains(focused) ?? false)) {
+      focused.blur();
     }
   }
 

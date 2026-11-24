@@ -1,7 +1,8 @@
 import { soloRequestFrom, createSolo } from "./dev/solo";
 import { DecodeError } from "./net/decode";
 import { Connection, type Status } from "./net/connection";
-import type { Profile, ServerMessage, TableState } from "./net/protocol";
+import type { ClientMessage, Profile, ServerMessage, TableState } from "./net/protocol";
+import { StillHere } from "./net/stillHere";
 import { socketUrl } from "./net/socket";
 import { Controller } from "./play/controller";
 import { modelOf } from "./play/model";
@@ -21,7 +22,7 @@ import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
 import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
 import { BannerRoom } from "./lobby/bannerRoom";
-import { Notices, connectionText, errorText, presenceNews, restartingText, waitingText } from "./lobby/notices";
+import { Notices, connectionText, errorText, ownPresence, presenceNews, restartingText, stillHereText, waitingText } from "./lobby/notices";
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
 import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
@@ -94,14 +95,27 @@ const connection: Connection = new Connection({
       notices.clear("restart");
       bannerRoom.update();
     }
+    // A new connection is the person here, to the server, whatever it asked the last one.
+    stillHere.answered();
     render();
   },
   onUnreadable: (error: DecodeError) => console.error(`The server sent what the page cannot read: ${error.message}`),
   onMessage: (message) => handle(message),
 });
 
+// Whether the server asked if the person is still there. Anything the page sends answers it.
+const stillHere = new StillHere();
+
+function send(message: ClientMessage): boolean {
+  const sent = connection.send(message);
+  if (sent) {
+    stillHere.answered();
+  }
+  return sent;
+}
+
 const controller: Controller = new Controller({
-  send: (message) => connection.send(message),
+  send,
   store,
   table: {
     playOwn: (card) => void scene.playOwn(card, animates()),
@@ -139,7 +153,7 @@ let lastStatus: Status = "connecting";
 // The sheets and the menu bar. What the sheets show is drawn after the table has, so a round sheet
 // does not cover the last trick's sweep, and again whenever the player asks for another.
 const flow: Flow = new Flow({
-  send: (message) => connection.send(message),
+  send,
   store,
   changed: () => render(),
   keepPace: storePace,
@@ -407,10 +421,23 @@ function render(): void {
   keyboard.refresh();
   followAddress();
   notices.set("waiting", waitingText(state.table, state.tableAt, performance.now()), { kind: "wait" });
+  showStillHere();
   notices.set("connection", connectionText(lastStatus, wasConnected), {
     kind: "warn",
     ...(lastStatus === "elsewhere" ? { action: { label: t("errors", "Play here"), run: () => window.location.reload() } } : {}),
   });
+}
+
+// The question whether you are still there, while it can be answered, and the word that the server
+// counts you as gone, while the tab is connected and nothing has been sent since.
+function showStillHere(): void {
+  const shown = lastStatus === "open" ? stillHereText(stillHere.state(performance.now()), ownPresence(store.state.table)) : null;
+  const answer = () => {
+    send({ type: "back" });
+    render();
+  };
+  notices.set("still-here", shown?.id === "asking" ? shown.text : null, { kind: "warn", action: { label: t("online", "I'm here"), run: answer } });
+  notices.set("gone", shown?.id === "gone" ? shown.text : null, { kind: "warn", action: { label: t("online", "I'm back"), run: answer } });
 }
 
 // Esc closes the sheet the menu bar or a corner button opened, and otherwise raises the pause menu,
@@ -427,6 +454,7 @@ window.setInterval(() => {
   scene.updateCountdown(performance.now());
   const state = store.state;
   notices.set("waiting", waitingText(state.table, state.tableAt, performance.now()), { kind: "wait" });
+  showStillHere();
   if (state.held !== null && state.held.deadlineAt !== null) {
     render();
   }
@@ -486,6 +514,13 @@ function handle(message: ServerMessage): void {
     serverInfo = message.server;
     render();
   }
+  if (message.type === "stillHere") {
+    // About the person, not the table, so it skips the playback queue, which a sync would empty.
+    stillHere.asked(message.deadline, performance.now());
+    showStillHere();
+    announcer.say(t("online", "Are you still there? Answer within %1 s.", [Math.ceil(message.deadline / 1000)]));
+    return;
+  }
   if (message.type === "restarting") {
     // Not the table's news, so it goes round the queue, which a sync would empty.
     notices.set("restart", restartingText(message.deadline, new Date(), currentLanguage()), { kind: "restart" });
@@ -501,7 +536,7 @@ function handle(message: ServerMessage): void {
     synced = true;
     if (message.table === null && solo !== null && !soloAsked) {
       soloAsked = true;
-      connection.send(createSolo(solo));
+      send(createSolo(solo));
     } else if (message.table === null && !soloAsked) {
       // The address is a table's link: ask who the person is, and let them sit down.
       const code = tableCodeFrom(window.location.pathname);

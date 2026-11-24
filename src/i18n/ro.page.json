@@ -1057,6 +1057,41 @@
       "context": "footer",
       "source": "Page source code",
       "translation": "Pagina: codul sursă"
+    },
+    {
+      "context": "online",
+      "source": "Are you still there? Answer within %1 s.",
+      "translation": "Mai ești acolo? Răspunde în %1 s."
+    },
+    {
+      "context": "online",
+      "source": "I'm here",
+      "translation": "Sunt aici"
+    },
+    {
+      "context": "online",
+      "source": "A computer player is playing for you.",
+      "translation": "Un robot joacă în locul tău."
+    },
+    {
+      "context": "online",
+      "source": "You did not answer in time. Your game is waiting for you.",
+      "translation": "Nu ai răspuns la timp. Jocul tău te așteaptă."
+    },
+    {
+      "context": "online",
+      "source": "I'm back",
+      "translation": "M-am întors"
+    },
+    {
+      "context": "errors",
+      "source": "You already have a game at Instant speed. Finish it, or choose another speed.",
+      "translation": "Ai deja un joc cu viteza Instant. Termină-l sau alege altă viteză."
+    },
+    {
+      "context": "errors",
+      "source": "The server is running as many games at Instant speed as it can. Choose another speed, or try again later.",
+      "translation": "Serverul are acum numărul maxim de jocuri cu viteza Instant. Alege altă viteză sau încearcă din nou mai târziu."
     }
   ]
 }

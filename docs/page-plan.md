@@ -372,6 +372,17 @@ sets the rules. The page's share:
   no new game can start. The strip is a live region, so a screen reader says it. It stays until
   the connection goes. `busy` and each limit of `rateLimited` have words of their own, and a
   refusal for too many connections waits 30 seconds before the page tries again.
+- **A player the game has waited on too long** is sent `stillHere` with the time left to answer.
+  It is about the person, not the table, so it also goes before the playback queue. The strip shows
+  "Are you still there?" with the seconds left and an "I'm here" button, and the announcer says it.
+  Anything the page sends answers it, which a single wrapper round the connection's send sees.
+  Unanswered, the server counts the person as gone though the tab is open. So does a tab whose own
+  seat shows `away`, or `replaced` by a computer player while it is connected. Until the page sends
+  something, the strip says that the game waits, or that a computer player is playing for them,
+  with an "I'm back" button that sends `back`. The page counts the unanswered question itself,
+  since a solo watcher has no seat to show it. A new connection starts with no question. `busy` and
+  `rateLimited` with the `detail` `instant` say that another speed would start, and which limit it
+  was: the server's, or the network's own.
 
 All of this is built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
 the page is built from the latest commit of this repository whose submodule points at the server

@@ -85,8 +85,9 @@ describe("decode", () => {
     expect("hand" in blind).toBe(false);
   });
 
-  it("keeps how long a restart leaves, and the busy refusal", () => {
+  it("keeps how long a restart leaves, how long a question about you leaves, and the busy refusal", () => {
     expect(decode(read("fixtures", "restarting.json"))).toEqual({ type: "restarting", seq: 3, deadline: 900000 });
+    expect(decode(read("fixtures", "stillHere.json"))).toEqual({ type: "stillHere", seq: 8, deadline: 30000 });
     expect(decode(read("fixtures", "error.busy.json"))).toMatchObject({ type: "error", code: "busy" });
     expect(decode(read("fixtures", "error.rateLimited.json"))).toMatchObject({ type: "error", code: "rateLimited" });
   });

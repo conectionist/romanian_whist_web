@@ -223,6 +223,7 @@ export type ServerMessage =
   | ({ type: "held"; seq: number } & Hold)
   | ({ type: "sync"; seq: number } & SyncBody)
   | { type: "restarting"; seq: number; deadline: number }
+  | { type: "stillHere"; seq: number; deadline: number }
   | { type: "error"; seq: number; code: ErrorCode; detail?: string };
 
 export type ClientMessage =

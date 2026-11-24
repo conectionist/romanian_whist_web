@@ -1,8 +1,9 @@
 import { el, setText } from "../dom/el";
 import { translateGendered, type Gendered } from "../i18n/person";
 import { t } from "../i18n/t";
-import type { ErrorCode, TableState } from "../net/protocol";
+import type { ErrorCode, Presence, TableState } from "../net/protocol";
 import type { Status } from "../net/connection";
+import type { Question } from "../net/stillHere";
 
 // What the page tells you that the table does not: the server's refusals in words, the connection's
 // state, a person who went away and was replaced, a game that waits for one. The desktop has no
@@ -38,13 +39,17 @@ export function errorText(code: ErrorCode, detail?: string): string {
           return t("errors", "Too many tables were made from your network this hour. Try again later.");
         case "joins":
           return t("errors", "Too many table codes that do not exist were tried. Try again in a few minutes.");
+        case "instant":
+          return t("errors", "You already have a game at Instant speed. Finish it, or choose another speed.");
         default:
           return t("errors", "That was too many messages. Wait a moment.");
       }
     case "draining":
       return t("errors", "The server is restarting and takes no new games just now.");
     case "busy":
-      return t("errors", "The server has as many games or tables as it can take. Try again in a few minutes.");
+      return detail === "instant"
+        ? t("errors", "The server is running as many games at Instant speed as it can. Choose another speed, or try again later.")
+        : t("errors", "The server has as many games or tables as it can take. Try again in a few minutes.");
     case "openElsewhere":
       return t("errors", "This game is open in another window.");
   }
@@ -70,6 +75,27 @@ export function connectionText(status: Status, wasConnected: boolean): string | 
     return null;
   }
   return t("errors", "The connection was lost. Trying again…");
+}
+
+// Your own seat's presence at the table, or null when you have no seat there.
+export function ownPresence(table: TableState | null): Presence | null {
+  const seat = table?.seats.find((each) => each.kind === "human" && each.you);
+  return seat?.kind === "human" ? seat.presence : null;
+}
+
+// What the page asks of a person the game has waited on too long, and what it tells one the server
+// counts as gone though the tab is open: anything sent answers both, and the button sends it.
+export function stillHereText(question: Question, presence: Presence | null): { id: "asking" | "gone"; text: string } | null {
+  if (question?.kind === "asking") {
+    return { id: "asking", text: t("online", "Are you still there? Answer within %1 s.", [question.secondsLeft]) };
+  }
+  if (presence === "replaced") {
+    return { id: "gone", text: t("online", "A computer player is playing for you.") };
+  }
+  if (question?.kind === "unanswered" || presence === "away") {
+    return { id: "gone", text: t("online", "You did not answer in time. Your game is waiting for you.") };
+  }
+  return null;
 }
 
 // What the table says it waits for: a person who is away, until they come back or are replaced. The

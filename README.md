@@ -29,7 +29,7 @@ a table's link, `/t/` and six capital letters or digits, with the page. Its tags
 `master`), a release such as `1.0.0` or `1.0`, and `sha-<commit>`.
 
 **On the public internet.** The server limits what one address can do: connections, tables made in an
-hour, failed joins and messages a second. It sends the page's security headers and caching rules itself.
+hour, failed joins, games at Instant speed and messages a second. It sends the page's security headers and caching rules itself.
 When it is asked to stop, it stops giving out new games and lets the games someone is at end, for as long as
 its `drain_ms` says (15 minutes by default); a person at one sees a banner that says until when. The
 server's README has the settings and the restart, and what to monitor: `/health` answers 200, and 503 while
@@ -264,9 +264,9 @@ through the page: solo games, the sheets, New Game, the language dialog, a game 
 About, and online tables played by three browsers at once, each in a context of its own. They start with English chosen,
 as a browser that has been through the dialog; the tests of the dialog start with nothing. One test starts a
 server of its own on port 8091 with a drain of five seconds, stops it with a game in progress, and checks
-the banner, the refusal of a new game, the game cut at the deadline and the exit with no failure. Two
+the banner, the refusal of a new game, the game cut at the deadline and the exit with no failure. Three
 more start one on port 8092 that asks whether you are still there after two seconds, and check the
-question answered and left unanswered. The
+question answered by its button and by a move, and left unanswered. The
 server's limits per address are lifted in `tests/e2e/server.json`, since every test is one address. The tests need
 Playwright's Chromium once: `npx playwright install chromium`.
 

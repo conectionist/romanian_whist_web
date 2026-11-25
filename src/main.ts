@@ -10,7 +10,7 @@ import { currentPace, storePace, storedPace } from "./play/motion";
 import { Flow, type Memory } from "./play/flow";
 import { announcementFor } from "./play/announce";
 import { Keyboard } from "./play/keyboard";
-import { atTable, type SheetName } from "./play/sheets";
+import { atTable, gameOn, type SheetName } from "./play/sheets";
 import { PlaybackQueue } from "./play/queue";
 import { NO_CHANGE, Store } from "./play/store";
 import { Announcer } from "./dom/announcer";
@@ -95,7 +95,7 @@ const connection: Connection = new Connection({
       notices.clear("restart");
       bannerRoom.update();
     }
-    // A new connection is the person here, to the server, whatever it asked the last one.
+    // The server counts a new connection as the person here, whatever it asked the last one.
     stillHere.answered();
     render();
   },
@@ -103,9 +103,9 @@ const connection: Connection = new Connection({
   onMessage: (message) => handle(message),
 });
 
-// Whether the server asked if the person is still there. Anything the page sends answers it.
 const stillHere = new StillHere();
 
+// Anything the page sends answers the server's question whether the person is still there.
 function send(message: ClientMessage): boolean {
   const sent = connection.send(message);
   if (sent) {
@@ -428,15 +428,27 @@ function render(): void {
   });
 }
 
-// The question whether you are still there, while it can be answered, and the word that the server
-// counts you as gone, while the tab is connected and nothing has been sent since.
 function showStillHere(): void {
-  const shown = lastStatus === "open" ? stillHereText(stillHere.state(performance.now()), ownPresence(store.state.table)) : null;
+  const playing = gameOn(store.state);
+  // The server asks about the game being played, and drops the question once it is over.
+  if (!playing) {
+    stillHere.answered();
+  }
+  const shown = stillHereText({
+    question: stillHere.state(performance.now()),
+    presence: ownPresence(store.state.table),
+    playing,
+    connected: lastStatus === "open",
+  });
   const answer = () => {
     send({ type: "back" });
     render();
   };
-  notices.set("still-here", shown?.id === "asking" ? shown.text : null, { kind: "warn", action: { label: t("online", "I'm here"), run: answer } });
+  notices.set("still-here", shown?.id === "asking" ? shown.text : null, {
+    kind: "warn",
+    action: { label: t("online", "I'm here"), run: answer },
+    ...(shown?.secondsLeft === undefined ? {} : { count: `${shown.secondsLeft} s` }),
+  });
   notices.set("gone", shown?.id === "gone" ? shown.text : null, { kind: "warn", action: { label: t("online", "I'm back"), run: answer } });
 }
 
@@ -518,7 +530,6 @@ function handle(message: ServerMessage): void {
     // About the person, not the table, so it skips the playback queue, which a sync would empty.
     stillHere.asked(message.deadline, performance.now());
     showStillHere();
-    announcer.say(t("online", "Are you still there? Answer within %1 s.", [Math.ceil(message.deadline / 1000)]));
     return;
   }
   if (message.type === "restarting") {

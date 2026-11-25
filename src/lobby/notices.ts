@@ -40,7 +40,7 @@ export function errorText(code: ErrorCode, detail?: string): string {
         case "joins":
           return t("errors", "Too many table codes that do not exist were tried. Try again in a few minutes.");
         case "instant":
-          return t("errors", "You already have a game at Instant speed. Finish it, or choose another speed.");
+          return t("errors", "A game at Instant speed is already running from your network. Choose another speed, or try again when it is over.");
         default:
           return t("errors", "That was too many messages. Wait a moment.");
       }
@@ -83,16 +83,28 @@ export function ownPresence(table: TableState | null): Presence | null {
   return seat?.kind === "human" ? seat.presence : null;
 }
 
-// What the page asks of a person the game has waited on too long, and what it tells one the server
-// counts as gone though the tab is open: anything sent answers both, and the button sends it.
-export function stillHereText(question: Question, presence: Presence | null): { id: "asking" | "gone"; text: string } | null {
+export interface StillHereShown {
+  id: "asking" | "gone";
+  text: string;
+  // The seconds left to answer, which change too often for a screen reader to be read them each time.
+  secondsLeft?: number;
+}
+
+// The question whether you are still there, and the word that the server counts you as gone though the tab is
+// open: only during a game, and only while connected. A seat's presence is the server's own word that you are
+// gone; the page's count of an unanswered question is for a watcher, who has no seat to show it.
+export function stillHereText(seen: { question: Question; presence: Presence | null; playing: boolean; connected: boolean }): StillHereShown | null {
+  const { question, presence } = seen;
+  if (!seen.playing || !seen.connected) {
+    return null;
+  }
   if (question?.kind === "asking") {
-    return { id: "asking", text: t("online", "Are you still there? Answer within %1 s.", [question.secondsLeft]) };
+    return { id: "asking", text: t("online", "Are you still there?"), secondsLeft: question.secondsLeft };
   }
   if (presence === "replaced") {
     return { id: "gone", text: t("online", "A computer player is playing for you.") };
   }
-  if (question?.kind === "unanswered" || presence === "away") {
+  if (presence === "away" || (presence === null && question?.kind === "unanswered")) {
     return { id: "gone", text: t("online", "You did not answer in time. Your game is waiting for you.") };
   }
   return null;
@@ -106,7 +118,8 @@ export function waitingText(table: TableState | null, receivedAt: number, now: n
     return null;
   }
   const seat = table.seats[waiting.seat];
-  if (seat === undefined || seat.kind === "open") {
+  // Your own seat waited for is the question's business, not a third person's.
+  if (seat === undefined || seat.kind === "open" || (seat.kind === "human" && seat.you)) {
     return null;
   }
   const left = Math.max(0, Math.ceil((waiting.deadline - (now - receivedAt)) / 1000));
@@ -159,7 +172,7 @@ export class Notices {
     this.element = el("div", { class: "notices", attrs: { role: "status", "aria-live": "polite" } });
   }
 
-  set(id: string, text: string | null, options: { kind?: string; liveMs?: number; action?: { label: string; run: () => void } } = {}): void {
+  set(id: string, text: string | null, options: { kind?: string; liveMs?: number; action?: { label: string; run: () => void }; count?: string } = {}): void {
     if (text === null || text === "") {
       this.clear(id);
       return;
@@ -172,6 +185,18 @@ export class Notices {
     }
     entry.node.dataset.kind = options.kind ?? "info";
     setText(entry.node.firstElementChild as HTMLElement, text);
+    // Kept out of the live region, which would be read out whole again at every tick.
+    let count = entry.node.querySelector<HTMLElement>(".notice-count");
+    if (options.count !== undefined && count === null) {
+      count = el("span", { class: "notice-count", attrs: { "aria-hidden": "true" } });
+      entry.node.firstElementChild?.after(count);
+    } else if (options.count === undefined && count !== null) {
+      count.remove();
+      count = null;
+    }
+    if (count !== null) {
+      setText(count, options.count ?? "");
+    }
     const button = entry.node.querySelector("button");
     if (options.action !== undefined && button === null) {
       const action = el("button", { class: "notice-btn", attrs: { type: "button" }, text: options.action.label });

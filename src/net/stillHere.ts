@@ -1,6 +1,5 @@
-// The server asks whether the person is still there when a game has waited on them too long, and
-// anything the page sends is the answer. Once the time to answer is up, the server counts them as
-// gone, as if the tab had closed, until the page next sends something.
+// Once the time to answer is up, the server counts the person as gone, as if the tab had closed, until
+// the page next sends something.
 export type Question = { kind: "asking"; secondsLeft: number } | { kind: "unanswered" } | null;
 
 export class StillHere {
@@ -11,7 +10,6 @@ export class StillHere {
     this.deadlineAt = now + deadlineMs;
   }
 
-  // The page sent something, or has a new connection, which the server counts as the person here.
   answered(): void {
     this.deadlineAt = null;
   }

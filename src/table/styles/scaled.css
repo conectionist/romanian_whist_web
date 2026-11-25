@@ -741,6 +741,12 @@
   top: calc((var(--banner-room, 52px) + 4px) / var(--scale, 1));
 }
 
+/* A question to the person, or the word that the server counts them gone, needs an answer, and stands where the offer
+   of full screen would be. */
+.window[data-layout="scaled"]:has(.notice[data-notice="still-here"], .notice[data-notice="gone"]) .stage .scaled-notice {
+  visibility: hidden;
+}
+
 /* The scaled table's cards run off the foot of the window, and a focus or a scroll into view must not carry
    the table up to show them: a clipped box cannot be scrolled. */
 .view.scaled {

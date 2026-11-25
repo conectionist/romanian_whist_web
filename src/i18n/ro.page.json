@@ -377,8 +377,8 @@
     },
     {
       "context": "online",
-      "source": "Waiting for %1 to come back: %2 s",
-      "translation": "Așteptăm ca %1 să revină: %2 s"
+      "source": "Waiting for %1 to come back.",
+      "translation": "Așteptăm ca %1 să revină."
     },
     {
       "context": "online",
@@ -1092,6 +1092,33 @@
       "context": "errors",
       "source": "The server is running as many games at Instant speed as it can. Choose another speed, or try again later.",
       "translation": "Serverul are acum numărul maxim de jocuri cu viteza Instant. Alege altă viteză sau încearcă din nou mai târziu."
+    },
+    {
+      "context": "online",
+      "source": "You have %n seconds to answer.",
+      "forms": [
+        "Ai %n secundă să răspunzi.",
+        "Ai %n secunde să răspunzi.",
+        "Ai %n de secunde să răspunzi."
+      ]
+    },
+    {
+      "context": "online",
+      "source": "A computer player takes your seat in %n seconds.",
+      "forms": [
+        "Un robot îți ia locul în %n secundă.",
+        "Un robot îți ia locul în %n secunde.",
+        "Un robot îți ia locul în %n de secunde."
+      ]
+    },
+    {
+      "context": "online",
+      "source": "%n seconds left.",
+      "forms": [
+        "A mai rămas %n secundă.",
+        "Au mai rămas %n secunde.",
+        "Au mai rămas %n de secunde."
+      ]
     }
   ]
 }

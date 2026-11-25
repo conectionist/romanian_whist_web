@@ -22,7 +22,7 @@ import { MenuBar, menuStateFor } from "./menu/menuBar";
 import { MenuPage } from "./lobby/menuPage";
 import { addressMove, pathFor, linkFor, tableCodeFrom, type Entered } from "./lobby/address";
 import { BannerRoom } from "./lobby/bannerRoom";
-import { Notices, connectionText, errorText, ownPresence, presenceNews, restartingText, stillHereText, waitingText } from "./lobby/notices";
+import { Notices, connectionText, errorText, presenceNews, restartingText, stillHereText, waitingText, type Shown } from "./lobby/notices";
 import { defaults, loadSetup, saveSetup, type Setup } from "./lobby/setup";
 import { LanguageDialog, askLanguage } from "./lobby/languageDialog";
 import { loadProfile, saveProfile } from "./lobby/profile";
@@ -97,6 +97,7 @@ const connection: Connection = new Connection({
     }
     // The server counts a new connection as the person here, whatever it asked the last one.
     stillHere.answered();
+    syncedHere = false;
     render();
   },
   onUnreadable: (error: DecodeError) => console.error(`The server sent what the page cannot read: ${error.message}`),
@@ -109,7 +110,7 @@ const stillHere = new StillHere();
 function send(message: ClientMessage): boolean {
   const sent = connection.send(message);
   if (sent) {
-    stillHere.answered();
+    stillHere.sent(performance.now());
   }
   return sent;
 }
@@ -149,6 +150,8 @@ const bannerRoom = new BannerRoom(frame, notices.element);
 let synced = false;
 let wasConnected = false;
 let lastStatus: Status = "connecting";
+// Whether this connection's sync has been taken in: until then the store holds what the last one was told.
+let syncedHere = false;
 
 // The sheets and the menu bar. What the sheets show is drawn after the table has, so a round sheet
 // does not cover the last trick's sweep, and again whenever the player asks for another.
@@ -420,7 +423,7 @@ function render(): void {
   shownSheet = shown;
   keyboard.refresh();
   followAddress();
-  notices.set("waiting", waitingText(state.table, state.tableAt, performance.now()), { kind: "wait" });
+  showWaiting();
   showStillHere();
   notices.set("connection", connectionText(lastStatus, wasConnected), {
     kind: "warn",
@@ -434,22 +437,32 @@ function showStillHere(): void {
   if (!playing) {
     stillHere.answered();
   }
+  const now = performance.now();
   const shown = stillHereText({
-    question: stillHere.state(performance.now()),
-    presence: ownPresence(store.state.table),
+    question: stillHere.state(now),
+    table: store.state.table,
+    tableAt: store.state.tableAt,
+    now,
     playing,
-    connected: lastStatus === "open",
+    connected: lastStatus === "open" && syncedHere,
   });
   const answer = () => {
     send({ type: "back" });
     render();
   };
-  notices.set("still-here", shown?.id === "asking" ? shown.text : null, {
-    kind: "warn",
-    action: { label: t("online", "I'm here"), run: answer },
-    ...(shown?.secondsLeft === undefined ? {} : { count: `${shown.secondsLeft} s` }),
-  });
-  notices.set("gone", shown?.id === "gone" ? shown.text : null, { kind: "warn", action: { label: t("online", "I'm back"), run: answer } });
+  const asking = shown?.id === "asking" ? shown : null;
+  const gone = shown?.id === "gone" ? shown : null;
+  notices.set("still-here", asking?.text ?? null, { kind: "warn", action: { label: t("online", "I'm here"), run: answer }, ...partsOf(asking) });
+  notices.set("gone", gone?.text ?? null, { kind: "warn", action: { label: t("online", "I'm back"), run: answer }, ...partsOf(gone) });
+}
+
+function showWaiting(): void {
+  const waiting = waitingText(store.state.table, store.state.tableAt, performance.now());
+  notices.set("waiting", waiting?.text ?? null, { kind: "wait", ...partsOf(waiting) });
+}
+
+function partsOf(shown: Shown | null): { count?: string; said?: string } {
+  return { ...(shown?.count === undefined ? {} : { count: shown.count }), ...(shown?.said === undefined ? {} : { said: shown.said }) };
 }
 
 // Esc closes the sheet the menu bar or a corner button opened, and otherwise raises the pause menu,
@@ -465,7 +478,7 @@ document.addEventListener("keydown", (event) => {
 window.setInterval(() => {
   scene.updateCountdown(performance.now());
   const state = store.state;
-  notices.set("waiting", waitingText(state.table, state.tableAt, performance.now()), { kind: "wait" });
+  showWaiting();
   showStillHere();
   if (state.held !== null && state.held.deadlineAt !== null) {
     render();
@@ -491,6 +504,9 @@ const queue = new PlaybackQueue(
     onApply: (message, change) => {
       // Whether a sheet waits for this answer, asked before the flow takes the answer in.
       const answers = flow.asking();
+      if (message.type === "sync") {
+        syncedHere = true;
+      }
       controller.onApply(message, change);
       flow.onApply(message);
       const said = announcementFor(message, modelOf(store.state));
@@ -528,7 +544,9 @@ function handle(message: ServerMessage): void {
   }
   if (message.type === "stillHere") {
     // About the person, not the table, so it skips the playback queue, which a sync would empty.
-    stillHere.asked(message.deadline, performance.now());
+    if (!stillHere.asked(message.deadline, performance.now())) {
+      send({ type: "back" });
+    }
     showStillHere();
     return;
   }

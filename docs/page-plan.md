@@ -374,15 +374,18 @@ sets the rules. The page's share:
   refusal for too many connections waits 30 seconds before the page tries again.
 - **A player the game has waited on too long** is sent `stillHere` with the time left to answer.
   It is about the person, not the table, so it also goes before the playback queue. The strip shows
-  "Are you still there?" with an "I'm here" button, and the seconds left beside it, kept out of the
-  live region, which would read the strip out whole at every tick. Anything the page sends answers
-  it, which a single wrapper round the connection's send sees. Unanswered, the server counts the
-  person as gone though the tab is open. While a game is played and the tab is connected, the strip
-  then says that the game waits, or that a computer player is playing for them, with an "I'm back"
-  button that sends `back`. For a seated person it says so while their own seat shows `away` or
-  `replaced`, which is the server's word, until the server's next `tableState`. For a solo watcher,
-  who has no seat, the page counts the unanswered question itself. A new connection starts with no
-  question, and so does the end of the game. `busy` and `rateLimited` with the `detail` `instant`
+  "Are you still there?" with an "I'm here" button, and the seconds left beside it. The seconds are
+  kept out of the live region, which would read the strip out whole at every tick, and a screen
+  reader is told the time once, in words that do not change. The waiting notice does the same.
+  Anything the page sends answers the question, which a single wrapper round the connection's send
+  sees; a question that comes within two seconds of a send may have crossed it, and is answered with
+  `back` at once. Unanswered, the server counts the person as gone though the tab is open. While a
+  game is played, and once the connection has its sync, the strip then says that the game waits, or
+  that a computer player is playing for them, with an "I'm back" button that sends `back`, and with
+  the seconds until a computer takes the seat when the table waits for it. For a seated person it
+  says so while their own seat shows `away` or `replaced`, which is the server's word. For a solo
+  watcher, who has no seat, the page counts the unanswered question itself. A new connection starts
+  with no question, and so does the end of the game. `busy` and `rateLimited` with the `detail` `instant`
   say that another speed would start, and which limit it was: the server's, or the network's own.
 
 All of this is built in the server plan's phase 9, as the page's share of it. So is the deploy rule:

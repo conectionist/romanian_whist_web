@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { setLanguage } from "../../src/i18n/language";
 import { connectionText, errorText, ownPresence, presenceNews, restartingText, stillHereText, waitingText } from "../../src/lobby/notices";
-import { StillHere, type Question } from "../../src/net/stillHere";
-import type { ErrorCode, Presence } from "../../src/net/protocol";
+import { CROSSED_MS, StillHere, type Question } from "../../src/net/stillHere";
+import type { ErrorCode, TableState } from "../../src/net/protocol";
 import { decode } from "../../src/net/decode";
 import { serverFixture } from "./support/sheetState";
 
@@ -119,8 +119,10 @@ describe("what the table waits for", () => {
 
   it("is the person who is away, with the time left counted from when the page was told", () => {
     // The fixture's deadline is 300 ms: with 100 ms gone it is still one second, by the ceiling.
-    expect(waitingText(waiting, 1000, 1100)).toBe("Waiting for Bogdan to come back: 1 s");
-    expect(waitingText(waiting, 1000, 5000)).toBe("Waiting for Bogdan to come back: 0 s");
+    expect(waitingText(waiting, 1000, 1100)).toEqual({ text: "Waiting for Bogdan to come back.", count: "1 s", said: "1 second left." });
+    expect(waitingText(waiting, 1000, 5000)?.count).toBe("0 s");
+    // What a screen reader is told does not change with the ticks.
+    expect(waitingText(waiting, 1000, 5000)?.said).toBe("1 second left.");
   });
 
   it("is nothing when the table waits for nobody, or for a seat nobody holds", () => {
@@ -190,69 +192,87 @@ describe("who went away, was replaced or came back", () => {
 });
 
 describe("whether you are still there", () => {
-  // The second seat is yours, here, away or replaced.
+  // The second seat is yours, here, away or replaced; the table waits for it while it is away.
   const base = table("tableState.waiting");
   const yours = (presence: "here" | "away" | "replaced") => ({
     ...base,
-    waitingFor: undefined,
+    waitingFor: presence === "away" ? { seat: 1, deadline: 23000 } : undefined,
     seats: base.seats.map((seat, index) => (seat.kind === "human" ? { ...seat, you: index === 1, presence: index === 1 ? presence : "here" } : seat)),
   });
+  const watched = { ...base, waitingFor: undefined, seats: base.seats.map((seat) => (seat.kind === "human" ? { ...seat, you: false } : seat)) };
+  const asking: Question = { kind: "asking", secondsLeft: 12, secondsGiven: 30 };
+
+  // During a game, connected, told at 0 and seen at 1000.
+  const shown = (question: Question, at: TableState | null) =>
+    stillHereText({ question, table: at, tableAt: 0, now: 1000, playing: true, connected: true });
 
   it("reads your own seat's presence, and none at no table or without a seat", () => {
     expect(ownPresence(yours("away"))).toBe("away");
     expect(ownPresence(yours("replaced"))).toBe("replaced");
     expect(ownPresence(null)).toBeNull();
-    expect(ownPresence({ ...base, seats: base.seats.map((seat) => (seat.kind === "human" ? { ...seat, you: false } : seat)) })).toBeNull();
+    expect(ownPresence(watched)).toBeNull();
   });
 
   it("asks until the time to answer is up, and then says the game waits, until the page sends something", () => {
     const question = new StillHere();
     expect(question.state(0)).toBeNull();
-    question.asked(30000, 1000);
-    expect(question.state(1000)).toEqual({ kind: "asking", secondsLeft: 30 });
-    expect(question.state(30999)).toEqual({ kind: "asking", secondsLeft: 1 });
+    expect(question.asked(30000, 1000)).toBe(true);
+    expect(question.state(1000)).toEqual({ kind: "asking", secondsLeft: 30, secondsGiven: 30 });
+    expect(question.state(30999)).toEqual({ kind: "asking", secondsLeft: 1, secondsGiven: 30 });
     expect(question.state(31000)).toEqual({ kind: "unanswered" });
-    question.answered();
+    question.sent(31000);
     expect(question.state(31000)).toBeNull();
   });
 
-  // During a game, connected: what the page shows, from the question and your seat.
-  const shown = (question: Question, presence: Presence | null) => stillHereText({ question, presence, playing: true, connected: true });
+  it("answers at once a question that crossed something the page sent", () => {
+    const question = new StillHere();
+    question.sent(1000);
+    expect(question.asked(30000, 1000 + CROSSED_MS - 1)).toBe(false);
+    expect(question.state(1000 + CROSSED_MS)).toBeNull();
+    expect(question.asked(30000, 1000 + CROSSED_MS)).toBe(true);
+  });
 
-  it("is one notice at a time: the question, or else that the server counts you as gone", () => {
-    expect(shown({ kind: "asking", secondsLeft: 12 }, "here")).toEqual({ id: "asking", text: "Are you still there?", secondsLeft: 12 });
+  it("asks with the seconds ticking beside it, and tells a screen reader the time once", () => {
+    expect(shown(asking, yours("here"))).toEqual({ id: "asking", text: "Are you still there?", count: "12 s", said: "You have 30 seconds to answer." });
     // A turn timer gives the seat to a computer player as the question comes: the question comes first.
-    expect(shown({ kind: "asking", secondsLeft: 12 }, "replaced")?.id).toBe("asking");
-    expect(shown(null, "away")).toEqual({ id: "gone", text: "You did not answer in time. Your game is waiting for you." });
-    expect(shown(null, "replaced")).toEqual({ id: "gone", text: "A computer player is playing for you." });
-    expect(shown(null, "here")).toBeNull();
+    expect(shown(asking, yours("replaced"))?.id).toBe("asking");
+  });
+
+  it("says the server counts you as gone from your seat's presence, with the time left before a computer takes it", () => {
+    expect(shown(null, yours("away"))).toEqual({
+      id: "gone",
+      text: "You did not answer in time. Your game is waiting for you.",
+      count: "22 s",
+      said: "A computer player takes your seat in 23 seconds.",
+    });
+    expect(shown(null, yours("replaced"))).toEqual({ id: "gone", text: "A computer player is playing for you." });
+    expect(shown(null, yours("here"))).toBeNull();
     expect(shown(null, null)).toBeNull();
   });
 
   it("takes a seat's presence over the page's own count, which is for a watcher", () => {
     // A move that crossed the question answered it, and the seat is here.
-    expect(shown({ kind: "unanswered" }, "here")).toBeNull();
-    expect(shown({ kind: "unanswered" }, null)?.id).toBe("gone");
+    expect(shown({ kind: "unanswered" }, yours("here"))).toBeNull();
+    expect(shown({ kind: "unanswered" }, watched)).toEqual({ id: "gone", text: "You did not answer in time. Your game is waiting for you." });
   });
 
-  it("says nothing between games, at no table, or with the connection down", () => {
-    for (const presence of ["away", "replaced", null] as const) {
-      expect(stillHereText({ question: { kind: "unanswered" }, presence, playing: false, connected: true })).toBeNull();
-      expect(stillHereText({ question: { kind: "asking", secondsLeft: 3 }, presence, playing: true, connected: false })).toBeNull();
+  it("says nothing between games, at no table, or before this connection's sync", () => {
+    for (const at of [yours("away"), yours("replaced"), watched, null]) {
+      expect(stillHereText({ question: { kind: "unanswered" }, table: at, tableAt: 0, now: 0, playing: false, connected: true })).toBeNull();
+      expect(stillHereText({ question: asking, table: at, tableAt: 0, now: 0, playing: true, connected: false })).toBeNull();
     }
   });
 
   it("does not name your own seat as one the table waits for", () => {
-    const waiting = table("tableState.waiting");
-    const awaited = waiting.waitingFor!.seat;
-    const mine = { ...waiting, seats: waiting.seats.map((seat, index) => (seat.kind === "human" ? { ...seat, you: index === awaited } : seat)) };
-    expect(waitingText(mine, 1000, 1100)).toBeNull();
+    expect(waitingText(yours("away"), 0, 1000)).toBeNull();
   });
 
   it("is said in Romanian", () => {
     setLanguage("ro");
-    expect(shown({ kind: "asking", secondsLeft: 5 }, "here")?.text).toBe("Mai ești acolo?");
-    expect(shown(null, "replaced")?.text).toBe("Un robot joacă în locul tău.");
+    expect(shown(asking, yours("here"))).toMatchObject({ text: "Mai ești acolo?", said: "Ai 30 de secunde să răspunzi." });
+    expect(shown(null, yours("replaced"))?.text).toBe("Un robot joacă în locul tău.");
+    expect(shown(null, yours("away"))?.said).toBe("Un robot îți ia locul în 23 de secunde.");
+    expect(waitingText(table("tableState.waiting"), 1000, 1100)).toMatchObject({ text: "Așteptăm ca Bogdan să revină.", said: "A mai rămas 1 secundă." });
     expect(errorText("rateLimited", "instant")).toContain("rețeaua ta");
   });
 });

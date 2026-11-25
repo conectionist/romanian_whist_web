@@ -225,7 +225,8 @@ test.describe("with nothing moving", () => {
     // The game goes on until it is Bob's turn, and then waits for him, and says so.
     const waiting = alice.locator('.notice[data-notice="waiting"]');
     await playUntil([alice], async () => (await waiting.count()) > 0);
-    await expect(waiting).toHaveText(/^Waiting for Bob to come back: \d+ s$/);
+    await expect(waiting.locator(".notice-text")).toHaveText("Waiting for Bob to come back.");
+    await expect(waiting.locator(".notice-count")).toHaveText(/^\d+ s$/);
 
     // The wait ends, and a computer player holds the seat, and the table is told.
     await playUntil([alice], async () => (await seatOf(alice, "Bob").locator('.presence[data-state="replaced"]').count()) > 0);

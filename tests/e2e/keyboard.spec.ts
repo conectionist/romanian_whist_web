@@ -232,8 +232,8 @@ async function tabWithinTo(page: Page, wanted: string, key = "Tab"): Promise<voi
   throw new Error(`Tab did not reach ${wanted}`);
 }
 
-// A server of its own, which asks after three seconds of waiting on you, the pause counted, and gives eight to
-// answer: time for the keys, and more than the page's two seconds in which a question may cross what it sent.
+// A server of its own, which asks after three seconds of waiting on you, the pause counted, more than the page's two
+// seconds in which a question may cross what it sent; and gives eight to answer, time for the keys.
 const PORT = 8093;
 const SETTINGS = { still_here_after_ms: 3000, still_here_answer_ms: 8000 };
 
@@ -242,6 +242,29 @@ function sentBy(page: Page): string[] {
   const sent: string[] = [];
   page.on("websocket", (socket) => socket.on("framesent", (frame) => sent.push(String(JSON.parse(String(frame.payload)).type))));
   return sent;
+}
+
+// Holds back for a second and a half what the server sends from just before an unanswered question's time is up,
+// in order, so that the page's own count runs out before the server's word that you are gone comes.
+async function holdBackTheWordGone(page: Page): Promise<void> {
+  await page.routeWebSocket(/\/ws$/, (socket) => {
+    const server = socket.connectToServer();
+    let holdFrom: number | null = null;
+    let delivered = Promise.resolve();
+    socket.onMessage((message) => {
+      holdFrom = null;
+      server.send(message);
+    });
+    server.onMessage((message) => {
+      const now = Date.now();
+      const parsed = JSON.parse(String(message)) as { type: string; deadline?: number };
+      const due = holdFrom !== null && now >= holdFrom ? now + 1500 : now;
+      if (parsed.type === "stillHere" && parsed.deadline !== undefined) {
+        holdFrom = now + parsed.deadline - 500;
+      }
+      delivered = delivered.then(() => new Promise((resolve) => setTimeout(resolve, Math.max(0, due - Date.now())))).then(() => socket.send(message));
+    });
+  });
 }
 
 test("with a sheet up, Tab reaches the notice's I'm here and I'm back, Enter on either sends back, and Tab never leaves for the table", async ({
@@ -303,6 +326,7 @@ test("with the round held, I'm here gives the keyboard back to Continue, and a q
     keep(context);
     const page = await context.newPage();
     const sent = sentBy(page);
+    await holdBackTheWordGone(page);
     await page.goto("/");
     await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
     await dealByKeys(page, { waitForMe: true });
@@ -329,12 +353,18 @@ test("with the round held, I'm here gives the keyboard back to Continue, and a q
     await expect(next).toBeFocused();
     await expect(round).toHaveAttribute("aria-modal", "true");
 
-    // Asked again, with the keyboard left on I'm here until the time runs out.
+    // Asked again, with the keyboard left on I'm here until the time runs out. Until the server's word comes, the
+    // question stays with no seconds, and keeps the keyboard and the sheet's word that it is not modal.
     await expect(asking).toBeVisible({ timeout: 15_000 });
     await tabWithinTo(page, '.notice[data-notice="still-here"] .notice-btn');
+    await expect(asking.locator(".notice-count")).toHaveCount(0, { timeout: 15_000 });
+    await expect(asking.locator(".notice-btn")).toBeFocused();
+    await expect(round).toHaveAttribute("aria-modal", "false");
     const gone = page.locator('.notice[data-notice="gone"]');
     await expect(gone).toBeVisible({ timeout: 20_000 });
+    await expect(asking).toHaveCount(0);
     await expect(gone.locator(".notice-btn")).toBeFocused();
+    await expect(gone.locator(".notice-btn")).toHaveAccessibleDescription("You did not answer in time. Your game is waiting for you.");
     const later = sent.length;
     await page.keyboard.press("Enter");
     await expect(gone).toHaveCount(0);

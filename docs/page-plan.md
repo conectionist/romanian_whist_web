@@ -384,12 +384,13 @@ sets the rules. The page's share:
   that a computer player is playing for them, with an "I'm back" button that sends `back`, and with
   the seconds until a computer takes the seat when the table waits for it. For a seated person the
   strip says so while their own seat shows `away` or `replaced`, which is the server's word. For a solo
-  watcher, who has no seat, the page counts the unanswered question itself. While a sheet is up, Tab
-  reaches the strip's buttons among the sheet's own and nothing else, and the sheet says it is not
-  modal while the strip asks. An answered notice gives the keyboard back to the sheet, if the sheet
-  had it; a question whose time runs out with the keyboard on "I'm here" gives it to "I'm back", and
-  Enter does nothing in between. A new connection starts
-  with no question, and so does the end of the game. `busy` and `rateLimited` with the `detail` `instant`
+  watcher, who has no seat, the page counts the unanswered question itself; for a seated person whose
+  count runs out first, the question stays, without its seconds, until the server's word comes. While
+  a sheet is up, Tab reaches the strip's buttons among the sheet's own and nothing else, and the sheet
+  says it is not modal while the question or the word that you are gone is shown. A notice that goes
+  with the keyboard on it gives the keyboard to "I'm back" when that notice takes over, and otherwise
+  back to the sheet, if the sheet had it. A new connection starts with no question, and so does the
+  end of the game. `busy` and `rateLimited` with the `detail` `instant`
   say that another speed would start, and which limit it was: the server's, or the network's own.
 
 All of this is built in the server plan's phase 9, as the page's share of it. So is the deploy rule:

@@ -456,15 +456,9 @@ function showStillHere(): void {
   const asking = shown?.id === "asking" ? shown : null;
   const gone = shown?.id === "gone" ? shown : null;
   notices.set("gone", gone?.text ?? null, { kind: "warn", action: { label: t("online", "I'm back"), run: answer }, ...partsOf(gone) });
-  // A question whose time ran out with the keyboard on I'm here gives the keyboard to I'm back, so that an Enter
-  // meant for one never lands on the sheet's own button.
-  const timedOut = stillHere.state(now)?.kind === "unanswered";
-  notices.set("still-here", asking?.text ?? null, {
-    kind: "warn",
-    action: { label: t("online", "I'm here"), run: answer },
-    ...partsOf(asking),
-    ...(timedOut ? { handTo: "gone" } : {}),
-  });
+  // The keyboard on I'm here goes to I'm back when one takes over from the other, so that an Enter meant for the
+  // question never lands on the sheet's own button.
+  notices.set("still-here", asking?.text ?? null, { kind: "warn", action: { label: t("online", "I'm here"), run: answer }, ...partsOf(asking), handTo: "gone" });
   sheets.layer.setBesideAsks(shown !== null);
 }
 

@@ -1,4 +1,4 @@
-import { el } from "../dom/el";
+import { el, setAttr } from "../dom/el";
 import { icon } from "../dom/icons";
 import { t } from "../i18n/t";
 import { PAGE_ACTION, placementFor, type SheetKey } from "./placement";
@@ -134,23 +134,30 @@ export class SheetLayer {
     strip.addEventListener("keydown", (event) => this.keep(event));
   }
 
-  // The keyboard goes back to the open sheet, if the sheet took it when it came up.
+  // The keyboard goes back to the open sheet, if the sheet has taken it: to its own button, or to its first enabled
+  // one where that is disabled, since from the body the next Tab would leave the sheet.
   takeKeyboardBack(): void {
-    if (this.open !== null && this.tookKeyboard) {
-      this.open.focusDefault();
+    if (this.open === null || !this.tookKeyboard) {
+      return;
+    }
+    this.open.focusDefault();
+    if (!this.open.element.contains(document.activeElement)) {
+      this.stopsIn([this.open.element])[0]?.focus();
     }
   }
 
   // While a strip beside the sheet asks something, the sheet is not modal: a screen reader that kept to the sheet
   // would not read the question that the keyboard is sent to.
   setBesideAsks(asks: boolean): void {
-    this.besideAsks = asks;
-    this.markModal();
+    if (asks !== this.besideAsks) {
+      this.besideAsks = asks;
+      this.markModal();
+    }
   }
 
   private markModal(): void {
     for (const sheet of this.sheets) {
-      sheet.element.setAttribute("aria-modal", sheet === this.open && this.besideAsks ? "false" : "true");
+      setAttr(sheet.element, "aria-modal", sheet === this.open && this.besideAsks ? "false" : "true");
     }
   }
 
@@ -158,7 +165,8 @@ export class SheetLayer {
   // words keeps the keyboard where it is, and one that waits for nothing does not take it.
   show(sheet: Sheet | null, takesKeyboard = true): boolean {
     if (sheet === this.open) {
-      // A sheet put up resting and then made to wait for the person has its keyboard given by its owner.
+      // A sheet put up resting and then made to wait for the person is given the keyboard by its owner, and a
+      // notice that goes takes it back there.
       this.tookKeyboard ||= sheet !== null && takesKeyboard;
       return false;
     }
@@ -215,10 +223,7 @@ export class SheetLayer {
     if (event.key !== "Tab" || this.open === null) {
       return;
     }
-    const stops = [...this.beside, this.open.element]
-      .flatMap((root) => Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)))
-      .filter((node) => node.offsetParent !== null)
-      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+    const stops = this.stopsIn([...this.beside, this.open.element]);
     if (stops.length === 0) {
       event.preventDefault();
       return;
@@ -227,5 +232,13 @@ export class SheetLayer {
     const next = at < 0 ? (event.shiftKey ? stops.length - 1 : 0) : (at + (event.shiftKey ? stops.length - 1 : 1)) % stops.length;
     event.preventDefault();
     stops[next].focus();
+  }
+
+  // What Tab stops at in these, as drawn, in the page's order.
+  private stopsIn(roots: HTMLElement[]): HTMLElement[] {
+    return roots
+      .flatMap((root) => Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)))
+      .filter((node) => node.offsetParent !== null)
+      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
   }
 }

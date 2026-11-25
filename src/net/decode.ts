@@ -455,7 +455,7 @@ function syncBodyOf(fields: Fields): SyncBody {
   };
 }
 
-const MESSAGE_TYPES = ["welcome", "tableState", "game", "prompt", "promptClosed", "held", "sync", "restarting", "error"] as const;
+const MESSAGE_TYPES = ["welcome", "tableState", "game", "prompt", "promptClosed", "held", "sync", "restarting", "stillHere", "error"] as const;
 
 const message = record<ServerMessage>((fields) => {
   const type = fields.get("type", choice(MESSAGE_TYPES));
@@ -496,6 +496,8 @@ const message = record<ServerMessage>((fields) => {
     case "sync":
       return { type, seq, ...syncBodyOf(fields) };
     case "restarting":
+      return { type, seq, deadline: fields.get("deadline", count) };
+    case "stillHere":
       return { type, seq, deadline: fields.get("deadline", count) };
     case "error": {
       const code = fields.get("code", choice(ERROR_CODES));

@@ -1,8 +1,9 @@
 import { el, setText } from "../dom/el";
 import { translateGendered, type Gendered } from "../i18n/person";
 import { t } from "../i18n/t";
-import type { ErrorCode, TableState } from "../net/protocol";
+import type { ErrorCode, Presence, TableState } from "../net/protocol";
 import type { Status } from "../net/connection";
+import type { Question } from "../net/stillHere";
 
 // What the page tells you that the table does not: the server's refusals in words, the connection's
 // state, a person who went away and was replaced, a game that waits for one. The desktop has no
@@ -38,13 +39,17 @@ export function errorText(code: ErrorCode, detail?: string): string {
           return t("errors", "Too many tables were made from your network this hour. Try again later.");
         case "joins":
           return t("errors", "Too many table codes that do not exist were tried. Try again in a few minutes.");
+        case "instant":
+          return t("errors", "A game at Instant speed is already running from your network. Choose another speed, or try again when it is over.");
         default:
           return t("errors", "That was too many messages. Wait a moment.");
       }
     case "draining":
       return t("errors", "The server is restarting and takes no new games just now.");
     case "busy":
-      return t("errors", "The server has as many games or tables as it can take. Try again in a few minutes.");
+      return detail === "instant"
+        ? t("errors", "The server is running as many games at Instant speed as it can. Choose another speed, or try again later.")
+        : t("errors", "The server has as many games or tables as it can take. Try again in a few minutes.");
     case "openElsewhere":
       return t("errors", "This game is open in another window.");
   }
@@ -72,19 +77,89 @@ export function connectionText(status: Status, wasConnected: boolean): string | 
   return t("errors", "The connection was lost. Trying again…");
 }
 
-// What the table says it waits for: a person who is away, until they come back or are replaced. The
-// deadline counts down from when the page was told.
-export function waitingText(table: TableState | null, receivedAt: number, now: number): string | null {
+// Your own seat's presence at the table, or null when you have no seat there.
+export function ownPresence(table: TableState | null): Presence | null {
+  const seat = table?.seats.find((each) => each.kind === "human" && each.you);
+  return seat?.kind === "human" ? seat.presence : null;
+}
+
+// A notice's words, the seconds that tick beside them, and what a screen reader is told of the time, once.
+export interface Shown {
+  text: string;
+  count?: string;
+  said?: string;
+}
+
+export interface StillHereShown extends Shown {
+  id: "asking" | "gone";
+}
+
+// The seat the table waits for, and its seconds: those it had when the page was told, and those left now.
+function waitOf(table: TableState | null, receivedAt: number, now: number): { seat: number; given: number; left: number } | null {
   const waiting = table?.waitingFor;
-  if (table === null || waiting === undefined) {
+  if (waiting === undefined) {
     return null;
   }
-  const seat = table.seats[waiting.seat];
-  if (seat === undefined || seat.kind === "open") {
+  return {
+    seat: waiting.seat,
+    given: Math.max(0, Math.ceil(waiting.deadline / 1000)),
+    left: Math.max(0, Math.ceil((waiting.deadline - (now - receivedAt)) / 1000)),
+  };
+}
+
+// The question whether you are still there, and the word that the server counts you as gone though the tab is
+// open: only during a game, and only once this connection has its sync. A seat's presence is the server's own word
+// that you are gone; the page's count of an unanswered question is for a watcher, who has no seat to show it.
+export function stillHereText(seen: {
+  question: Question;
+  table: TableState | null;
+  tableAt: number;
+  now: number;
+  playing: boolean;
+  connected: boolean;
+}): StillHereShown | null {
+  const { question, table } = seen;
+  if (!seen.playing || !seen.connected) {
     return null;
   }
-  const left = Math.max(0, Math.ceil((waiting.deadline - (now - receivedAt)) / 1000));
-  return t("online", "Waiting for %1 to come back: %2 s", [seat.name, left]);
+  if (question?.kind === "asking") {
+    return {
+      id: "asking",
+      text: t("online", "Are you still there?"),
+      count: `${question.secondsLeft} s`,
+      said: t("online", "You have %n seconds to answer.", [], { n: question.secondsGiven, one: "You have %n second to answer." }),
+    };
+  }
+  const presence = ownPresence(table);
+  if (presence === "replaced") {
+    return { id: "gone", text: t("online", "A computer player is playing for you.") };
+  }
+  if (presence === "away" || (presence === null && question?.kind === "unanswered")) {
+    const gone: StillHereShown = { id: "gone", text: t("online", "You did not answer in time. Your game is waiting for you.") };
+    const wait = waitOf(table, seen.tableAt, seen.now);
+    const seat = wait === null ? undefined : table?.seats[wait.seat];
+    if (wait === null || seat?.kind !== "human" || !seat.you) {
+      return gone;
+    }
+    const said = t("online", "A computer player takes your seat in %n seconds.", [], { n: wait.given, one: "A computer player takes your seat in %n second." });
+    return { ...gone, count: `${wait.left} s`, said };
+  }
+  return null;
+}
+
+// What the table says it waits for: a person who is away, until they come back or are replaced. Your own seat
+// waited for is told in the second person, by the notice that you are counted as gone.
+export function waitingText(table: TableState | null, receivedAt: number, now: number): Shown | null {
+  const wait = waitOf(table, receivedAt, now);
+  const seat = wait === null ? undefined : table?.seats[wait.seat];
+  if (wait === null || seat === undefined || seat.kind === "open" || (seat.kind === "human" && seat.you)) {
+    return null;
+  }
+  return {
+    text: t("online", "Waiting for %1 to come back.", [seat.name]),
+    count: `${wait.left} s`,
+    said: t("online", "%n seconds left.", [], { n: wait.given, one: "%n second left." }),
+  };
 }
 
 // A person's seat taken over by a computer player, told as Romanian agrees it with the person.
@@ -123,6 +198,21 @@ export function presenceNews(before: TableState | null, after: TableState | null
   return news;
 }
 
+// One optional span of a notice, kept right after `after`, and gone when there is nothing to show.
+function part(node: HTMLElement, className: string, value: string | undefined, after: Element, attrs: Record<string, string> = {}): HTMLElement | null {
+  let span = node.querySelector<HTMLElement>(`.${className.split(" ")[0]}`);
+  if (value === undefined) {
+    span?.remove();
+    return null;
+  }
+  if (span === null) {
+    span = el("span", { class: className, attrs });
+    after.after(span);
+  }
+  setText(span, value);
+  return span;
+}
+
 // A strip of notices, each kept under its own name: one that is set again changes its words in place,
 // and one cleared goes. A notice with a time to live goes by itself.
 export class Notices {
@@ -133,7 +223,11 @@ export class Notices {
     this.element = el("div", { class: "notices", attrs: { role: "status", "aria-live": "polite" } });
   }
 
-  set(id: string, text: string | null, options: { kind?: string; liveMs?: number; action?: { label: string; run: () => void } } = {}): void {
+  set(
+    id: string,
+    text: string | null,
+    options: { kind?: string; liveMs?: number; action?: { label: string; run: () => void }; count?: string; said?: string } = {},
+  ): void {
     if (text === null || text === "") {
       this.clear(id);
       return;
@@ -145,7 +239,12 @@ export class Notices {
       this.element.append(entry.node);
     }
     entry.node.dataset.kind = options.kind ?? "info";
-    setText(entry.node.firstElementChild as HTMLElement, text);
+    const words = entry.node.firstElementChild as HTMLElement;
+    setText(words, text);
+    // The seconds are kept out of the live region, which would read the strip out whole again at every tick; a
+    // screen reader is told the time once instead, in words that do not change.
+    const count = part(entry.node, "notice-count", options.count, words, { "aria-hidden": "true" });
+    part(entry.node, "notice-said sr-only", options.said, count ?? words);
     const button = entry.node.querySelector("button");
     if (options.action !== undefined && button === null) {
       const action = el("button", { class: "notice-btn", attrs: { type: "button" }, text: options.action.label });

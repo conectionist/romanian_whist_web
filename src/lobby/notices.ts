@@ -155,7 +155,8 @@ export class Notices {
   readonly element: HTMLElement;
   private readonly shown = new Map<string, { node: HTMLElement; timer: number | null }>();
 
-  constructor() {
+  // `lost` is told when a notice that had the keyboard goes, which would otherwise leave it on nothing.
+  constructor(private readonly lost: () => void = () => undefined) {
     this.element = el("div", { class: "notices", attrs: { role: "status", "aria-live": "polite" } });
   }
 
@@ -197,7 +198,11 @@ export class Notices {
     if (entry.timer !== null) {
       window.clearTimeout(entry.timer);
     }
+    const hadKeyboard = entry.node.contains(document.activeElement);
     entry.node.remove();
     this.shown.delete(id);
+    if (hadKeyboard) {
+      this.lost();
+    }
   }
 }

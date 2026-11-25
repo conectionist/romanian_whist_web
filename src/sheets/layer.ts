@@ -50,6 +50,8 @@ export class SheetLayer {
   readonly element: HTMLElement;
   private open: Sheet | null = null;
   private returnTo: Element | null = null;
+  private tookKeyboard = false;
+  private readonly beside: HTMLElement[] = [];
   private scaled = false;
   private readonly watcher: ResizeObserver;
 
@@ -125,6 +127,21 @@ export class SheetLayer {
     return this.open;
   }
 
+  // A strip outside the layer whose buttons stay in Tab's reach while a sheet is up: the notices ask
+  // what no sheet asks, and are answered only by their own buttons.
+  keepBeside(strip: HTMLElement): void {
+    this.beside.push(strip);
+    strip.addEventListener("keydown", (event) => this.keep(event));
+  }
+
+  // The keyboard was on something beside the sheet that went: it goes back to the sheet, if the sheet
+  // took it, or the next Tab would start from the top of the page.
+  takeKeyboardBack(): void {
+    if (this.open !== null && this.tookKeyboard) {
+      this.open.focusDefault();
+    }
+  }
+
   // Shows this sheet, or none. Says whether another is up now than was: a sheet put up again with new
   // words keeps the keyboard where it is, and one that waits for nothing does not take it.
   show(sheet: Sheet | null, takesKeyboard = true): boolean {
@@ -139,6 +156,7 @@ export class SheetLayer {
       this.returnTo = document.activeElement;
     }
     this.open = sheet;
+    this.tookKeyboard = sheet !== null && takesKeyboard;
     for (const each of this.sheets) {
       each.element.hidden = each !== sheet;
     }
@@ -176,14 +194,16 @@ export class SheetLayer {
     }
   }
 
-  // Tab stays inside the sheet, as the desktop's does: walking out would reach the table under the dim.
+  // Tab stays inside the sheet and the strips beside it, as the desktop's does: walking out would reach
+  // the table under the dim. The stops go in the page's order, so Shift+Tab walks back the same way.
   private keep(event: KeyboardEvent): void {
     if (event.key !== "Tab" || this.open === null) {
       return;
     }
-    const stops = Array.from(this.open.element.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-      (node) => node.offsetParent !== null,
-    );
+    const stops = [...this.beside, this.open.element]
+      .flatMap((root) => Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)))
+      .filter((node) => node.offsetParent !== null)
+      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
     if (stops.length === 0) {
       event.preventDefault();
       return;

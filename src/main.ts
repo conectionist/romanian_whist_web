@@ -143,7 +143,7 @@ const memory: Memory = {
   },
 };
 
-const notices = new Notices();
+const notices = new Notices(() => sheets.layer.takeKeyboardBack());
 const bannerRoom = new BannerRoom(frame, notices.element);
 // Whether the page has been told yet that it is at a table or at none: until then it shows neither.
 let synced = false;
@@ -311,6 +311,8 @@ const announcer = new Announcer();
 
 const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage, settings: () => flow.openMenu("settings"), rules: () => flow.openMenu("rules"), about: () => flow.openMenu("about") });
 frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element, rotateHint());
+// A question in the strip is answered there, so Tab reaches it from an open sheet.
+sheets.layer.keepBeside(notices.element);
 
 scene.onHistory(() => flow.openMenu("history"));
 scene.onLastTrick(() => flow.openMenu("last-trick"));

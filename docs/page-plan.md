@@ -379,7 +379,9 @@ sets the rules. The page's share:
   Unanswered, the server counts the person as gone though the tab is open. So does a tab whose own
   seat shows `away`, or `replaced` by a computer player while it is connected. Until the page sends
   something, the strip says that the game waits, or that a computer player is playing for them,
-  with an "I'm back" button that sends `back`. The page counts the unanswered question itself,
+  with an "I'm back" button that sends `back`. While a sheet is up, Tab reaches these buttons among
+  the sheet's own and goes nowhere else, and a notice that goes with the keyboard on it gives the
+  keyboard back to the sheet. The page counts the unanswered question itself,
   since a solo watcher has no seat to show it. A new connection starts with no question. `busy` and
   `rateLimited` with the `detail` `instant` say that another speed would start, and which limit it
   was: the server's, or the network's own.

@@ -1,17 +1,32 @@
-// The server asks whether the person is still there when a game has waited on them too long, and
-// anything the page sends is the answer. Once the time to answer is up, the server counts them as
-// gone, as if the tab had closed, until the page next sends something.
-export type Question = { kind: "asking"; secondsLeft: number } | { kind: "unanswered" } | null;
+// Once the time to answer is up, the server counts the person as gone, as if the tab had closed, until
+// the page next sends something.
+export type Question = { kind: "asking"; secondsLeft: number; secondsGiven: number } | { kind: "unanswered" } | null;
+
+// A question that comes this soon after the page sent something may have crossed it on the way, and the server may
+// have taken that as the answer already.
+export const CROSSED_MS = 2000;
 
 export class StillHere {
   private deadlineAt: number | null = null;
+  private secondsGiven = 0;
+  private sentAt: number | null = null;
 
-  // `deadlineMs` is the time left when the server sent it, counted from when the page was told.
-  asked(deadlineMs: number, now: number): void {
+  // `deadlineMs` is the time left when the server sent it, counted from when the page was told. False when the
+  // question crossed something the page sent, and is to be answered at once rather than asked.
+  asked(deadlineMs: number, now: number): boolean {
+    if (this.sentAt !== null && now - this.sentAt < CROSSED_MS) {
+      return false;
+    }
     this.deadlineAt = now + deadlineMs;
+    this.secondsGiven = Math.ceil(deadlineMs / 1000);
+    return true;
   }
 
-  // The page sent something, or has a new connection, which the server counts as the person here.
+  sent(now: number): void {
+    this.sentAt = now;
+    this.answered();
+  }
+
   answered(): void {
     this.deadlineAt = null;
   }
@@ -21,6 +36,6 @@ export class StillHere {
       return null;
     }
     const left = this.deadlineAt - now;
-    return left > 0 ? { kind: "asking", secondsLeft: Math.ceil(left / 1000) } : { kind: "unanswered" };
+    return left > 0 ? { kind: "asking", secondsLeft: Math.ceil(left / 1000), secondsGiven: this.secondsGiven } : { kind: "unanswered" };
   }
 }

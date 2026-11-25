@@ -374,17 +374,21 @@ sets the rules. The page's share:
   refusal for too many connections waits 30 seconds before the page tries again.
 - **A player the game has waited on too long** is sent `stillHere` with the time left to answer.
   It is about the person, not the table, so it also goes before the playback queue. The strip shows
-  "Are you still there?" with the seconds left and an "I'm here" button, and the announcer says it.
-  Anything the page sends answers it, which a single wrapper round the connection's send sees.
-  Unanswered, the server counts the person as gone though the tab is open. So does a tab whose own
-  seat shows `away`, or `replaced` by a computer player while it is connected. Until the page sends
-  something, the strip says that the game waits, or that a computer player is playing for them,
-  with an "I'm back" button that sends `back`. While a sheet is up, Tab reaches these buttons among
-  the sheet's own and goes nowhere else, and a notice that goes with the keyboard on it gives the
-  keyboard back to the sheet. The page counts the unanswered question itself,
-  since a solo watcher has no seat to show it. A new connection starts with no question. `busy` and
-  `rateLimited` with the `detail` `instant` say that another speed would start, and which limit it
-  was: the server's, or the network's own.
+  "Are you still there?" with an "I'm here" button, and the seconds left beside it. The seconds are
+  kept out of the live region, which would read the strip out whole at every tick, and a screen
+  reader is told the time once, in words that do not change. The waiting notice does the same.
+  Anything the page sends answers the question, which a single wrapper round the connection's send
+  sees; a question that comes within two seconds of a send may have crossed it, and is answered with
+  `back` at once. Unanswered, the server counts the person as gone though the tab is open. While a
+  game is played, and once the connection has its sync, the strip then says that the game waits, or
+  that a computer player is playing for them, with an "I'm back" button that sends `back`, and with
+  the seconds until a computer takes the seat when the table waits for it. While a sheet is up, Tab
+  reaches these buttons among the sheet's own and goes nowhere else, and a notice that goes with the
+  keyboard on it gives the keyboard back to the sheet. For a seated person it
+  says so while their own seat shows `away` or `replaced`, which is the server's word. For a solo
+  watcher, who has no seat, the page counts the unanswered question itself. A new connection starts
+  with no question, and so does the end of the game. `busy` and `rateLimited` with the `detail` `instant`
+  say that another speed would start, and which limit it was: the server's, or the network's own.
 
 All of this is built in the server plan's phase 9, as the page's share of it. So is the deploy rule:
 the page is built from the latest commit of this repository whose submodule points at the server
@@ -445,7 +449,8 @@ They run against a real server, built from the submodule ([§14](#14-building-an
 
 The end-to-end server's limits per address are lifted in `tests/e2e/server.json`, since every test
 connects and makes tables from the one address. The drain test starts a server of its own on port
-8091 with a short `drain_ms`.
+8091 with a short `drain_ms`, and the still-here tests one on port 8092 that asks after two seconds,
+both through `tests/e2e/ownServer.ts`.
 
 **The server for the end-to-end tests** is built from the submodule, by the server's own rules:
 

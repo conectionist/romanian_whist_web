@@ -37,14 +37,14 @@ it drains.
 
 - **With its server, in one stack:** the server's repository has the compose file that runs both
   images, with this image's Caddy getting the certificate. See "Deploy with Docker" in
-  [its README](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/README.md#deploy-with-docker-recommended).
+  [its README](https://github.com/conectionist/romanian_whist_server/blob/master/README.md#deploy-with-docker-recommended).
 - **Behind your own Caddy or nginx:** the server serves the page itself, from a volume that this
   image fills. See "Behind your own reverse proxy" in the same README.
 - **Pointed at any server,** below.
 - **Without Docker:** the server serves the built `dist/` as its document root, behind a proxy that
   holds TLS. See "Deploying without Docker" in
-  [the server's README](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/README.md#deploying-without-docker)
-  and [§12.2 of its plan](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#122-by-hand).
+  [the server's README](https://github.com/conectionist/romanian_whist_server/blob/master/README.md#deploying-without-docker)
+  and [§12.2 of its plan](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#122-by-hand).
 
 ### The page alone, pointed at a server
 

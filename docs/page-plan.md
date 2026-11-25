@@ -22,15 +22,13 @@ is done. When a phase is finished, its outcome is written under it, as the serve
 **Read first, in this order**
 
 1. This file, once, top to bottom.
-2. The server plan, [`docs/server-plan.md`](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md) in
+2. The server plan, [`docs/server-plan.md`](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md) in
    `romanian_whist_server`: above all §1 (the six rules), §2 (what is being built), §5.3 (what the
    others see), §6 (the protocol) and §7 (tables, seats and players). The page shows what the
    server sends.
 
-   The links to it point at the server's parent branch, `ccr-c8ac042f-e6e18n`, which holds the
-   current plan. They move to the server's `master` when that branch is merged there. This
-   repository's submodule holds the copy this page is built against:
-   `libs/romanian_whist_server/docs/server-plan.md`.
+   The links to it point at the server's `master`. This repository's submodule holds the copy
+   this page is built against: `libs/romanian_whist_server/docs/server-plan.md`.
 3. The desktop client itself, because the page must look like it: run it, or look at the pictures
    its `tests/ScreenshotTool.cpp` takes. Then its `docs/ui-redesign/IMPLEMENTATION_PLAN.md`, whose
    phase outcomes record where the desktop client departed from its mock-up,
@@ -336,7 +334,7 @@ Paths are in the desktop repository.
 ## 12. Security
 
 The server plan's
-[§9](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#9-security-and-fairness)
+[§9](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#9-security-and-fairness)
 sets the rules. The page's share:
 
 - Player-chosen text goes in only through `textContent`.
@@ -357,7 +355,7 @@ sets the rules. The page's share:
   pull request's is its head's. With no commit, or a dirty one, the link is to the repository and
   About says the commit is unknown or that the build has local changes. The AGPL's section 13 needs
   both (the server plan's
-  [§12](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#12-deployment-and-operations)).
+  [§12](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#12-deployment-and-operations)).
 - **An About sheet,** opened by the footer and placed like the rules on the phone, lists the licence
   (AGPL-3.0-or-later), both links, both versions and commits, the protocol number, and what the page
   keeps in the browser, by name: the token, the profile, the last New Game for each language, the
@@ -407,7 +405,7 @@ first (the server plan's §12).
 The page's tests decode every fixture in the server's `protocol/fixtures/`, read through the
 submodule, with the page's own decoder. A field renamed in the server fails them once the
 submodule moves to that server (the server plan's
-[§6.9](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#69-keeping-the-two-sides-in-step)).
+[§6.9](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#69-keeping-the-two-sides-in-step)).
 
 ### 13.2 End to end
 
@@ -426,7 +424,7 @@ They run against a real server, built from the submodule ([§14](#14-building-an
   `tests/ScreenshotTool.cpp` games**, with the same seeds and players, to the same moments. It
   writes each viewer's snapshot into the server's `protocol/look/`, which the page reads through
   its submodule (the server plan's
-  [§10.5](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#105-the-look)). The sheets
+  [§10.5](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#105-the-look)). The sheets
   get fixtures built by hand, as the screenshot tool builds theirs.
 - **Playwright renders each fixture at the desktop shot's own size**: 1920×1080 for the
   whole-window shots, 1920×1034 for `table-empty`, the hands and the sheets. A script pairs each
@@ -511,7 +509,7 @@ checkout of the server beside this one.
     never from a pull request.
   - **Versioning.** The image's tag is the version in `package.json`; its labels carry the
     protocol version and the server revision it was tested with. The server's plan has the rest
-    ([§12.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#121-with-docker-recommended)).
+    ([§12.1](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#121-with-docker-recommended)).
 - **Python** 3.12 with Pillow, for the mock-up's build script and the import tools.
 - **Pull requests:** change a PR's title or description with
   `gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -F body=@<file>`. `gh pr edit` fails on the
@@ -535,7 +533,7 @@ Branch `web/docker`, off `ccr-209c0806-o444sp`, PR #5, "The page's Docker image"
   registry ghcr.io; publishing from `master` and version tags; amd64 only.
 - **Two requests:** the latest stable versions (Node 26 for the image's build stage, Caddy 2.11.9),
   and a deployment without a Caddy of ours, which is the server's
-  [§12.1.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#1211-behind-your-own-proxy).
+  [§12.1.1](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#1211-behind-your-own-proxy).
 - **The plan's open questions,** all at their defaults. The ones that shape this page: the browser
   check of the policy runs in CI; `/version` is proxied; there is no HSTS; the Linux job and the
   owner's machine stay on Node 24.
@@ -664,7 +662,7 @@ Docker's documentation and no test covers.
 
 The phases are numbered in one sequence with the server's. Phases 0 to 5, 9 and 11 are in the
 server plan's
-[§13](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#13-phases),
+[§13](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#13-phases),
 and 6, 7, 8, 8b and 10 are here. Phase 9 has a share here too: the footer, the About page, and deploying the page with its server
 (§12).
 The branch workflow and the code review procedure are that section's. Its step 5, building and
@@ -931,7 +929,7 @@ of code `e2eef2e`):
   - no difference from the desktop client remains that the browser does not force or the owner
     has not accepted;
   - everything in
-    [the server plan's §2.1](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#21-carried-over-from-the-desktop-client)
+    [the server plan's §2.1](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#21-carried-over-from-the-desktop-client)
     works in solo play;
   - a blind card whose prompt the computer closes (the turn timer) keeps its back until it is
     played, tried against a real online table. Phase 6 could only unit-test it;
@@ -1524,7 +1522,7 @@ commit of code `71713b4`).
 ### Phase 9's share: the footer, About and the page deployed — M ✅ COMPLETE
 
 The phase is the server plan's
-[phase 9](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#phase-9-hardening-and-deployment--m--complete),
+[phase 9](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#phase-9-hardening-and-deployment--m--complete),
 whose outcome holds the owner's choices, the deploy, the load test and the server's reviews. This
 is the page's share of it, from §12 and "Left for the server's phase 9" in §14.
 
@@ -1626,7 +1624,7 @@ is the page's share of it, from §12 and "Left for the server's phase 9" in §14
 ## 17. Decisions, with defaults
 
 They keep the numbers they have in the server plan's
-[§15](https://github.com/conectionist/romanian_whist_server/blob/ccr-c8ac042f-e6e18n/docs/server-plan.md#15-decisions-with-defaults),
+[§15](https://github.com/conectionist/romanian_whist_server/blob/master/docs/server-plan.md#15-decisions-with-defaults),
 where the other decisions are. The plan assumes each default until the owner decides otherwise.
 
 | # | Question | Default |

@@ -218,19 +218,20 @@ function part(node: HTMLElement, className: string, value: string | undefined, a
 export class Notices {
   readonly element: HTMLElement;
   private readonly shown = new Map<string, { node: HTMLElement; timer: number | null }>();
+  private parkedFor: string | null = null;
 
   // `lost` is told when a notice that had the keyboard goes, which would otherwise leave it on nothing.
   constructor(private readonly lost: () => void = () => undefined) {
-    this.element = el("div", { class: "notices", attrs: { role: "status", "aria-live": "polite" } });
+    this.element = el("div", { class: "notices", attrs: { role: "status", "aria-live": "polite", tabindex: "-1" } });
   }
 
   set(
     id: string,
     text: string | null,
-    options: { kind?: string; liveMs?: number; action?: { label: string; run: () => void }; count?: string; said?: string } = {},
+    options: { kind?: string; liveMs?: number; action?: { label: string; run: () => void }; count?: string; said?: string; handTo?: string } = {},
   ): void {
     if (text === null || text === "") {
-      this.clear(id);
+      this.clear(id, options.handTo);
       return;
     }
     let entry = this.shown.get(id);
@@ -254,6 +255,10 @@ export class Notices {
     } else if (options.action === undefined && button !== null) {
       button.remove();
     }
+    if (this.parkedFor === id && document.activeElement === this.element) {
+      this.parkedFor = null;
+      entry.node.querySelector("button")?.focus();
+    }
     if (entry.timer !== null) {
       window.clearTimeout(entry.timer);
       entry.timer = null;
@@ -263,7 +268,9 @@ export class Notices {
     }
   }
 
-  clear(id: string): void {
+  // `handTo` names the notice that takes over from this one: the keyboard on this one goes to its button, and waits
+  // on the strip, where Enter does nothing, while it has not come yet.
+  clear(id: string, handTo?: string): void {
     const entry = this.shown.get(id);
     if (entry === undefined) {
       return;
@@ -274,8 +281,19 @@ export class Notices {
     const hadKeyboard = entry.node.contains(document.activeElement);
     entry.node.remove();
     this.shown.delete(id);
-    if (hadKeyboard) {
+    if (!hadKeyboard) {
+      return;
+    }
+    if (handTo === undefined) {
       this.lost();
+      return;
+    }
+    const next = this.shown.get(handTo)?.node.querySelector("button");
+    if (next !== null && next !== undefined) {
+      next.focus();
+    } else {
+      this.parkedFor = handTo;
+      this.element.focus();
     }
   }
 }

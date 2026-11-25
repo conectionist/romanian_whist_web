@@ -52,6 +52,7 @@ export class SheetLayer {
   private returnTo: Element | null = null;
   private tookKeyboard = false;
   private readonly beside: HTMLElement[] = [];
+  private besideAsks = false;
   private scaled = false;
   private readonly watcher: ResizeObserver;
 
@@ -127,18 +128,29 @@ export class SheetLayer {
     return this.open;
   }
 
-  // A strip outside the layer whose buttons stay in Tab's reach while a sheet is up: the notices ask
-  // what no sheet asks, and are answered only by their own buttons.
+  // A strip outside the layer whose buttons are among the open sheet's Tab stops.
   keepBeside(strip: HTMLElement): void {
     this.beside.push(strip);
     strip.addEventListener("keydown", (event) => this.keep(event));
   }
 
-  // The keyboard was on something beside the sheet that went: it goes back to the sheet, if the sheet
-  // took it, or the next Tab would start from the top of the page.
+  // The keyboard goes back to the open sheet, if the sheet took it when it came up.
   takeKeyboardBack(): void {
     if (this.open !== null && this.tookKeyboard) {
       this.open.focusDefault();
+    }
+  }
+
+  // While a strip beside the sheet asks something, the sheet is not modal: a screen reader that kept to the sheet
+  // would not read the question that the keyboard is sent to.
+  setBesideAsks(asks: boolean): void {
+    this.besideAsks = asks;
+    this.markModal();
+  }
+
+  private markModal(): void {
+    for (const sheet of this.sheets) {
+      sheet.element.setAttribute("aria-modal", sheet === this.open && this.besideAsks ? "false" : "true");
     }
   }
 
@@ -146,6 +158,8 @@ export class SheetLayer {
   // words keeps the keyboard where it is, and one that waits for nothing does not take it.
   show(sheet: Sheet | null, takesKeyboard = true): boolean {
     if (sheet === this.open) {
+      // A sheet put up resting and then made to wait for the person has its keyboard given by its owner.
+      this.tookKeyboard ||= sheet !== null && takesKeyboard;
       return false;
     }
     if (sheet !== null && !this.sheets.includes(sheet)) {
@@ -161,6 +175,7 @@ export class SheetLayer {
       each.element.hidden = each !== sheet;
     }
     this.element.hidden = sheet === null;
+    this.markModal();
     this.place();
     if (sheet === null) {
       this.giveBack();
@@ -194,8 +209,8 @@ export class SheetLayer {
     }
   }
 
-  // Tab stays inside the sheet and the strips beside it, as the desktop's does: walking out would reach
-  // the table under the dim. The stops go in the page's order, so Shift+Tab walks back the same way.
+  // Tab stays inside the sheet, as the desktop's does, and the strips beside it: walking out would reach the
+  // table under the dim. The stops go in the page's order, so Shift+Tab walks back the same way.
   private keep(event: KeyboardEvent): void {
     if (event.key !== "Tab" || this.open === null) {
       return;

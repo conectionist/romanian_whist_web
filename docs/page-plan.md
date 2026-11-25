@@ -382,11 +382,13 @@ sets the rules. The page's share:
   `back` at once. Unanswered, the server counts the person as gone though the tab is open. While a
   game is played, and once the connection has its sync, the strip then says that the game waits, or
   that a computer player is playing for them, with an "I'm back" button that sends `back`, and with
-  the seconds until a computer takes the seat when the table waits for it. While a sheet is up, Tab
-  reaches these buttons among the sheet's own and goes nowhere else, and a notice that goes with the
-  keyboard on it gives the keyboard back to the sheet. For a seated person it
-  says so while their own seat shows `away` or `replaced`, which is the server's word. For a solo
-  watcher, who has no seat, the page counts the unanswered question itself. A new connection starts
+  the seconds until a computer takes the seat when the table waits for it. For a seated person the
+  strip says so while their own seat shows `away` or `replaced`, which is the server's word. For a solo
+  watcher, who has no seat, the page counts the unanswered question itself. While a sheet is up, Tab
+  reaches the strip's buttons among the sheet's own and nothing else, and the sheet says it is not
+  modal while the strip asks. An answered notice gives the keyboard back to the sheet, if the sheet
+  had it; a question whose time runs out with the keyboard on "I'm here" gives it to "I'm back", and
+  Enter does nothing in between. A new connection starts
   with no question, and so does the end of the game. `busy` and `rateLimited` with the `detail` `instant`
   say that another speed would start, and which limit it was: the server's, or the network's own.
 

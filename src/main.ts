@@ -314,7 +314,8 @@ const announcer = new Announcer();
 
 const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage, settings: () => flow.openMenu("settings"), rules: () => flow.openMenu("rules"), about: () => flow.openMenu("about") });
 frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element, rotateHint());
-// A question in the strip is answered there, so Tab reaches it from an open sheet.
+// The notices ask what no sheet asks, and are answered only by their own buttons, so Tab reaches them from an
+// open sheet.
 sheets.layer.keepBeside(notices.element);
 
 scene.onHistory(() => flow.openMenu("history"));
@@ -454,8 +455,17 @@ function showStillHere(): void {
   };
   const asking = shown?.id === "asking" ? shown : null;
   const gone = shown?.id === "gone" ? shown : null;
-  notices.set("still-here", asking?.text ?? null, { kind: "warn", action: { label: t("online", "I'm here"), run: answer }, ...partsOf(asking) });
   notices.set("gone", gone?.text ?? null, { kind: "warn", action: { label: t("online", "I'm back"), run: answer }, ...partsOf(gone) });
+  // A question whose time ran out with the keyboard on I'm here gives the keyboard to I'm back, so that an Enter
+  // meant for one never lands on the sheet's own button.
+  const timedOut = stillHere.state(now)?.kind === "unanswered";
+  notices.set("still-here", asking?.text ?? null, {
+    kind: "warn",
+    action: { label: t("online", "I'm here"), run: answer },
+    ...partsOf(asking),
+    ...(timedOut ? { handTo: "gone" } : {}),
+  });
+  sheets.layer.setBesideAsks(shown !== null);
 }
 
 function showWaiting(): void {

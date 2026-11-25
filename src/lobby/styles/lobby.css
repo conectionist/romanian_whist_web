@@ -441,6 +441,11 @@ select.field option {
   pointer-events: none;
 }
 
+/* The strip holds the keyboard only between one notice's button and the next's, with nothing to press. */
+.notices:focus {
+  outline: none;
+}
+
 .notice {
   position: relative;
   display: flex;

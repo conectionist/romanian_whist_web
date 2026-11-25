@@ -1,5 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { ASK, answerByKeys, dealByKeys, playToTheResults, sheet, tabTo, untilCardsToChooseFrom } from "./keyboard";
+import { visitor, withServer } from "./ownServer";
 
 // Nothing flies, so what is on the table is what the server last said.
 test.beforeEach(async ({ page }) => {
@@ -202,4 +203,173 @@ test("Space closes the round sheet the game only rests on, with the keyboard on 
   await page.keyboard.press("Space");
   await expect(round).toHaveCount(0, { timeout: 1000 });
   await expect(page.locator(".score-round")).toHaveText("Round 2 of 23", { timeout: 10_000 });
+});
+
+// Where the keyboard is: on the open sheet, on the strip of notices, or anywhere else, which a sheet over the table
+// must never let it reach.
+async function keyboardOn(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const node = document.activeElement;
+    if (node?.closest(".sheet-layer .sheet:not([hidden])")) {
+      return "sheet";
+    }
+    if (node?.closest(".notices")) {
+      return "notices";
+    }
+    return node === null || node === document.body ? "nothing" : `${node.tagName}.${node.className}`;
+  });
+}
+
+// Tab, or Shift+Tab, until the keyboard is on the wanted button, each stop on the way checked.
+async function tabWithinTo(page: Page, wanted: string, key = "Tab"): Promise<void> {
+  for (let presses = 0; presses < 12; presses++) {
+    await page.keyboard.press(key);
+    expect(["sheet", "notices"]).toContain(await keyboardOn(page));
+    if (await page.evaluate((selector) => document.activeElement?.matches(selector) === true, wanted)) {
+      return;
+    }
+  }
+  throw new Error(`Tab did not reach ${wanted}`);
+}
+
+// A server of its own, which asks after three seconds of waiting on you, the pause counted, more than the page's two
+// seconds in which a question may cross what it sent; and gives eight to answer, time for the keys.
+const PORT = 8093;
+const SETTINGS = { still_here_after_ms: 3000, still_here_answer_ms: 8000 };
+
+// The types of the messages the page sends, as it sends them.
+function sentBy(page: Page): string[] {
+  const sent: string[] = [];
+  page.on("websocket", (socket) => socket.on("framesent", (frame) => sent.push(String(JSON.parse(String(frame.payload)).type))));
+  return sent;
+}
+
+// Holds back for a second and a half what the server sends from just before an unanswered question's time is up,
+// in order, so that the page's own count runs out before the server's word that you are gone comes.
+async function holdBackTheWordGone(page: Page): Promise<void> {
+  await page.routeWebSocket(/\/ws$/, (socket) => {
+    const server = socket.connectToServer();
+    let holdFrom: number | null = null;
+    let delivered = Promise.resolve();
+    socket.onMessage((message) => {
+      holdFrom = null;
+      server.send(message);
+    });
+    server.onMessage((message) => {
+      const now = Date.now();
+      const parsed = JSON.parse(String(message)) as { type: string; deadline?: number };
+      const due = holdFrom !== null && now >= holdFrom ? now + 1500 : now;
+      if (parsed.type === "stillHere" && parsed.deadline !== undefined) {
+        holdFrom = now + parsed.deadline - 500;
+      }
+      delivered = delivered.then(() => new Promise((resolve) => setTimeout(resolve, Math.max(0, due - Date.now())))).then(() => socket.send(message));
+    });
+  });
+}
+
+test("with a sheet up, Tab reaches the notice's I'm here and I'm back, Enter on either sends back, and Tab never leaves for the table", async ({
+  browser,
+}) => {
+  test.setTimeout(90_000);
+  await withServer(PORT, SETTINGS, async (_running, keep) => {
+    const context = await visitor(browser, PORT);
+    keep(context);
+    const page = await context.newPage();
+    const sent = sentBy(page);
+    await page.goto("/?solo=3");
+    await page.locator(ASK).first().waitFor();
+    await page.keyboard.press("Escape");
+    const pause = sheet(page, "pause");
+    await expect(pause).toBeVisible();
+    await expect(pause.locator('[data-action="resume"]')).toBeFocused();
+
+    const asking = page.locator('.notice[data-notice="still-here"]');
+    await expect(asking).toBeVisible({ timeout: 15_000 });
+    // A screen reader is not kept to the sheet while the strip asks.
+    await expect(pause).toHaveAttribute("aria-modal", "false");
+    await tabWithinTo(page, '.notice[data-notice="still-here"] .notice-btn');
+    const before = sent.length;
+    await page.keyboard.press("Enter");
+    await expect(asking).toHaveCount(0);
+    await expect.poll(() => sent.slice(before)).toEqual(["back"]);
+    // The sheet is still up, and has the keyboard back from the notice that went.
+    await expect(pause).toBeVisible();
+    await expect(pause.locator('[data-action="resume"]')).toBeFocused();
+    await expect(pause).toHaveAttribute("aria-modal", "true");
+
+    // Asked again and left unanswered, the server counts you gone, which stays until something is sent.
+    const gone = page.locator('.notice[data-notice="gone"]');
+    await expect(gone).toBeVisible({ timeout: 20_000 });
+    // Round and round both ways, the keyboard stays on the sheet and the strip.
+    for (const key of ["Tab", "Shift+Tab"]) {
+      const seen = new Set<string>();
+      for (let presses = 0; presses < 7; presses++) {
+        await page.keyboard.press(key);
+        seen.add(await keyboardOn(page));
+      }
+      expect([...seen].sort()).toEqual(["notices", "sheet"]);
+    }
+    await tabWithinTo(page, '.notice[data-notice="gone"] .notice-btn', "Shift+Tab");
+    const later = sent.length;
+    await page.keyboard.press("Enter");
+    await expect(gone).toHaveCount(0);
+    await expect.poll(() => sent.slice(later)).toEqual(["back"]);
+    await expect(pause).toBeVisible();
+    await expect(pause.locator('[data-action="resume"]')).toBeFocused();
+  });
+});
+
+test("with the round held, I'm here gives the keyboard back to Continue, and a question that runs out gives it to I'm back", async ({ browser }) => {
+  test.setTimeout(120_000);
+  await withServer(PORT, SETTINGS, async (_running, keep) => {
+    const context = await visitor(browser, PORT);
+    keep(context);
+    const page = await context.newPage();
+    const sent = sentBy(page);
+    await holdBackTheWordGone(page);
+    await page.goto("/");
+    await expect(page.locator("body")).toHaveAttribute("data-status", "at no table");
+    await dealByKeys(page, { waitForMe: true });
+
+    // The first round deals one card: a bid and a card, and then the round waits for Continue, which has the keyboard.
+    const round = sheet(page, "round");
+    const next = round.locator('[data-action="continue"]:not(:disabled)');
+    for (let answered = 0; (await next.count()) === 0; ) {
+      if (await answerByKeys(page, answered)) {
+        answered += 1;
+      }
+      await page.waitForTimeout(15);
+    }
+    await expect(next).toBeFocused();
+
+    const asking = page.locator('.notice[data-notice="still-here"]');
+    await expect(asking).toBeVisible({ timeout: 15_000 });
+    await expect(round).toHaveAttribute("aria-modal", "false");
+    await tabWithinTo(page, '.notice[data-notice="still-here"] .notice-btn');
+    const before = sent.length;
+    await page.keyboard.press("Enter");
+    await expect(asking).toHaveCount(0);
+    await expect.poll(() => sent.slice(before)).toEqual(["back"]);
+    await expect(next).toBeFocused();
+    await expect(round).toHaveAttribute("aria-modal", "true");
+
+    // Asked again, with the keyboard left on I'm here until the time runs out. Until the server's word comes, the
+    // question stays with no seconds, and keeps the keyboard and the sheet's word that it is not modal.
+    await expect(asking).toBeVisible({ timeout: 15_000 });
+    await tabWithinTo(page, '.notice[data-notice="still-here"] .notice-btn');
+    await expect(asking.locator(".notice-count")).toHaveCount(0, { timeout: 15_000 });
+    await expect(asking.locator(".notice-btn")).toBeFocused();
+    await expect(round).toHaveAttribute("aria-modal", "false");
+    const gone = page.locator('.notice[data-notice="gone"]');
+    await expect(gone).toBeVisible({ timeout: 20_000 });
+    await expect(asking).toHaveCount(0);
+    await expect(gone.locator(".notice-btn")).toBeFocused();
+    await expect(gone.locator(".notice-btn")).toHaveAccessibleDescription("You did not answer in time. Your game is waiting for you.");
+    const later = sent.length;
+    await page.keyboard.press("Enter");
+    await expect(gone).toHaveCount(0);
+    await expect.poll(() => sent.slice(later)).toEqual(["back"]);
+    await expect(round).toBeVisible();
+    await expect(next).toBeFocused();
+  });
 });

@@ -251,9 +251,12 @@ describe("whether you are still there", () => {
   });
 
   it("takes a seat's presence over the page's own count, which is for a watcher", () => {
-    // A move that crossed the question answered it, and the seat is here.
-    expect(shown({ kind: "unanswered" }, yours("here"))).toBeNull();
+    expect(shown({ kind: "unanswered" }, yours("away"))?.id).toBe("gone");
     expect(shown({ kind: "unanswered" }, watched)).toEqual({ id: "gone", text: "You did not answer in time. Your game is waiting for you." });
+  });
+
+  it("keeps asking, with no seconds, when its count runs out before the server says you are gone", () => {
+    expect(shown({ kind: "unanswered" }, yours("here"))).toEqual({ id: "asking", text: "Are you still there?" });
   });
 
   it("says nothing between games, at no table, or before this connection's sync", () => {

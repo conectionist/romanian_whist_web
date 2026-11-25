@@ -131,6 +131,11 @@ export function stillHereText(seen: {
     };
   }
   const presence = ownPresence(table);
+  // The page's count can run out a moment before the server's word comes, and the question stays until then, with
+  // no seconds: its button still answers, and the keyboard on it is not left on nothing.
+  if (presence === "here" && question?.kind === "unanswered") {
+    return { id: "asking", text: t("online", "Are you still there?") };
+  }
   if (presence === "replaced") {
     return { id: "gone", text: t("online", "A computer player is playing for you.") };
   }
@@ -219,22 +224,24 @@ export class Notices {
   readonly element: HTMLElement;
   private readonly shown = new Map<string, { node: HTMLElement; timer: number | null }>();
 
-  constructor() {
+  // `lost` is told when a notice that had the keyboard goes with no other to hand it to, which would otherwise
+  // leave it on nothing.
+  constructor(private readonly lost: () => void = () => undefined) {
     this.element = el("div", { class: "notices", attrs: { role: "status", "aria-live": "polite" } });
   }
 
   set(
     id: string,
     text: string | null,
-    options: { kind?: string; liveMs?: number; action?: { label: string; run: () => void }; count?: string; said?: string } = {},
+    options: { kind?: string; liveMs?: number; action?: { label: string; run: () => void }; count?: string; said?: string; handTo?: string } = {},
   ): void {
     if (text === null || text === "") {
-      this.clear(id);
+      this.clear(id, options.handTo);
       return;
     }
     let entry = this.shown.get(id);
     if (entry === undefined) {
-      entry = { node: el("div", { class: "panel notice", data: { notice: id } }, el("span", { class: "notice-text" })), timer: null };
+      entry = { node: el("div", { class: "panel notice", data: { notice: id } }, el("span", { class: "notice-text", attrs: { id: `notice-${id}` } })), timer: null };
       this.shown.set(id, entry);
       this.element.append(entry.node);
     }
@@ -247,7 +254,8 @@ export class Notices {
     part(entry.node, "notice-said sr-only", options.said, count ?? words);
     const button = entry.node.querySelector("button");
     if (options.action !== undefined && button === null) {
-      const action = el("button", { class: "notice-btn", attrs: { type: "button" }, text: options.action.label });
+      // A button the keyboard is given to says what it answers: the live region's words may be cut short by it.
+      const action = el("button", { class: "notice-btn", attrs: { type: "button", "aria-describedby": `notice-${id}` }, text: options.action.label });
       action.addEventListener("click", options.action.run);
       entry.node.append(action);
     } else if (options.action === undefined && button !== null) {
@@ -262,7 +270,8 @@ export class Notices {
     }
   }
 
-  clear(id: string): void {
+  // `handTo` names a notice that may take over from this one, and the keyboard on this one goes to its button.
+  clear(id: string, handTo?: string): void {
     const entry = this.shown.get(id);
     if (entry === undefined) {
       return;
@@ -270,7 +279,17 @@ export class Notices {
     if (entry.timer !== null) {
       window.clearTimeout(entry.timer);
     }
+    const hadKeyboard = entry.node.contains(document.activeElement);
     entry.node.remove();
     this.shown.delete(id);
+    if (!hadKeyboard) {
+      return;
+    }
+    const next = handTo === undefined ? null : this.shown.get(handTo)?.node.querySelector("button");
+    if (next !== null && next !== undefined) {
+      next.focus();
+    } else {
+      this.lost();
+    }
   }
 }

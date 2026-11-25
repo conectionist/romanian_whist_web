@@ -1,4 +1,4 @@
-import { el } from "../dom/el";
+import { el, setAttr } from "../dom/el";
 import { icon } from "../dom/icons";
 import { t } from "../i18n/t";
 import { PAGE_ACTION, placementFor, type SheetKey } from "./placement";
@@ -50,6 +50,9 @@ export class SheetLayer {
   readonly element: HTMLElement;
   private open: Sheet | null = null;
   private returnTo: Element | null = null;
+  private tookKeyboard = false;
+  private readonly beside: HTMLElement[] = [];
+  private besideAsks = false;
   private scaled = false;
   private readonly watcher: ResizeObserver;
 
@@ -125,10 +128,46 @@ export class SheetLayer {
     return this.open;
   }
 
+  // A strip outside the layer whose buttons are among the open sheet's Tab stops.
+  keepBeside(strip: HTMLElement): void {
+    this.beside.push(strip);
+    strip.addEventListener("keydown", (event) => this.keep(event));
+  }
+
+  // The keyboard goes back to the open sheet, if the sheet has taken it: to its own button, or to its first enabled
+  // one where that is disabled, since from the body the next Tab would leave the sheet.
+  takeKeyboardBack(): void {
+    if (this.open === null || !this.tookKeyboard) {
+      return;
+    }
+    this.open.focusDefault();
+    if (!this.open.element.contains(document.activeElement)) {
+      this.stopsIn([this.open.element])[0]?.focus();
+    }
+  }
+
+  // While a strip beside the sheet asks something, the sheet is not modal: a screen reader that kept to the sheet
+  // would not read the question that the keyboard is sent to.
+  setBesideAsks(asks: boolean): void {
+    if (asks !== this.besideAsks) {
+      this.besideAsks = asks;
+      this.markModal();
+    }
+  }
+
+  private markModal(): void {
+    for (const sheet of this.sheets) {
+      setAttr(sheet.element, "aria-modal", sheet === this.open && this.besideAsks ? "false" : "true");
+    }
+  }
+
   // Shows this sheet, or none. Says whether another is up now than was: a sheet put up again with new
   // words keeps the keyboard where it is, and one that waits for nothing does not take it.
   show(sheet: Sheet | null, takesKeyboard = true): boolean {
     if (sheet === this.open) {
+      // A sheet put up resting and then made to wait for the person is given the keyboard by its owner, and a
+      // notice that goes takes it back there.
+      this.tookKeyboard ||= sheet !== null && takesKeyboard;
       return false;
     }
     if (sheet !== null && !this.sheets.includes(sheet)) {
@@ -139,10 +178,12 @@ export class SheetLayer {
       this.returnTo = document.activeElement;
     }
     this.open = sheet;
+    this.tookKeyboard = sheet !== null && takesKeyboard;
     for (const each of this.sheets) {
       each.element.hidden = each !== sheet;
     }
     this.element.hidden = sheet === null;
+    this.markModal();
     this.place();
     if (sheet === null) {
       this.giveBack();
@@ -176,14 +217,13 @@ export class SheetLayer {
     }
   }
 
-  // Tab stays inside the sheet, as the desktop's does: walking out would reach the table under the dim.
+  // Tab stays inside the sheet, as the desktop's does, and the strips beside it: walking out would reach the
+  // table under the dim. The stops go in the page's order, so Shift+Tab walks back the same way.
   private keep(event: KeyboardEvent): void {
     if (event.key !== "Tab" || this.open === null) {
       return;
     }
-    const stops = Array.from(this.open.element.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-      (node) => node.offsetParent !== null,
-    );
+    const stops = this.stopsIn([...this.beside, this.open.element]);
     if (stops.length === 0) {
       event.preventDefault();
       return;
@@ -192,5 +232,13 @@ export class SheetLayer {
     const next = at < 0 ? (event.shiftKey ? stops.length - 1 : 0) : (at + (event.shiftKey ? stops.length - 1 : 1)) % stops.length;
     event.preventDefault();
     stops[next].focus();
+  }
+
+  // What Tab stops at in these, as drawn, in the page's order.
+  private stopsIn(roots: HTMLElement[]): HTMLElement[] {
+    return roots
+      .flatMap((root) => Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)))
+      .filter((node) => node.offsetParent !== null)
+      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
   }
 }

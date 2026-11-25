@@ -144,7 +144,7 @@ const memory: Memory = {
   },
 };
 
-const notices = new Notices();
+const notices = new Notices(() => sheets.layer.takeKeyboardBack());
 const bannerRoom = new BannerRoom(frame, notices.element);
 // Whether the page has been told yet that it is at a table or at none: until then it shows neither.
 let synced = false;
@@ -314,6 +314,9 @@ const announcer = new Announcer();
 
 const menuPage = new MenuPage({ newGame: () => flow.openMenu("new-game"), playOnline: () => flow.openMenu("online"), language: changeLanguage, settings: () => flow.openMenu("settings"), rules: () => flow.openMenu("rules"), about: () => flow.openMenu("about") });
 frame.append(menuPage.element, menuBar.element, notices.element, sheets.layer.element, announcer.element, rotateHint());
+// The notices ask what no sheet asks, and are answered only by their own buttons, so Tab reaches them from an
+// open sheet.
+sheets.layer.keepBeside(notices.element);
 
 scene.onHistory(() => flow.openMenu("history"));
 scene.onLastTrick(() => flow.openMenu("last-trick"));
@@ -452,8 +455,11 @@ function showStillHere(): void {
   };
   const asking = shown?.id === "asking" ? shown : null;
   const gone = shown?.id === "gone" ? shown : null;
-  notices.set("still-here", asking?.text ?? null, { kind: "warn", action: { label: t("online", "I'm here"), run: answer }, ...partsOf(asking) });
   notices.set("gone", gone?.text ?? null, { kind: "warn", action: { label: t("online", "I'm back"), run: answer }, ...partsOf(gone) });
+  // The keyboard on I'm here goes to I'm back when one takes over from the other, so that an Enter meant for the
+  // question never lands on the sheet's own button.
+  notices.set("still-here", asking?.text ?? null, { kind: "warn", action: { label: t("online", "I'm here"), run: answer }, ...partsOf(asking), handTo: "gone" });
+  sheets.layer.setBesideAsks(shown !== null);
 }
 
 function showWaiting(): void {

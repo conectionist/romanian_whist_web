@@ -2,10 +2,11 @@ import { expect, test, type Page } from "@playwright/test";
 import { answer, decide, waitForTurn } from "./support";
 import { visitor, withServer } from "./ownServer";
 
-// A server of its own, which asks whether you are still there after two seconds of waiting on you, and gives four to
-// answer, where the one the other tests share waits five minutes.
+// A server of its own, which asks whether you are still there after three seconds of waiting on you, more than the
+// page's two in which a question may cross what it sent, and gives four to answer, where the one the other tests
+// share waits five minutes.
 const PORT = 8092;
-const SETTINGS = { still_here_after_ms: 2000, still_here_answer_ms: 4000 };
+const SETTINGS = { still_here_after_ms: 3000, still_here_answer_ms: 4000 };
 
 // Notes any notice that the server counts the person as gone, however briefly it shows, so that a test need not
 // guess how long to look.

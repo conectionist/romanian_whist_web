@@ -36,15 +36,11 @@ in PRs of their own, one area at a time, not mixed into unrelated changes.
 
 ## Branch workflow
 
-Branches are stacked, as in the server: `master` -> the parent branch -> `web/phase-N-<name>`.
-The parent branch is currently `ccr-209c0806-o444sp`.
-
-Phase branches are reviewed and PR'd against the parent branch, never `master`. When running
-`/code-review` on a phase branch, diff against the parent, or pass the PR number so GitHub's base
-branch is used. This repository's phases are in `docs/page-plan.md`. The review procedure, and
-when a phase branch is merged, are in section 13 of the server's `docs/server-plan.md`. Read
-the submodule's copy, `libs/romanian_whist_server/docs/server-plan.md`: the server's `master`
-holds an older plan.
+Work goes on a branch off `master` and is PR'd against `master`, as in the server. When running
+`/code-review` on a branch, diff against `master`, or pass the PR number so GitHub's base branch
+is used. This repository's phases are in `docs/page-plan.md`. The review procedure is in section
+13 of the server's `docs/server-plan.md`. The submodule holds the copy this page is built against,
+`libs/romanian_whist_server/docs/server-plan.md`.
 
 ## Changing a PR: never `gh pr edit`
 
